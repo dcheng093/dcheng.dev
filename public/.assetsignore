@@ -1,0 +1,2 @@
+# Files in dist/ that wrangler must not publish (drop-folder notes for the site owner).
+README.txt

@@ -1,0 +1,183 @@
+@import "tailwindcss";
+
+@theme {
+  --font-pixel: "Press Start 2P", monospace;
+  --font-vt: "VT323", monospace;
+  --font-silk: "Silkscreen", monospace;
+  --font-comic: "Comic Sans MS", "Comic Sans", "Chalkboard SE", cursive;
+  --font-times: "Times New Roman", Times, serif;
+  --font-impact: Impact, "Arial Black", "Haettenschweiler", sans-serif;
+
+  --color-win: #c0c0c0;
+  --color-win-dark: #808080;
+  --color-win-title: #000080;
+  --color-lime: #00ff00;
+  --color-hotpink: #ff00cc;
+  --color-cyber: #00ffff;
+  --color-bsod: #0000aa;
+
+  /* Mostly steps() timing so motion looks like a 6fps GIF, not a smooth tween. */
+  --animate-jank-x: jank-x 1.2s steps(4) infinite alternate;
+  --animate-wobble: wobble 0.5s steps(2) infinite;
+  --animate-pulse-scale: pulse-scale 0.8s steps(3) infinite alternate;
+  --animate-spin-y: spin-y 2s steps(12) infinite;
+  --animate-spin-z: spin-z 3s steps(8) infinite;
+  --animate-shake: shake 0.25s steps(2) infinite;
+  --animate-blink: blink 0.8s steps(1) infinite;
+  --animate-rainbow: rainbow 1.5s steps(6) infinite;
+  --animate-strobe: strobe 0.3s steps(1) infinite;
+  --animate-drift: drift 14s steps(40) infinite alternate;
+  --animate-boing: boing 0.9s steps(5) infinite;
+  --animate-marquee: marquee 12s linear infinite;
+  --animate-wave: wave 1s steps(4) infinite;
+  --animate-trail: trail 0.7s steps(5) forwards;
+
+  @keyframes jank-x {
+    from { translate: -12px 0; }
+    to { translate: 12px 0; }
+  }
+  @keyframes wobble {
+    0% { rotate: -4deg; }
+    100% { rotate: 4deg; }
+  }
+  @keyframes pulse-scale {
+    from { scale: 0.9; }
+    to { scale: 1.15; }
+  }
+  @keyframes spin-y {
+    to { transform: rotateY(360deg); }
+  }
+  @keyframes spin-z {
+    to { rotate: 360deg; }
+  }
+  @keyframes shake {
+    0% { translate: -2px 1px; }
+    100% { translate: 2px -1px; }
+  }
+  @keyframes blink {
+    0% { opacity: 1; }
+    50% { opacity: 0; }
+  }
+  @keyframes rainbow {
+    to { filter: hue-rotate(360deg); }
+  }
+  @keyframes strobe {
+    0% { background-color: #ff0; color: #f00; }
+    50% { background-color: #f00; color: #ff0; }
+  }
+  @keyframes drift {
+    from { translate: 0 0; }
+    to { translate: var(--drift-x, 60px) var(--drift-y, 30px); }
+  }
+  @keyframes boing {
+    0%, 100% { translate: 0 0; scale: 1 1; }
+    40% { translate: 0 -18px; scale: 0.9 1.1; }
+    80% { translate: 0 0; scale: 1.15 0.85; }
+  }
+  @keyframes marquee {
+    from { transform: translateX(0); }
+    to { transform: translateX(-100%); }
+  }
+  @keyframes wave {
+    0%, 100% { translate: 0 0; }
+    50% { translate: 0 -6px; }
+  }
+  @keyframes trail {
+    from { opacity: 1; scale: 1; }
+    to { opacity: 0; scale: 0.3; translate: 0 14px; }
+  }
+}
+
+@layer base {
+  html {
+    overflow-x: clip;
+  }
+  body {
+    background: #000 url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='64' height='64'><rect width='64' height='64' fill='black'/><circle cx='8' cy='12' r='1' fill='white'/><circle cx='40' cy='30' r='1.5' fill='yellow'/><circle cx='22' cy='52' r='1' fill='white'/><circle cx='58' cy='6' r='1' fill='cyan'/></svg>");
+    color: #000;
+    font-family: var(--font-times);
+    overflow-x: clip;
+  }
+  img {
+    image-rendering: pixelated;
+  }
+}
+
+@layer components {
+  /* Tiled backgrounds (CSS/SVG placeholders until real GIF tiles are sourced). */
+  .tile-stars {
+    background: #000 url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='48' height='48'><rect width='48' height='48' fill='%23000010'/><circle cx='6' cy='9' r='1' fill='white'/><circle cx='30' cy='20' r='1.5' fill='%23ffff66'/><circle cx='18' cy='40' r='1' fill='white'/><circle cx='44' cy='4' r='.8' fill='%2300ffff'/><path d='M38 36l1 3 3 1-3 1-1 3-1-3-3-1 3-1z' fill='white'/></svg>");
+  }
+  .tile-hearts {
+    background: #ffb6e6 url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='40' height='40'><rect width='40' height='40' fill='%23ffb6e6'/><path d='M10 14c-3-5-10-2-7 4l7 7 7-7c3-6-4-9-7-4z' fill='%23ff3ca6'/><path d='M30 34c-2-3-6-1-4 2l4 4 4-4c2-3-2-5-4-2z' fill='%23ff77cc'/></svg>");
+  }
+  .tile-terminal {
+    background: #001a00 repeating-linear-gradient(0deg, rgb(0 255 0 / 0.08) 0 2px, transparent 2px 4px);
+  }
+  .tile-paisley {
+    background: #ff66cc url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='60' height='60'><rect width='60' height='60' fill='%23ff66cc'/><path d='M15 8c10 0 14 10 8 18s-16 4-14-4c1-5 8-6 9-1' fill='none' stroke='%237a00cc' stroke-width='4'/><circle cx='15' cy='18' r='3' fill='%23ffff00'/><path d='M45 34c10 0 14 10 8 18s-16 4-14-4c1-5 8-6 9-1' fill='none' stroke='%2300ccff' stroke-width='4'/><circle cx='45' cy='44' r='3' fill='%23ff3300'/><circle cx='48' cy='10' r='5' fill='%23b300ff'/><circle cx='12' cy='48' r='4' fill='%2333ff99'/></svg>");
+  }
+  .tile-clouds {
+    background: #6cf url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='120' height='80'><rect width='120' height='80' fill='%2366ccff'/><g fill='white'><circle cx='20' cy='30' r='12'/><circle cx='34' cy='26' r='14'/><circle cx='48' cy='32' r='10'/><circle cx='86' cy='62' r='9'/><circle cx='98' cy='58' r='12'/></g></svg>");
+  }
+  .tile-brick {
+    background-color: #a33;
+    background-image:
+      linear-gradient(#5a1a1a 2px, transparent 2px),
+      linear-gradient(90deg, #5a1a1a 2px, transparent 2px);
+    background-size: 40px 20px, 40px 40px;
+  }
+  .tile-checker {
+    background: repeating-conic-gradient(#ff0 0 25%, #00f 0 50%) 0 0 / 32px 32px;
+  }
+  .tile-flames {
+    background: linear-gradient(0deg, #f00, #f80 40%, #ff0 70%, #000);
+  }
+  .tile-water {
+    background: #003 repeating-radial-gradient(circle at 30% 120%, #06c 0 6px, #039 6px 12px);
+  }
+
+  /* Windows 95 chrome */
+  .win-raised {
+    background: var(--color-win);
+    border: 2px solid;
+    border-color: #fff #404040 #404040 #fff;
+    box-shadow: inset -1px -1px #808080, inset 1px 1px #dfdfdf;
+  }
+  .win-sunken {
+    border: 2px solid;
+    border-color: #808080 #fff #fff #808080;
+    box-shadow: inset 1px 1px #404040;
+  }
+  .wordart {
+    font-family: var(--font-impact);
+    background: linear-gradient(180deg, #ff0 0%, #f60 50%, #f0f 100%);
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+    -webkit-text-stroke: 1px #000;
+    filter: drop-shadow(3px 3px 0 #000);
+  }
+  .bevel-text {
+    text-shadow: 2px 2px 0 #000, -1px -1px 0 #fff;
+  }
+}
+
+/* /boring: undo Tailwind preflight so it reads like an unstyled 1997 page. */
+.boring {
+  background: #fff;
+  color: #000;
+  font-family: var(--font-times);
+  font-size: 16px;
+  line-height: normal;
+  padding: 8px;
+  min-height: 100vh;
+}
+.boring h1 { font-size: 2em; font-weight: bold; margin: 0.67em 0; }
+.boring h2 { font-size: 1.5em; font-weight: bold; margin: 0.83em 0; }
+.boring p { margin: 1em 0; }
+.boring ul { list-style: disc; padding-left: 40px; margin: 1em 0; }
+.boring a { color: #00e; text-decoration: underline; }
+.boring a:visited { color: #551a8b; }
+.boring hr { border: 1px inset #ccc; margin: 0.5em 0; }
+.boring img { image-rendering: auto; display: inline; }

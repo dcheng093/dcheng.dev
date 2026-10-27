@@ -1,0 +1,16 @@
+// Cloudflare Workers static-assets deploy: `npm run deploy` (builds first).
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "dcheng-dev",
+  "compatibility_date": "2026-10-01",
+  "assets": {
+    "directory": "./dist",
+    // Unknown paths get index.html so the router can show deep links and the fake BSOD.
+    "not_found_handling": "single-page-application"
+  },
+  // dcheng.dev must be a zone on the same Cloudflare account. www serves the same site.
+  "routes": [
+    { "pattern": "dcheng.dev", "custom_domain": true },
+    { "pattern": "www.dcheng.dev", "custom_domain": true }
+  ]
+}

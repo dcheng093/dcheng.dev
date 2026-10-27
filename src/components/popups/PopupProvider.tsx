@@ -1,0 +1,49 @@
+import { useCallback, useMemo, useReducer, type ReactNode } from 'react'
+import { ads } from '../../content/ads'
+import { useRandomInterval } from '../../hooks/useRandomInterval'
+import { pick } from '../../lib/random'
+import { useSfx } from '../../audio/audioContext'
+import { PopupContext, initialPopupState, popupReducer, type PopupVariant } from './popupState'
+import { PopupWindow } from './PopupWindow'
+
+const popupAds = ads.filter((a) => a.formats.includes('popup'))
+
+/** Owns every floating window. `auto` turns on the random ambush spawner. */
+export function PopupProvider({ auto, children }: { auto: boolean; children: ReactNode }) {
+  const [state, dispatch] = useReducer(popupReducer, initialPopupState)
+  const sfx = useSfx()
+
+  const open = useCallback(
+    (content: string, variant: PopupVariant = 'normal') => {
+      sfx('ding')
+      dispatch({ type: 'spawn', content, variant, fx: Math.random() * 0.6 + 0.05, fy: Math.random() * 0.5 + 0.08 })
+    },
+    [sfx],
+  )
+
+  useRandomInterval(
+    () => open(pick(popupAds).id, pick<PopupVariant>(['normal', 'normal', 'multiply', 'dodge'])),
+    auto ? 14_000 : null,
+    auto ? 32_000 : null,
+  )
+
+  const api = useMemo(() => ({ open }), [open])
+
+  return (
+    <PopupContext.Provider value={api}>
+      {children}
+      {state.popups.map((p, i) => (
+        <PopupWindow
+          key={p.key}
+          popup={p}
+          z={60 + i}
+          onClose={() => {
+            sfx('error')
+            dispatch({ type: 'close', key: p.key })
+          }}
+          onMove={(fx, fy) => dispatch({ type: 'move', key: p.key, fx, fy })}
+        />
+      ))}
+    </PopupContext.Provider>
+  )
+}
