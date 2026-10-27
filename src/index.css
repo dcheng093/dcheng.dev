@@ -109,8 +109,8 @@
   .tile-sky {
     background: #6cf url('/gifs/bg-sky.gif');
   }
-  .tile-red-hearts {
-    background: #fff url('/gifs/bg-red-hearts.gif');
+  .tile-lavender-hearts {
+    background: #fff url('/gifs/bg-lavender-hearts.gif');
   }
   .tile-green-grid {
     background: #000 url('/gifs/bg-green-grid.gif');
@@ -118,8 +118,8 @@
   .tile-stars {
     background: #000 url('/gifs/bg-stars.gif');
   }
-  .tile-red-flowers {
-    background: #fff url('/gifs/bg-red-flowers.gif');
+  .tile-blue-flowers {
+    background: #eef4ff url('/gifs/bg-blue-flowers.gif');
   }
   .tile-lava-lamps {
     background: #00f url('/gifs/bg-lava-lamps.gif');

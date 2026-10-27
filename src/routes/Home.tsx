@@ -84,7 +84,7 @@ function WelcomeBand() {
   return (
     <Band
       id="welcome"
-      tile="tile-red-hearts"
+      tile="tile-lavender-hearts"
       cursor={cursors.pinkHeart}
       lgHeight={500}
       title={<h2 className="font-comic text-4xl font-bold text-hotpink [text-shadow:3px_3px_0_#fff,5px_5px_0_#000] sm:text-5xl">♥ WELCOME 2 MY HEART ♥</h2>}
@@ -318,7 +318,7 @@ function LeaseBand() {
   return (
     <Band
       id="lease"
-      tile="tile-red-flowers"
+      tile="tile-blue-flowers"
       cursor={cursors.car}
       flow
       title={<h2 className="wordart animate-pulse-scale text-4xl sm:text-6xl">LEASE DANIEL TODAY!!!</h2>}
