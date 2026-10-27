@@ -53,11 +53,24 @@ for (const route of ROUTES) {
   })
 }
 
-test('deep links survive a hard reload', async ({ page }) => {
+test('a hard reload lands back on the enter gate at home', async ({ page }) => {
   await prepare(page)
   await page.goto('/shrine/segfault')
-  await page.reload()
   await expect(page.getByTestId('shrine')).toBeVisible()
+  await page.reload()
+  await expect(page).toHaveURL(/\/$/)
+  const gate = page.getByRole('dialog', { name: 'Enter the site' })
+  await expect(gate).toBeVisible()
+  await gate.getByRole('button').click()
+  await expect(page.getByTestId('mute')).toBeVisible()
+})
+
+test('home unlocks audio on first click even if the gate was skipped', async ({ page }) => {
+  await prepare(page)
+  await page.goto('/')
+  await expect(page.getByTestId('mute')).toHaveCount(0)
+  await page.locator('[data-band="header"]').click({ position: { x: 5, y: 5 } })
+  await expect(page.getByTestId('mute')).toBeVisible()
 })
 
 test('unknown routes blue-screen', async ({ page }) => {

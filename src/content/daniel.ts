@@ -41,13 +41,13 @@ export const daniel = {
     { title: 'PERIPHERALS', detail: 'Keyboards, mice, mousepads. I have two hands and too many mice.', shrine: 'peripherals' },
   ],
 
-  foods: ['Siu yuk fan', 'Carbonara spaghetti', 'Pepperoni pizza'],
+  foods: ['Siu Yuk Fan', 'Carbonara spaghetti', 'Pepperoni pizza'],
 
   roots: {
     // TODO(q3) hometown / pets / optional greeting — only what Daniel wants shown
     hometown: 'HOMETOWN',
     family: 'tiny involuntary cult',
-    pets: 'PETS: dog (eaten)',
+    pets: null as null,
     language: null as null | { greeting: string; translation: string },
   },
 

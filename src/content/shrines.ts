@@ -18,7 +18,7 @@ export const shrines: Shrine[] = [
   // One per hobby (daniel.hobbies[].shrine)
   {
     slug: 'chiikawa',
-    title: '♡ THE CHIIKAWA SHRINE ♡ (THEY ARE SO SMALL)',
+    title: '♡ THE CHIIKAWA SHRINE ♡',
     tile: 'tile-hearts',
     cursor: '🧸',
     textColor: 'text-pink-900',
@@ -26,7 +26,6 @@ export const shrines: Shrine[] = [
     intro: 'Chiikawa is small. Chiikawa is cute. Chiikawa is trying its best, and so am I. I watch every episode and I buy the merch. This is the merch.',
     gifs: [kawaii.blushBun, kawaii.bouquetCat, kawaii.angelBaby, kawaii.heartRow, kawaii.cheerBlob],
     facts: [
-      'Plushies owned: more than last week. Fewer than next week.',
       'Shelf space remaining: 0.',
       'An episode is about a minute long. I have watched them for hours.',
       'Every plush is a limited edition. Mostly limited by my wallet.',
@@ -40,7 +39,7 @@ export const shrines: Shrine[] = [
     cursor: '🎮',
     textColor: 'text-cyber',
     altar: '🖥️',
-    intro: 'This desk is where the games happen. TF2, Valorant, CS2, Apex, Aimlabs. Please wipe your feet before entering.',
+    intro: 'This desk is where the TOP 1 MGE WAS BORNN',
     gifs: ['surfer', 'typingPc', 'trophy'],
     facts: [
       'Hours played: yes.',
@@ -57,13 +56,13 @@ export const shrines: Shrine[] = [
     cursor: '🖱️',
     textColor: 'text-yellow-200',
     altar: '🖱️',
-    intro: 'Keyboards. Mice. Mousepads. Some people collect stamps. My stamps have polling rates.',
+    intro: 'Keyboards. Mice. Mousepads.',
     gifs: ['printer', 'typingPc', 'newBadge'],
     facts: [
       'Mice owned: more than hands owned.',
-      'Mice in use at any given time: 1.',
-      'Every new mouse is a few grams lighter. Soon they will weigh nothing.',
-      'The printer is also a peripheral. It is not invited.',
+      'I SWEAR THEYRE NOT THE SAME',
+      'Soon I will tape a sensor to my hand',
+      'I owe my life to aliexpress for cheap mice',
     ],
     photo: assets.hobbies[2],
   },
@@ -80,7 +79,7 @@ export const shrines: Shrine[] = [
       'Core dumped: 1,337 times this semester.',
       'Valgrind says I "definitely lost" 42 bytes. I say I definitely lost my mind.',
       'The fault is not in our stars but in our pointers.',
-      'If a segfault happens and no one runs gdb, did it really happen? Yes.',
+      'If a segfault happens and no one runs gdb, did it really happen?',
     ],
   },
   {
@@ -100,14 +99,14 @@ export const shrines: Shrine[] = [
   },
   {
     slug: 'push-swap',
-    title: 'PUSH_SWAP: THE STACK OF MY LIFE',
+    title: 'PUSH_SWAP: I SPENT WAY TOO FUCKING LONG ON IT',
     tile: 'tile-brick',
     cursor: '🥞',
     textColor: 'text-yellow-200',
     altar: '🥞',
     intro: 'sa sb ss pa pb ra rb rr rra rrb rrr. Say it with me. Say it until it means something.',
     gifs: ['printer', 'trophy', 'arrow'],
-    facts: ['500 numbers. 5,500 moves. One man.', 'Radix sort is a lifestyle.', 'pb pb pb pb pb pb (this is me crying)'],
+    facts: ['500 numbers. 5,500 moves. One man.', 'turksort is a lifestyle.', 'pb pb pb pb pb pb (this is me pushing everyone away)'],
   },
   {
     slug: 'kettle',
@@ -127,7 +126,7 @@ export const shrines: Shrine[] = [
     cursor: '🐴',
     textColor: 'text-purple-900',
     altar: '🐎',
-    intro: 'I do not own a horse. I have never ridden a horse. This page is for the horses anyway.',
+    intro: 'I do not own a horse. I have rode a horse only once. This page is for the horses anyway.',
     gifs: ['horses', 'horses', 'trophy'],
     facts: ['Horses: 2 (animated).', 'Times these horses have stopped galloping: 0.', 'Neigh.'],
   },
@@ -140,7 +139,7 @@ export const shrines: Shrine[] = [
     altar: '🦷',
     intro: 'A public service announcement from Daniel: brush twice a day. That is all. Please leave.',
     gifs: ['tooth', 'tooth', 'plumber'],
-    facts: ['Recommended brushing time: 2 minutes.', 'Time spent making this page: longer.', 'The tooth is wearing shoes. Do not ask.'],
+    facts: ['Recommended brushing time: 2 minutes.', 'Time spent making this page: longer.', 'The tooth is wearing shoes.'],
   },
 ]
 

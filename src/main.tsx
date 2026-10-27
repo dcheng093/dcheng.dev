@@ -7,6 +7,16 @@ import '@fontsource/silkscreen'
 import './index.css'
 import { routes } from './routes'
 
+// A refresh always lands back on the enter gate at the home page (the gate's click is what unlocks audio).
+if ((performance.getEntriesByType('navigation')[0] as PerformanceNavigationTiming | undefined)?.type === 'reload') {
+  try {
+    sessionStorage.removeItem('entered')
+  } catch {
+    // Blocked storage: nothing was persisted, so the gate shows anyway.
+  }
+  if (location.pathname !== '/') history.replaceState(null, '', '/')
+}
+
 const router = createBrowserRouter(routes)
 
 createRoot(document.getElementById('root')!).render(
