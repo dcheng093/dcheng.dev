@@ -22,6 +22,20 @@ export type PopupState = { popups: Popup[]; nextKey: number }
 
 export const POPUP_CAP = 8
 
+/** Popups that are more than an ad: little fake apps (drawn by SpecialPopup). `auto` ones join the random ambush. */
+export const SPECIAL_POPUPS = {
+  'business-card': { auto: false },
+  'ip-alert': { auto: true },
+  download: { auto: true },
+  'friend-request': { auto: true },
+  'quick-survey': { auto: true },
+  'spin-to-win': { auto: true },
+} satisfies Record<string, { auto: boolean }>
+
+export type SpecialId = keyof typeof SPECIAL_POPUPS
+
+export const isSpecial = (content: string): content is SpecialId => Object.hasOwn(SPECIAL_POPUPS, content)
+
 export const initialPopupState: PopupState = { popups: [], nextKey: 1 }
 
 export function popupReducer(state: PopupState, action: PopupAction): PopupState {

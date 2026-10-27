@@ -1,5 +1,6 @@
+/// <reference types="node" />
 import { describe, expect, it, vi } from 'vitest'
-import { POPUP_CAP, initialPopupState, popupReducer, type PopupState } from '../components/popups/popupState'
+import { POPUP_CAP, isSpecial, initialPopupState, popupReducer, type PopupState } from '../components/popups/popupState'
 import { pickAd, pickAds } from '../components/ads/pickAd'
 import { ads } from '../content/ads'
 import { pickReply } from '../content/chatScript'
@@ -9,7 +10,9 @@ import { WEBRING, neighbour, randomRoute } from '../lib/sitemap'
 import { mergeEntries, pageIndex, pageNumbers, PER_PAGE } from '../lib/guestbook'
 import { guestbookSeed } from '../content/guestbookSeed'
 import { readStored, writeStored } from '../hooks/useLocalStorage'
-import { assets, kawaii, type Slot } from '../content/assets'
+import { assets, blinkies, buttons88, cursors, dividers, icons, kawaii, sparkles, type Slot } from '../content/assets'
+import { readFileSync } from 'node:fs'
+import { payout, spinReels } from '../lib/slots'
 import { CONFETTI_MAX, CONFETTI_MIN, confettiCount, throwConfetti } from '../lib/confetti'
 
 const spawn = (s: PopupState, variant: 'normal' | 'multiply' | 'dodge' = 'normal') =>
@@ -56,6 +59,11 @@ describe('ads', () => {
     for (const t of routeTargets) expect(WEBRING).toContain(t)
   })
 
+  it('popup targets open a popup that exists', () => {
+    const popupTargets = ads.map((a) => a.to).filter((t) => t.startsWith('popup:'))
+    for (const t of popupTargets) expect(isSpecial(t.slice('popup:'.length))).toBe(true)
+  })
+
   it('pickAd respects format and kind', () => {
     const rng = mulberry32(7)
     for (let i = 0; i < 50; i++) {
@@ -69,6 +77,19 @@ describe('ads', () => {
     const got = pickAds('button', 8, mulberry32(3))
     expect(got).toHaveLength(8)
     expect(got.every((a) => a.formats.includes('button'))).toBe(true)
+  })
+})
+
+describe('slots', () => {
+  it('never lines up three of a kind, but often nearly does', () => {
+    const rng = mulberry32(5)
+    let nearMisses = 0
+    for (let i = 0; i < 500; i++) {
+      const [a, b, c] = spinReels(rng)
+      expect(a === b && b === c).toBe(false)
+      if (payout([a, b, c], 50)) nearMisses++
+    }
+    expect(nearMisses).toBeGreaterThan(100)
   })
 })
 
@@ -155,10 +176,22 @@ describe('web storage helpers', () => {
 describe('image slots', () => {
   // Lazy glob: only the file names are needed, matched case-sensitively like the production server.
   const supplied = new Set(Object.keys(import.meta.glob(['../../public/me/*', '../../public/gifs/*'])).map((p) => p.replace('../../public', '')))
-  const slots = [...Object.values(assets), ...Object.values(kawaii)].flat().filter((s): s is Slot => /^\/(me|gifs)\//.test(s.src))
+  const groups = [assets, kawaii, icons, cursors, sparkles, dividers, blinkies, buttons88]
+  const slots = groups.flatMap((g) => Object.values(g)).flat().filter((s): s is Slot => /^\/(me|gifs)\//.test(s.src))
+  // Read from disk: Vitest blanks stylesheet imports, even ?raw ones.
+  const css = readFileSync('src/index.css', 'utf8')
+  const tiles = [...css.matchAll(/url\('(\/gifs\/[^']+)'\)/g)].map((m) => m[1])
 
-  it.each(slots.map((s) => [s.src]))('%s exists in public/ with exactly that name', (src) => {
+  it.each([...new Set([...slots.map((s) => s.src), ...tiles])].map((src) => [src]))('%s exists in public/ with exactly that name', (src) => {
     expect(supplied).toContain(src)
+  })
+
+  it('finds the GIF background tiles in the stylesheet', () => {
+    expect(tiles.length).toBeGreaterThan(20)
+  })
+
+  it('keeps cursors within the 32×32 browsers allow', () => {
+    for (const c of Object.values(cursors)) expect(Math.max(c.w, c.h)).toBeLessThanOrEqual(32)
   })
 })
 

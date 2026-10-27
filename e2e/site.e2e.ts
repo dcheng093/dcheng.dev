@@ -1,6 +1,6 @@
 import { expect, test, type Page } from '@playwright/test'
 
-const ROUTES = ['/', '/dealership', '/shrine/segfault', '/shrine/kettle', '/shrine/chiikawa', '/guestbook', '/under-construction', '/you-won', '/checkout', '/leave', '/boring']
+const ROUTES = ['/', '/dealership', '/shrine/segfault', '/shrine/kettle', '/shrine/chiikawa', '/guestbook', '/under-construction', '/you-won', '/checkout', '/leave', '/scan', '/casino', '/survey', '/work-from-home', '/boring']
 
 /** Skip the enter gate (sessionStorage) and collect real errors, ignoring 404s for not-yet-supplied images. */
 async function prepare(page: Page, { skipGate = true } = {}) {
@@ -100,6 +100,32 @@ test('business-card popup opens, drags, and closes', async ({ page }) => {
 
   await popup.getByRole('button', { name: 'Close' }).click()
   await expect(popup).toBeHidden()
+})
+
+test('a dodging close button stays clickable and never sends you anywhere', async ({ page }, info) => {
+  test.skip(!/desktop|tablet-landscape/.test(info.project.name), 'dodging is mouse-only')
+  await page.clock.install()
+  await prepare(page)
+  await page.goto('/')
+  const dodgers = page.locator('[data-testid="popup"][data-variant="dodge"]')
+  // Ambush popups pick a random variant; close the others (topmost first: "multiply" ones split into
+  // overlapping pairs) and wait for the next until a dodger turns up.
+  for (let i = 0; i < 60 && (await dodgers.count()) === 0; i++) {
+    const other = page.locator('[data-testid="popup"]:not([data-variant="dodge"])').last()
+    if (await other.count()) await other.getByRole('button', { name: 'Close' }).click()
+    else await page.clock.fastForward(33_000)
+  }
+  const before = await dodgers.count()
+  expect(before).toBeGreaterThan(0)
+  const close = dodgers.first().getByRole('button', { name: 'Close' })
+  for (let i = 0; i < 3; i++) {
+    await page.mouse.move(0, 0)
+    await close.hover()
+  }
+  // Playwright refuses to click an element something else is drawn over, so this also proves nothing covers it.
+  await close.click()
+  await expect(dodgers).toHaveCount(before - 1)
+  expect(new URL(page.url()).pathname).toBe('/')
 })
 
 test('/boring is plain and has the real links', async ({ page }) => {

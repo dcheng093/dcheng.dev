@@ -60,5 +60,5 @@ export const daniel = {
   },
 
   boringBio:
-    'Daniel Cheng is a student at 42 specializing in C and Python, who likes playing games and testing gaming peripherals. This is the plain version of the site.',
+    'Daniel Cheng | Software Engineering Student at 42KL (C/Python) & Gaming Peripheral Enthusiast.\n[You are viewing the plain version of this site]',
 }

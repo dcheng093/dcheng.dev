@@ -6,6 +6,7 @@ import { Shrine } from './routes/Shrine'
 import { Guestbook } from './routes/Guestbook'
 import { Boring } from './routes/Boring'
 import { Checkout, Leave, UnderConstruction, YouWon } from './routes/Traps'
+import { Casino, Scan, Survey, WorkFromHome } from './routes/Scams'
 import { FakeBSOD } from './routes/FakeBSOD'
 
 const fullscreen: RouteHandle = { noWebring: true }
@@ -26,6 +27,10 @@ export const routes: RouteObject[] = [
       { path: 'under-construction', element: <UnderConstruction /> },
       { path: 'leave', element: <Leave />, handle: fullscreen },
       { path: 'checkout', element: <Checkout /> },
+      { path: 'scan', element: <Scan /> },
+      { path: 'casino', element: <Casino /> },
+      { path: 'survey', element: <Survey /> },
+      { path: 'work-from-home', element: <WorkFromHome /> },
       { path: '*', element: <FakeBSOD />, handle: fullscreen },
     ],
   },

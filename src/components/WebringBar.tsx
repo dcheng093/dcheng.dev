@@ -2,7 +2,9 @@ import { Link, useLocation } from 'react-router-dom'
 import { neighbour, randomRoute } from '../lib/sitemap'
 import { useAudio } from '../audio/audioContext'
 import { MIXES } from '../audio/synth'
+import { icons } from '../content/assets'
 import { Img } from './media/Img'
+import { ButtonWall } from './chaos/ButtonWall'
 
 /** "Daniel's Webring of One": Prev/Next/Random cycle the site's own pages; List is the real sitemap. */
 export function WebringBar() {
@@ -22,6 +24,7 @@ export function WebringBar() {
           <Link className={btn} to={neighbour(pathname, 1)}>Next »</Link>
           <Link className={btn} to="/boring">List Sites</Link>
         </div>
+        <ButtonWall />
       </div>
     </nav>
   )
@@ -37,9 +40,10 @@ export function MuteButton() {
       onClick={toggleMute}
       aria-label={muted ? 'Unmute' : 'Mute'}
       data-testid="mute"
-      className="fixed left-1 top-1 z-50 grid h-7 w-7 animate-spin-z place-items-center rounded-full border border-black bg-white text-sm"
+      className="fixed left-1 top-1 z-50 grid h-7 w-7 animate-spin-z overflow-hidden place-items-center rounded-full border border-black bg-white text-sm"
     >
-      {muted ? '🔇' : '🔊'}
+      <Img slot={icons.speaker} width={18} className={muted ? 'opacity-40 grayscale' : ''} />
+      {muted && <span aria-hidden className="absolute inset-0 m-auto h-0.5 w-6 rotate-45 bg-red-600" />}
     </button>
   )
 }

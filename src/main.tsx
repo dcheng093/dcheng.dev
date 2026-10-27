@@ -7,10 +7,13 @@ import '@fontsource/silkscreen'
 import './index.css'
 import { routes } from './routes'
 
-// A refresh always lands back on the enter gate at the home page (the gate's click is what unlocks audio).
+// A refresh always lands back on the enter gate at the top of the home page (the gate's click is what unlocks audio).
 if ((performance.getEntriesByType('navigation')[0] as PerformanceNavigationTiming | undefined)?.type === 'reload') {
+  // <ScrollRestoration> hands scrolling back to the browser on pagehide, so take it back before the browser restores.
+  history.scrollRestoration = 'manual'
   try {
     sessionStorage.removeItem('entered')
+    sessionStorage.removeItem('react-router-scroll-positions')
   } catch {
     // Blocked storage: nothing was persisted, so the gate shows anyway.
   }

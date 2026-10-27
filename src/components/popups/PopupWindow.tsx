@@ -1,18 +1,19 @@
 import { useRef, useState, type PointerEvent as ReactPointerEvent } from 'react'
-import { Link } from 'react-router-dom'
 import { ads } from '../../content/ads'
-import { daniel } from '../../content/daniel'
+import { icons } from '../../content/assets'
+import { Img } from '../media/Img'
 import { AdSlot } from '../ads/AdSlot'
-import type { Popup } from './popupState'
+import { isSpecial, type Popup } from './popupState'
+import { SpecialPopup } from './specials'
 
-const TITLES = ['Microsoft Internet Exploder', 'Netscrape Navigator', 'IMPORTANT MESSAGE!!!', 'Catastrophe.exe', 'Daniel Alert', 'Untitled - Notepad']
+const TITLES = ['Microsoft Internet Exploder', 'Netscrape Navigator', 'IMPORTANT MESSAGE!!!', 'Catastrophe.exe', 'Daniel Alert', 'Untitled - Notepad', 'SYSTEM WARNING', 'You Have (1) New Message', 'Free_Stuff.exe']
 
 type Props = { popup: Popup; z: number; onClose: () => void; onMove: (fx: number, fy: number) => void }
 
 export function PopupWindow({ popup, z, onClose, onMove }: Props) {
   const drag = useRef<{ dx: number; dy: number } | null>(null)
   const [dodges, setDodges] = useState(0)
-  const [closeOffset, setCloseOffset] = useState({ x: 0, y: 0 })
+  const [closeX, setCloseX] = useState(0)
   const ad = ads.find((a) => a.id === popup.content)
   const title = TITLES[popup.key % TITLES.length]
 
@@ -30,11 +31,12 @@ export function PopupWindow({ popup, z, onClose, onMove }: Props) {
     )
   }
 
-  // "dodge" popups run away from the cursor three times, then give up.
+  // "dodge" popups run away from the mouse three times, then give up. They only slide along the
+  // title bar: dropping into the body put the × under the ad, which then ate every click.
   const dodge = () => {
     if (popup.variant !== 'dodge' || dodges >= 3) return
     setDodges((d) => d + 1)
-    setCloseOffset({ x: -40 - Math.random() * 120, y: Math.random() * 60 })
+    setCloseX(-30 - Math.random() * 110)
   }
 
   return (
@@ -52,42 +54,24 @@ export function PopupWindow({ popup, z, onClose, onMove }: Props) {
         onPointerMove={onPointerMove}
         onPointerUp={() => (drag.current = null)}
       >
-        <span>💾</span>
+        <Img slot={icons.floppy} width={14} />
         <span className="flex-1 truncate">{title}</span>
         <span className="win-raised grid h-4 w-4 place-items-center text-[10px] leading-none text-black">_</span>
         <button
           type="button"
           aria-label="Close"
-          onPointerEnter={dodge}
+          onPointerEnter={(e) => e.pointerType === 'mouse' && dodge()}
           onClick={onClose}
-          className="win-raised relative grid h-4 w-4 place-items-center text-[10px] font-bold leading-none text-black transition-transform duration-75"
-          style={{ transform: `translate(${closeOffset.x}px, ${closeOffset.y}px)` }}
+          className="win-raised relative z-10 grid h-4 w-4 place-items-center text-[10px] font-bold leading-none text-black transition-transform duration-75"
+          style={{ transform: `translateX(${closeX}px)` }}
         >
           ×
         </button>
       </div>
       <div className="bg-white p-2">
-        {popup.content === 'business-card' ? <BusinessCard /> : ad ? <AdSlot ad={ad} format="popup" className="w-full" /> : <p>404 popup not found. Close me. CLOSE ME.</p>}
+        {isSpecial(popup.content) ? <SpecialPopup id={popup.content} close={onClose} /> : ad ? <AdSlot ad={ad} format="popup" className="w-full" /> : <p>404 popup not found. Close me. CLOSE ME.</p>}
       </div>
       {popup.variant === 'multiply' && <p className="px-1 pt-0.5 text-[10px] text-gray-700">Closing this window may open more windows.</p>}
-    </div>
-  )
-}
-
-function BusinessCard() {
-  const { links } = daniel
-  return (
-    <div className="space-y-1 font-times text-sm text-black">
-      <p className="font-impact text-xl text-blue-800">{daniel.name.toUpperCase()}</p>
-      <p className="italic">Webmaster • Developer • Kettle Enthusiast</p>
-      <ul className="list-inside list-disc">
-        {links.email && <li><a className="text-blue-700 underline" href={`mailto:${links.email}`}>{links.email}</a></li>}
-        {links.github && <li><a className="text-blue-700 underline" href={links.github} target="_blank" rel="noreferrer">GitHub</a></li>}
-        {links.linkedin && <li><a className="text-blue-700 underline" href={links.linkedin} target="_blank" rel="noreferrer">LinkedIn</a></li>}
-      </ul>
-      <p>
-        Need the serious version? <Link to="/boring" className="text-blue-700 underline">Click here for the boring site</Link>.
-      </p>
     </div>
   )
 }

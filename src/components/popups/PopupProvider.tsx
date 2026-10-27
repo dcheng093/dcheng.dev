@@ -3,10 +3,14 @@ import { ads } from '../../content/ads'
 import { useRandomInterval } from '../../hooks/useRandomInterval'
 import { pick } from '../../lib/random'
 import { useSfx } from '../../audio/audioContext'
-import { PopupContext, initialPopupState, popupReducer, type PopupVariant } from './popupState'
+import { PopupContext, SPECIAL_POPUPS, initialPopupState, popupReducer, type PopupVariant } from './popupState'
 import { PopupWindow } from './PopupWindow'
 
-const popupAds = ads.filter((a) => a.formats.includes('popup'))
+/** Everything the random ambush can throw: popup-format ads plus the interactive specials. */
+const ambushPool = [
+  ...ads.filter((a) => a.formats.includes('popup')).map((a) => a.id),
+  ...Object.entries(SPECIAL_POPUPS).filter(([, s]) => s.auto).map(([id]) => id),
+]
 
 /** Owns every floating window. `auto` turns on the random ambush spawner. */
 export function PopupProvider({ auto, children }: { auto: boolean; children: ReactNode }) {
@@ -22,7 +26,7 @@ export function PopupProvider({ auto, children }: { auto: boolean; children: Rea
   )
 
   useRandomInterval(
-    () => open(pick(popupAds).id, pick<PopupVariant>(['normal', 'normal', 'multiply', 'dodge'])),
+    () => open(pick(ambushPool), pick<PopupVariant>(['normal', 'normal', 'multiply', 'dodge'])),
     auto ? 14_000 : null,
     auto ? 32_000 : null,
   )

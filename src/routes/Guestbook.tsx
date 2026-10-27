@@ -1,7 +1,8 @@
 import { useState, type FormEvent } from 'react'
-import { emojiCursor } from '../lib/cursor'
+import { gifCursor } from '../lib/cursor'
+import { blinkies, cursors, dividers } from '../content/assets'
 import { Img } from '../components/media/Img'
-import { Blink, RainbowText } from '../components/chaos/Chaos'
+import { Blink, BlinkieRow, GifDivider, RainbowText } from '../components/chaos/Chaos'
 import { FOUND_VIA, type GuestEntry } from '../content/guestbookSeed'
 import { PER_PAGE, mergeEntries, pageIndex, pageNumbers } from '../lib/guestbook'
 import { useStored } from '../hooks/useLocalStorage'
@@ -39,7 +40,7 @@ export function Guestbook() {
 
   const field = 'win-sunken w-full bg-white px-1 font-[Verdana,sans-serif] text-sm text-black'
   return (
-    <div data-testid="guestbook" className="tile-clouds min-h-screen p-3 sm:p-6" style={{ cursor: emojiCursor('✍️') }}>
+    <div data-testid="guestbook" className="tile-quills min-h-screen p-3 sm:p-6" style={{ cursor: gifCursor(cursors.pencil) }}>
       <div className="mx-auto max-w-2xl space-y-4">
         <header className="flex flex-col items-center gap-2 text-center">
           <Img slot="envelope" width={110} />
@@ -49,7 +50,9 @@ export function Guestbook() {
           <p className="bg-yellow-200 px-2 font-comic text-sm">
             <Blink>NEW!</Blink> {entries.length} people have signed. You could be {entries.length + 1}!
           </p>
+          <BlinkieRow items={[blinkies.guestbook, blinkies.rememberYou]} />
         </header>
+        <GifDivider slot={dividers.flowers} />
 
         <form onSubmit={submit} className="win-raised space-y-2 p-3 font-[Verdana,sans-serif] text-sm text-black" aria-label="Sign the guestbook">
           <div className="bg-win-title px-1 font-bold text-white">Sign Guestbook.exe</div>

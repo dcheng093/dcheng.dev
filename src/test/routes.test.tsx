@@ -21,6 +21,10 @@ const testIds: Record<string, string> = {
   '/you-won': 'you-won',
   '/checkout': 'checkout',
   '/leave': 'leave',
+  '/scan': 'scan',
+  '/casino': 'casino',
+  '/survey': 'survey',
+  '/work-from-home': 'work-from-home',
 }
 
 describe('routes', () => {

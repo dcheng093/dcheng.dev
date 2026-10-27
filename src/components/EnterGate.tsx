@@ -11,7 +11,7 @@ export function EnterGate({ onEnter }: { onEnter: () => void }) {
     onEnter()
   }
   return (
-    <div className="tile-stars fixed inset-0 z-[100] grid place-items-center overflow-y-auto p-4" role="dialog" aria-label="Enter the site">
+    <div className="tile-nebula fixed inset-0 z-[100] grid place-items-center overflow-y-auto p-4" role="dialog" aria-label="Enter the site">
       <div className="flex max-w-xl flex-col items-center gap-4 text-center">
         <div className="[perspective:400px]">
           <Img slot="headGrin" width={140} className="animate-spin-y" />

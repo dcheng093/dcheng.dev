@@ -6,9 +6,10 @@ import { pickAds } from '../components/ads/pickAd'
 import { Img } from '../components/media/Img'
 import { usePopups } from '../components/popups/popupState'
 import { Jukebox } from '../components/WebringBar'
-import { BigArrow, Blink, HitCounter, Marquee, RainbowText, ResettingCountdown, Sticker, UnderConstruction, ViewersNow, WavyText } from '../components/chaos/Chaos'
+import { ButtonWall } from '../components/chaos/ButtonWall'
+import { BigArrow, Blink, BlinkieRow, GifDivider, HitCounter, Marquee, RainbowText, ResettingCountdown, Sticker, UnderConstruction, ViewersNow, WavyText } from '../components/chaos/Chaos'
 import { ads } from '../content/ads'
-import { assets, type Slot } from '../content/assets'
+import { assets, blinkies, cursors, dividers, icons, type Slot } from '../content/assets'
 import { daniel } from '../content/daniel'
 import { models } from '../content/dealership'
 import { randomRoute } from '../lib/sitemap'
@@ -23,15 +24,22 @@ export function Home() {
   return (
     <div data-testid="home">
       <HeaderBand />
+      <GifDivider slot={dividers.rainbow} className="bg-white" />
       <WelcomeBand />
+      <GifDivider slot={dividers.sparkleFlowers} className="bg-white" />
       <AdStrip />
       <CodingBand />
       <AdWall />
       <GameBand />
+      <GifDivider slot={dividers.rainbowDots} className="bg-black" />
       <LeaseBand />
+      <GifDivider slot={dividers.smileys} className="bg-white" />
       <InterestsBand />
+      <GifDivider slot={dividers.flowers} className="bg-white" />
       <RootsBand />
+      <GifDivider slot={dividers.beads} className="bg-white" />
       <DestinyBand />
+      <GifDivider slot={dividers.flames} className="bg-black" />
       <EndBand />
     </div>
   )
@@ -39,7 +47,7 @@ export function Home() {
 
 function HeaderBand() {
   return (
-    <Band id="header" tile="tile-clouds" cursor="✨" lgHeight={470}>
+    <Band id="header" tile="tile-sky" cursor={cursors.star} lgHeight={470}>
       <Piece lg="lg:left-[3%] lg:top-[30px]" className="[perspective:400px]">
         <Img slot="headGrin" width={170} className="animate-spin-y" />
       </Piece>
@@ -76,8 +84,8 @@ function WelcomeBand() {
   return (
     <Band
       id="welcome"
-      tile="tile-hearts"
-      cursor="💖"
+      tile="tile-red-hearts"
+      cursor={cursors.pinkHeart}
       lgHeight={500}
       title={<h2 className="font-comic text-4xl font-bold text-hotpink [text-shadow:3px_3px_0_#fff,5px_5px_0_#000] sm:text-5xl">♥ WELCOME 2 MY HEART ♥</h2>}
     >
@@ -162,8 +170,8 @@ function CodingBand() {
   return (
     <Band
       id="coding"
-      tile="tile-terminal"
-      cursor="💀"
+      tile="tile-green-grid"
+      cursor={cursors.skullSmall}
       lgHeight={600}
       title={
         <h2 className="font-vt text-3xl text-lime sm:text-5xl">
@@ -233,12 +241,14 @@ function CodingBand() {
 function AdWall() {
   const [squares] = useState(() => pickAds('button125', 4))
   return (
-    <div className="tile-checker flex flex-wrap items-center justify-center gap-3 border-y-4 border-black p-4">
+    <div className="tile-smileys flex flex-wrap items-center justify-center gap-3 border-y-4 border-black p-4">
       {squares.map((ad, i) => (
         <AdSlot key={i} ad={ad} format="button125" className={i % 2 ? 'rotate-3' : '-rotate-2'} />
       ))}
       <AdSlot ad={adById('more-ram')} format="square" />
       <AdSlot format="banner" kind="surreal" className="w-full max-w-[468px]" />
+      <BlinkieRow items={[blinkies.niceToNerds, blinkies.gamer, blinkies.caffeine, blinkies.peopleStrange]} className="w-full" />
+      <ButtonWall className="w-full max-w-[760px] bg-white/80 p-2" />
     </div>
   )
 }
@@ -262,7 +272,7 @@ function GameBand() {
     <Band
       id="games"
       tile="tile-stars"
-      cursor="🕹️"
+      cursor={cursors.arcade}
       lgHeight={660}
       title={
         <h2 className="font-pixel text-2xl text-yellow-300 sm:text-4xl">
@@ -308,8 +318,8 @@ function LeaseBand() {
   return (
     <Band
       id="lease"
-      tile="tile-paisley"
-      cursor="🚗"
+      tile="tile-red-flowers"
+      cursor={cursors.car}
       flow
       title={<h2 className="wordart animate-pulse-scale text-4xl sm:text-6xl">LEASE DANIEL TODAY!!!</h2>}
     >
@@ -331,8 +341,8 @@ function InterestsBand() {
   return (
     <Band
       id="interests"
-      tile="tile-checker"
-      cursor="⭐"
+      tile="tile-lava-lamps"
+      cursor={cursors.starSmall}
       flow
       title={
         <h2 className="inline-block bg-black px-3 font-impact text-4xl sm:text-5xl">
@@ -373,7 +383,7 @@ function InterestsBand() {
 function RootsBand() {
   const { roots } = daniel
   return (
-    <Band id="roots" tile="tile-brick" cursor="🏠" flow title={<h2 className="bevel-text font-times text-4xl font-bold italic text-yellow-200 sm:text-5xl">~ ROOTS ~</h2>}>
+    <Band id="roots" tile="tile-brick" cursor={cursors.bear} flow title={<h2 className="bevel-text font-times text-4xl font-bold italic text-yellow-200 sm:text-5xl">~ ROOTS ~</h2>}>
       <div className="w-[260px] -rotate-2 bg-white p-2 text-center text-black shadow-[6px_6px_0_#000]">
         <Img slot={meSlot('roots-1.jpg', 400, 300, 'hometown photo')} width={240} />
         <p className="font-comic font-bold">{roots.hometown}</p>
@@ -410,7 +420,7 @@ function DestinyBand() {
     { label: '???', slot: 'arrow', go: () => navigate(randomRoute('/')) },
   ]
   return (
-    <Band id="destiny" tile="tile-water" cursor="🔮" flow title={<h2 className="font-impact text-4xl text-white [text-shadow:0_0_8px_#0ff] sm:text-6xl"><WavyText text="CHOOSE YOUR DESTINY" /></h2>}>
+    <Band id="destiny" tile="tile-blue-swirl" cursor={cursors.atom} flow title={<h2 className="font-impact text-4xl text-white [text-shadow:0_0_8px_#0ff] sm:text-6xl"><WavyText text="CHOOSE YOUR DESTINY" /></h2>}>
       <Jukebox />
       <div className="grid w-[min(520px,100%)] grid-cols-2 gap-2 sm:grid-cols-3">
         {doors.map((d) => (
@@ -427,7 +437,7 @@ function DestinyBand() {
 function EndBand() {
   const toc = ['Introduction', 'Kettles', 'Despair (Abridged)', 'Horses', 'Segmentation', 'The End', 'The End (Director’s Cut)']
   return (
-    <Band id="end" tile="tile-flames" cursor="🔥" flow className="!bg-[linear-gradient(0deg,#000_0%,#000_40%,#f00_80%,#f80_100%)]">
+    <Band id="end" tile="tile-flames" cursor={icons.flame} flow className="!bg-[linear-gradient(0deg,#000_0%,#000_40%,#f00_80%,#f80_100%)]">
       <div className="w-[min(420px,100%)] bg-black/80 p-4 font-times text-white">
         <p className="mb-2 text-center text-2xl font-bold underline">TABLE OF CONTENTS</p>
         <ol className="list-inside list-decimal space-y-1">

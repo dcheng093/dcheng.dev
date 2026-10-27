@@ -2,6 +2,7 @@ import { useEffect, useState, type CSSProperties, type ReactNode } from 'react'
 import { readStored, writeStored } from '../../hooks/useLocalStorage'
 import { nextHitCount } from '../../lib/hitCounter'
 import { useRandomInterval } from '../../hooks/useRandomInterval'
+import { icons, type Slot } from '../../content/assets'
 import { Img } from '../media/Img'
 
 export function Marquee({ children, className = '', speed = 12 }: { children: ReactNode; className?: string; speed?: number }) {
@@ -85,7 +86,7 @@ export function ViewersNow({ thing = 'this Daniel', className = '' }: { thing?: 
   useRandomInterval(() => setN((v) => Math.max(3, v + Math.round((Math.random() - 0.4) * 9))), 1500, 4000)
   return (
     <span className={`font-comic text-sm ${className}`}>
-      🔥 <b>{n}</b> people are looking at {thing} right now!!
+      <Img slot={icons.flame} width={14} className="inline-block align-[-2px]" /> <b>{n}</b> people are looking at {thing} right now!!
     </span>
   )
 }
@@ -119,6 +120,22 @@ export function BigArrow({ children, direction = 'left', className = '' }: { chi
       <div className={`absolute inset-y-0 grid place-items-center px-2 text-center font-impact text-sm text-white sm:text-lg ${direction === 'left' ? 'left-[30%] right-0' : 'left-0 right-[30%]'}`}>
         {children}
       </div>
+    </div>
+  )
+}
+
+/** A GIF horizontal rule, repeated across the full width at its native height. */
+export function GifDivider({ slot, className = '' }: { slot: Slot; className?: string }) {
+  return <div role="separator" className={`w-full bg-repeat-x [image-rendering:pixelated] ${className}`} style={{ backgroundImage: `url("${slot.src}")`, backgroundPosition: 'center', height: slot.h }} />
+}
+
+/** A little cluster of blinkies, pinned up the way people did on their about-me pages. */
+export function BlinkieRow({ items, className = '' }: { items: readonly Slot[]; className?: string }) {
+  return (
+    <div className={`flex flex-wrap justify-center gap-1 ${className}`}>
+      {items.map((b) => (
+        <Img key={b.src} slot={b} alt={b.label.replace('blinkie: ', '')} />
+      ))}
     </div>
   )
 }
