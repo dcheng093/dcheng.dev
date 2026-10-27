@@ -9,7 +9,7 @@ import { Jukebox } from '../components/WebringBar'
 import { ButtonWall } from '../components/chaos/ButtonWall'
 import { BigArrow, Blink, BlinkieRow, GifDivider, HitCounter, Marquee, RainbowText, ResettingCountdown, Sticker, UnderConstruction, ViewersNow, WavyText } from '../components/chaos/Chaos'
 import { ads } from '../content/ads'
-import { assets, blinkies, cursors, dividers, icons, type Slot } from '../content/assets'
+import { assets, blinkies, cursors, dividers, icons, kawaii, type Slot } from '../content/assets'
 import { daniel } from '../content/daniel'
 import { models } from '../content/dealership'
 import { randomRoute } from '../lib/sitemap'
@@ -18,6 +18,19 @@ import { useUnlockOnGesture } from '../audio/audioContext'
 
 const adById = (id: string) => ads.find((a) => a.id === id)!
 const meSlot = (file: string, w: number, h: number, label: string): Slot => ({ src: `/me/${file}`, w, h, label })
+
+/** What each band heaps into its side gutters on wide screens (see Band's `edges`). */
+const EDGES = {
+  header: [assets.globe, kawaii.twinkleStar, assets.newBadge, kawaii.pastelSparkles, assets.arrow, kawaii.fairy, assets.email3d],
+  welcome: [kawaii.bearHeart, kawaii.smileHeart, kawaii.heartRain, kawaii.bouquetCat, kawaii.angelBaby, kawaii.pinkSparkles, kawaii.blushBun, kawaii.heartFloat],
+  coding: [icons.floppy, icons.virus, assets.typingPc, icons.warning, assets.surfer, icons.kidComputer, assets.printer],
+  games: [assets.trophy, icons.diamond, icons.smiley, icons.rocket, kawaii.twinkleStar, icons.cherry],
+  lease: [icons.moneyBag, assets.trophy, icons.horseRun, assets.newBadge, icons.rocket, assets.globe, icons.diamond],
+  interests: [kawaii.shiba, kawaii.pug, kawaii.duckling, kawaii.hamster, kawaii.cupcake, kawaii.strawberry, icons.kawaiiBlob, kawaii.balloonBear],
+  roots: [kawaii.moonCat, kawaii.hammockKitten, kawaii.poolBear, kawaii.chicksRow, kawaii.bluebird, kawaii.bunMail],
+  destiny: [icons.question, kawaii.mochiStars, kawaii.butterflies, kawaii.fairy, icons.diamond, kawaii.twinkleStar, kawaii.pinkButterfly],
+  end: [icons.flame, icons.skull, icons.candle, kawaii.angelChick, icons.flame, icons.crying],
+} satisfies Record<string, Slot[]>
 
 export function Home() {
   useUnlockOnGesture()
@@ -47,7 +60,7 @@ export function Home() {
 
 function HeaderBand() {
   return (
-    <Band id="header" tile="tile-sky" cursor={cursors.star} lgHeight={470}>
+    <Band id="header" edges={EDGES.header} tile="tile-sky" cursor={cursors.star} lgHeight={470}>
       <Piece lg="lg:left-[3%] lg:top-[30px]" className="[perspective:400px]">
         <Img slot="headGrin" width={170} className="animate-spin-y" />
       </Piece>
@@ -84,7 +97,8 @@ function WelcomeBand() {
   return (
     <Band
       id="welcome"
-      tile="tile-lavender-hearts"
+      edges={EDGES.welcome}
+      tile="tile-pink-twinkles"
       cursor={cursors.pinkHeart}
       lgHeight={500}
       title={<h2 className="font-comic text-4xl font-bold text-hotpink [text-shadow:3px_3px_0_#fff,5px_5px_0_#000] sm:text-5xl">♥ WELCOME 2 MY HEART ♥</h2>}
@@ -116,7 +130,7 @@ function WelcomeBand() {
         ))}
       </Piece>
       <Piece lg="lg:left-[38%] lg:top-[40px]" className="w-[220px]">
-        <p className="mb-1 font-comic font-bold text-purple-900">My fave emoticons:</p>
+        <p className="mb-1 inline-block bg-hotpink px-1 font-comic font-bold text-white">My fave emoticons:</p>
         <ul className="grid grid-cols-2 gap-x-3 bg-white/70 p-2 font-vt text-xl text-black">
           {daniel.emoticons.map((e) => (
             <li key={e}>{e}</li>
@@ -129,7 +143,7 @@ function WelcomeBand() {
       <Piece lg="lg:right-[4%] lg:top-[30px]" tilt={5} className="flex flex-col items-center gap-1">
         <Img slot="email3d" />
         <Link to="/guestbook" className="font-comic text-lg font-bold text-blue-800 underline">
-          <Blink>SIGN MY GUESTBOOK!!!</Blink>
+          <Blink className="bg-white px-1">SIGN MY GUESTBOOK!!!</Blink>
         </Link>
       </Piece>
       <Piece lg="lg:right-[20%] lg:top-[240px]" className="flex flex-col items-center">
@@ -170,6 +184,7 @@ function CodingBand() {
   return (
     <Band
       id="coding"
+      edges={EDGES.coding}
       tile="tile-green-grid"
       cursor={cursors.skullSmall}
       lgHeight={600}
@@ -271,6 +286,7 @@ function GameBand() {
   return (
     <Band
       id="games"
+      edges={EDGES.games}
       tile="tile-stars"
       cursor={cursors.arcade}
       lgHeight={660}
@@ -318,6 +334,7 @@ function LeaseBand() {
   return (
     <Band
       id="lease"
+      edges={EDGES.lease}
       tile="tile-blue-flowers"
       cursor={cursors.car}
       flow
@@ -341,6 +358,7 @@ function InterestsBand() {
   return (
     <Band
       id="interests"
+      edges={EDGES.interests}
       tile="tile-lava-lamps"
       cursor={cursors.starSmall}
       flow
@@ -383,7 +401,7 @@ function InterestsBand() {
 function RootsBand() {
   const { roots } = daniel
   return (
-    <Band id="roots" tile="tile-brick" cursor={cursors.bear} flow title={<h2 className="bevel-text font-times text-4xl font-bold italic text-yellow-200 sm:text-5xl">~ ROOTS ~</h2>}>
+    <Band id="roots" edges={EDGES.roots} tile="tile-brick" cursor={cursors.bear} flow title={<h2 className="bevel-text font-times text-4xl font-bold italic text-yellow-200 sm:text-5xl">~ ROOTS ~</h2>}>
       <div className="w-[260px] -rotate-2 bg-white p-2 text-center text-black shadow-[6px_6px_0_#000]">
         <Img slot={meSlot('roots-1.jpg', 400, 300, 'hometown photo')} width={240} />
         <p className="font-comic font-bold">{roots.hometown}</p>
@@ -420,7 +438,7 @@ function DestinyBand() {
     { label: '???', slot: 'arrow', go: () => navigate(randomRoute('/')) },
   ]
   return (
-    <Band id="destiny" tile="tile-blue-swirl" cursor={cursors.atom} flow title={<h2 className="font-impact text-4xl text-white [text-shadow:0_0_8px_#0ff] sm:text-6xl"><WavyText text="CHOOSE YOUR DESTINY" /></h2>}>
+    <Band id="destiny" edges={EDGES.destiny} tile="tile-blue-swirl" cursor={cursors.atom} flow title={<h2 className="font-impact text-4xl text-white [text-shadow:0_0_8px_#0ff] sm:text-6xl"><WavyText text="CHOOSE YOUR DESTINY" /></h2>}>
       <Jukebox />
       <div className="grid w-[min(520px,100%)] grid-cols-2 gap-2 sm:grid-cols-3">
         {doors.map((d) => (
@@ -437,7 +455,7 @@ function DestinyBand() {
 function EndBand() {
   const toc = ['Introduction', 'Kettles', 'Despair (Abridged)', 'Horses', 'Segmentation', 'The End', 'The End (Director’s Cut)']
   return (
-    <Band id="end" tile="tile-flames" cursor={icons.flame} flow className="!bg-[linear-gradient(0deg,#000_0%,#000_40%,#f00_80%,#f80_100%)]">
+    <Band id="end" edges={EDGES.end} tile="tile-flames" cursor={icons.flame} flow className="!bg-[linear-gradient(0deg,#000_0%,#000_40%,#f00_80%,#f80_100%)]">
       <div className="w-[min(420px,100%)] bg-black/80 p-4 font-times text-white">
         <p className="mb-2 text-center text-2xl font-bold underline">TABLE OF CONTENTS</p>
         <ol className="list-inside list-decimal space-y-1">
