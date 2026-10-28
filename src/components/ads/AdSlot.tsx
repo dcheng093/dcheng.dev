@@ -1,6 +1,5 @@
 import { useState } from 'react'
-import { useLocation } from 'react-router-dom'
-import { useNavigate } from '../../hooks/useNavigate'
+import { useLocation, useNavigate } from 'react-router-dom'
 import type { Ad, AdFormat, AdKind } from '../../content/ads'
 import { randomRoute } from '../../lib/sitemap'
 import { usePopups } from '../popups/popupState'

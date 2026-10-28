@@ -1,4 +1,4 @@
-import { Link } from '../components/Link'
+import { Link } from 'react-router-dom'
 import { Img } from '../components/media/Img'
 import { RainbowText } from '../components/chaos/Chaos'
 import { stickers } from '../content/stickers'

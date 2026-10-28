@@ -1,6 +1,5 @@
 import { useEffect, useState } from 'react'
-import { useLocation } from 'react-router-dom'
-import { Link } from './Link'
+import { Link, useLocation } from 'react-router-dom'
 import { Img } from './media/Img'
 import { cursors, icons, type Slot } from '../content/assets'
 import { DanielLogo } from './DanielLogo'

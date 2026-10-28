@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Link } from '../Link'
+import { Link } from 'react-router-dom'
 import { clampToViewport, useDrag } from '../../hooks/useDrag'
 import { icons } from '../../content/assets'
 import type { ObjSpec } from '../../three/pageScenes'

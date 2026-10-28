@@ -1,12 +1,11 @@
 import { useEffect, useState } from 'react'
-import { Link } from '../components/Link'
-import { useNavigate } from '../hooks/useNavigate'
+import { Link, useNavigate } from 'react-router-dom'
 import { gifCursor } from '../lib/cursor'
 import { cursors, dividers, icons, type Slot } from '../content/assets'
 import { payout, spinReels, type Face } from '../lib/slots'
 import { AdSlot } from '../components/ads/AdSlot'
 import { Img } from '../components/media/Img'
-import { Blink, GifDivider, Marquee, RainbowText, ResettingCountdown, Sticker, ViewersNow } from '../components/chaos/Chaos'
+import { Blink, GifDivider, Marquee, RainbowText, ResettingCountdown, Sticker } from '../components/chaos/Chaos'
 import { usePopups } from '../components/popups/popupState'
 import { useSfx } from '../audio/audioContext'
 
@@ -219,75 +218,6 @@ export function Casino() {
         <GifDivider slot={dividers.rainbow} />
         <Sticker className="text-lg">NO DEPOSIT NEEDED*</Sticker>
         <AdSlot format="leaderboard" className="w-full max-w-[728px]" />
-      </div>
-    </div>
-  )
-}
-
-const SURVEY = [
-  { q: 'How did you hear about Daniel?', a: ['A friend', 'A horse', 'He told me himself', 'I am Daniel'] },
-  { q: 'On a scale of 10 to 10, how much do you like Daniel?', a: ['10', '10', '10 (but louder)'] },
-  { q: 'Would you recommend Daniel to a friend?', a: ['Yes', 'Yes, to all of them', 'I have no friends left, I recommended Daniel to them'] },
-  { q: 'BONUS QUESTION!!! What is your favourite kettle?', a: ['The one that boils', 'Kettle+', 'All kettles equally'] },
-  { q: 'Please enter your mother’s maiden name (for the horse).', a: ['Sure', 'Of course', 'Absolutely'] },
-  { q: 'How many teeth do you have? (Approximately is fine.)', a: ['32', '3,200', 'I would rather not say'] },
-  { q: 'Is this survey taking too long?', a: ['No', 'No!!', 'It is the perfect length'] },
-  { q: 'Final question (really this time): are you human?', a: ['Yes', 'Neigh'] },
-]
-
-/** "Only 3 questions!" The question count keeps growing as you go. */
-export function Survey() {
-  const [step, setStep] = useState(0)
-  const navigate = useNavigate()
-  const sfx = useSfx()
-  const done = step >= SURVEY.length
-  // The total claims to be 3 until you pass it, then it is always "just one more".
-  const total = Math.max(3, step + 1)
-
-  return (
-    <div data-testid="survey" className="tile-cherubs min-h-screen p-3 sm:p-6" style={{ cursor: gifCursor(cursors.pencilGreen) }}>
-      <div className="mx-auto max-w-xl space-y-4 border-4 border-blue-800 bg-white p-4 text-center text-black">
-        <h1 className="font-impact text-3xl text-blue-800 sm:text-4xl">CUSTOMER SATISFACTION SURVEY</h1>
-        <p className="font-comic">
-          Answer <b>3 quick questions</b> to win a <b>FREE HORSE</b>!!! <Img slot="horses" width={60} className="inline-block" />
-        </p>
-        {done ? (
-          <div className="space-y-3" role="status">
-            <p className="font-impact text-2xl text-green-700">THANK YOU!!!</p>
-            <p className="font-comic">Your horse will arrive in 6–8 business decades. To confirm delivery, please claim your prize below.</p>
-            <button type="button" onClick={() => navigate('/you-won')} className="animate-pulse-scale border-2 border-black bg-red-600 px-4 py-1 font-impact text-xl text-white">
-              CLAIM MY HORSE »
-            </button>
-          </div>
-        ) : (
-          <fieldset className="win-raised space-y-3 p-3 text-left font-[Verdana,sans-serif] text-sm">
-            <legend className="bg-win-title px-1 font-bold text-white">
-              Question {step + 1} of {total}
-            </legend>
-            <div className="win-sunken h-3 w-full bg-white">
-              <div className="h-full bg-win-title" style={{ width: `${((step + 1) / total) * 100}%` }} />
-            </div>
-            <p className="font-bold">{SURVEY[step].q}</p>
-            <div className="flex flex-col gap-1">
-              {SURVEY[step].a.map((a, i) => (
-                <button
-                  key={`${step}-${i}`}
-                  type="button"
-                  onClick={() => {
-                    sfx('click')
-                    setStep((s) => s + 1)
-                  }}
-                  className="win-raised px-2 py-1 text-left"
-                >
-                  ○ {a}
-                </button>
-              ))}
-            </div>
-            {step >= 3 && <p className="animate-blink text-xs font-bold text-red-600">Almost there!!! (you are not almost there)</p>}
-          </fieldset>
-        )}
-        <GifDivider slot={dividers.pinkDots} />
-        <ViewersNow thing="this survey" />
       </div>
     </div>
   )

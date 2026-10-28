@@ -1,4 +1,4 @@
-import { Link } from '../Link'
+import { Link } from 'react-router-dom'
 import { buttons88 } from '../../content/assets'
 import { Img } from '../media/Img'
 import { usePopups } from '../popups/popupState'

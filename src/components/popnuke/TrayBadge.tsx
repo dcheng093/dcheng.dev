@@ -1,4 +1,4 @@
-import { Link } from '../Link'
+import { Link } from 'react-router-dom'
 import { popnukeGifs } from '../../content/assets'
 import { Img } from '../media/Img'
 import { usePopnuke } from './popnukeState'

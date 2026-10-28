@@ -1,6 +1,5 @@
 import { useEffect } from 'react'
-import { useLocation } from 'react-router-dom'
-import { useNavigate } from '../hooks/useNavigate'
+import { useLocation, useNavigate } from 'react-router-dom'
 import { randomRoute } from '../lib/sitemap'
 
 /** 404s and crashes. Any key (or tap) flings you somewhere random. */

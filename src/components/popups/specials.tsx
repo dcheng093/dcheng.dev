@@ -1,6 +1,5 @@
 import { useEffect, useState, type ReactNode } from 'react'
-import { Link } from '../Link'
-import { useNavigate } from '../../hooks/useNavigate'
+import { Link, useNavigate } from 'react-router-dom'
 import { daniel } from '../../content/daniel'
 import { useSfx } from '../../audio/audioContext'
 import { icons, popnukeGifs, selfies } from '../../content/assets'

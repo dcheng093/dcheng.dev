@@ -1,5 +1,4 @@
-import { useLocation } from 'react-router-dom'
-import { useNavigate } from '../../hooks/useNavigate'
+import { useLocation, useNavigate } from 'react-router-dom'
 import { models, type Model } from '../../content/dealership'
 import { assets } from '../../content/assets'
 import { randomRoute } from '../../lib/sitemap'

@@ -35,6 +35,9 @@ import { bounce, clampOffset, contains, isFree, nearestFree, place, MIN_SIZE } f
 import { shrines } from '../content/shrines'
 import { existsSync } from 'node:fs'
 import { govern } from '../three/stage'
+import { arrival, statusLine } from '../lib/dialup'
+import { QUESTIONS, SURVEY } from '../content/survey'
+import { claimedTotal, fleeGivesUp, possess, questionNumber, resultRows } from '../lib/survey'
 import { DEFAULT_SETTINGS, chaosScale, danielPick, danielSwap, mergeSettings } from '../lib/settings'
 
 const spawn = (s: PopupState, variant: 'normal' | 'multiply' | 'dodge' = 'normal') =>
@@ -635,5 +638,68 @@ describe('3D frame governor', () => {
     expect(slow.frameMs).toBeCloseTo(1000 / 30)
     expect(run(Array(60).fill(9), slow).frameMs).toBeCloseTo(1000 / 30) // in between: no flip-flopping
     expect(run(Array(60).fill(5), slow).frameMs).toBeCloseTo(1000 / 60)
+  })
+})
+
+describe('dial-up', () => {
+  it('a page loads over dial-up the first time this visit, and fades in from the cache after that', () => {
+    expect(arrival(false)).toBe('dialup')
+    expect(arrival(true)).toBe('fade')
+  })
+
+  it('the status bar contacts the host, opens the page counting up (never 100% early), then says Done', () => {
+    expect(statusLine('/casino', 0)).toMatch(/^Contacting host/)
+    expect(statusLine('/casino', 0.15)).toMatch(/Waiting for reply/)
+    expect(statusLine('/casino', 0.37)).toBe('Opening page /casino… 37%')
+    expect(statusLine('/casino', 0.999)).toBe('Opening page /casino… 99%')
+    expect(statusLine('/casino', 1)).toBe('Document: Done')
+  })
+})
+
+describe('the survey', () => {
+  const questions = SURVEY.filter((s) => s.kind !== 'interrupt')
+  it('is about a hundred questions (it says 3), in every format, each with its own id', () => {
+    expect(QUESTIONS.length).toBeGreaterThanOrEqual(100)
+    expect(questions).toHaveLength(QUESTIONS.length)
+    expect(new Set(SURVEY.map((s) => s.id)).size).toBe(SURVEY.length)
+    expect(new Set(SURVEY.map((s) => s.kind))).toEqual(new Set(['choice', 'scale', 'checks', 'text', 'select', 'flee', 'interrupt']))
+    // It's all about Daniel: in the question, or in every possible answer to it.
+    const about = (q: (typeof QUESTIONS)[number]) => JSON.stringify(q).includes('Daniel') || ['scale', 'text'].includes(q.kind)
+    expect(QUESTIONS.filter(about).length).toBeGreaterThanOrEqual(90)
+  })
+
+  it('is interrupted after every 10th question (never after the last), taking turns', () => {
+    const interrupts = SURVEY.flatMap((s, i) => (s.kind === 'interrupt' ? [{ at: questionNumber(SURVEY, i) - 1, variant: s.variant }] : []))
+    expect(interrupts.map((x) => x.at)).toEqual([10, 20, 30, 40, 50, 60, 70, 80, 90])
+    expect(interrupts.slice(0, 3).map((x) => x.variant)).toEqual(['expired', 'captcha', 'ad'])
+    expect(SURVEY[SURVEY.length - 1].kind).not.toBe('interrupt')
+  })
+
+  it('question 4 is about fruit (the strawberry sticker says so)', () => {
+    expect(questions[3].q).toMatch(/fruit/i)
+  })
+
+  it('always claims you are on the last of 3', () => {
+    expect([1, 2, 3, 4, 57].map(claimedTotal)).toEqual([3, 3, 3, 4, 57])
+  })
+
+  it('the possessed text box spells Daniel whatever you type, and No gives up running after 3 escapes', () => {
+    expect(possess(0)).toBe('')
+    expect(possess(3)).toBe('Dan')
+    expect(possess(10)).toBe('Daniel Dan')
+    expect([0, 1, 2, 3].map(fleeGivesUp)).toEqual([false, false, false, true])
+  })
+
+  it('results: everyone else is 100% pro-Daniel; you are shown as you answered', () => {
+    const rows = resultRows({ rate: '10', like: 'Yes' })
+    expect(rows.find((r) => r.id === 'rate')).toMatchObject({ you: '10', everyone: '10', agree: true })
+    expect(rows.find((r) => r.id === 'like')).toMatchObject({ you: 'Yes', everyone: 'Definitely yes', agree: false })
+    expect(rows.find((r) => r.id === 'forever')!.you).toBe('(no answer)')
+    // Every headline is a real question, and "everyone"'s answer is one you could give.
+    for (const r of rows) {
+      const q = QUESTIONS.find((x) => x.id === r.id)!
+      const choices = q.kind === 'choice' ? q.a : q.kind === 'flee' ? [q.yes] : ['10']
+      expect(choices).toContain(r.everyone)
+    }
   })
 })

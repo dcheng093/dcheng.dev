@@ -14,6 +14,7 @@ import { LiveChat } from '../components/LiveChat'
 import { PetWindow } from '../components/PetWindow'
 import { PopnukeProvider } from '../components/popnuke/PopnukeProvider'
 import { Taskbar } from '../components/Taskbar'
+import { PageLoad, ScanIn } from '../components/DialUp'
 import { SettingsProvider } from '../components/settings/SettingsProvider'
 import { VirusAlert } from '../components/VirusAlert'
 import { MiniPlayer, MuteButton, WebringBar } from '../components/WebringBar'
@@ -48,13 +49,15 @@ export function RootLayout() {
           {!entered && <EnterGate onEnter={() => setEntered(true)} />}
           <CursorTrail />
           <ClickBurst />
-          {/* Win95-blue blinds sweep off the screen on every page change, and once more on entering the site. */}
-          <div
-            key={`${pathname}|${entered}`}
-            aria-hidden
-            data-testid="page-wipe"
-            className="pointer-events-none fixed inset-0 z-[95] animate-page-wipe bg-[repeating-linear-gradient(90deg,#000080_0_14px,#1084d0_14px_28px)]"
-          />
+          {/* The first time each page is opened this visit it "loads" over dial-up (starting with the one you enter
+              on); after that it's cached and fades in. Not behind the enter gate: nobody would see it, and the page
+              would count as cached already. */}
+          {entered && (
+            <>
+              <PageLoad key={pathname} path={pathname} />
+              <ScanIn />
+            </>
+          )}
           {/* While the gate is up the site sits mounted but unpainted underneath it: the gate is opaque, and
               painting the whole animated collage behind it would just eat the frame budget of its 3D dream. */}
           <div className={entered ? 'contents' : 'invisible'}>

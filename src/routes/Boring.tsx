@@ -1,4 +1,4 @@
-import { Link } from '../components/Link'
+import { Link } from 'react-router-dom'
 import { Img } from '../components/media/Img'
 import { daniel } from '../content/daniel'
 import { WEBRING } from '../lib/sitemap'

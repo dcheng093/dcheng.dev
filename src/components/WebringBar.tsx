@@ -1,6 +1,5 @@
 import { useEffect, useRef } from 'react'
-import { useLocation } from 'react-router-dom'
-import { Link } from './Link'
+import { Link, useLocation } from 'react-router-dom'
 import { neighbour, randomRoute } from '../lib/sitemap'
 import { useAudio } from '../audio/audioContext'
 import { findTrack, MIXES, type MixId } from '../audio/tracks'

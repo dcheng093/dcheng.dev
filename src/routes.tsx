@@ -6,7 +6,7 @@ import { Shrine } from './routes/Shrine'
 import { Guestbook } from './routes/Guestbook'
 import { Boring } from './routes/Boring'
 import { Checkout, Leave, UnderConstruction, YouWon } from './routes/Traps'
-import { Casino, Scan, Survey, WorkFromHome } from './routes/Scams'
+import { Casino, Scan, WorkFromHome } from './routes/Scams'
 import { FakeBSOD } from './routes/FakeBSOD'
 
 // Cyber Town pages load on demand: they carry their own games/encoders and most visitors never open all six.
@@ -34,7 +34,7 @@ export const routes: RouteObject[] = [
       { path: 'checkout', element: <Checkout /> },
       { path: 'scan', element: <Scan /> },
       { path: 'casino', element: <Casino /> },
-      { path: 'survey', element: <Survey /> },
+      { path: 'survey', lazy: lazyPage(() => import('./routes/Survey'), 'Survey') },
       { path: 'work-from-home', element: <WorkFromHome /> },
       { path: 'arcade', lazy: lazyPage(() => import('./routes/Arcade'), 'Arcade') },
       { path: 'desktop', lazy: lazyPage(() => import('./routes/Desktop'), 'Desktop') },

@@ -1,5 +1,5 @@
 import { useEffect, useReducer, useRef, useState, type Dispatch, type PointerEvent as ReactPointerEvent, type RefObject } from 'react'
-import { useNavigate } from '../hooks/useNavigate'
+import { useNavigate } from 'react-router-dom'
 import { useSfx } from '../audio/audioContext'
 import { Img } from '../components/media/Img'
 import { Win95Window } from '../components/Win95Window'

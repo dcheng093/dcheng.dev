@@ -548,13 +548,13 @@ test("Cyber Town door icons sit above their labels, not on them", async ({ page 
   }
 })
 
-test('the loading wipe plays again over Home after CLICK HERE TO ENTER', async ({ page }) => {
+test('Home loads over dial-up the moment you CLICK HERE TO ENTER (not unseen behind the gate)', async ({ page }) => {
   await prepare(page, { skipGate: false })
   await page.goto('/')
-  const first = await page.getByTestId('page-wipe').elementHandle()
+  await expect(page.getByTestId('page-load')).toHaveCount(0)
   await page.getByRole('dialog', { name: 'Enter the site' }).getByRole('button').click()
-  await expect.poll(() => first!.evaluate((e) => e.isConnected)).toBe(false)
-  await expect(page.getByTestId('page-wipe')).toHaveCSS('animation-name', 'page-wipe')
+  await expect(page.getByTestId('page-load')).toHaveCSS('animation-name', 'dialup')
+  await expect(page.getByTestId('page-load')).toHaveCSS('animation-duration', '1.1s') // a first visit
 })
 
 test('the table of contents goes where it says', async ({ page }) => {
@@ -772,11 +772,63 @@ test('the taskbar stays stuck to the top, fits the screen, and its buttons go wh
   await expect(page).toHaveURL(/\/$/)
 })
 
-test('page changes are eased, and windows ease shut before they go', async ({ page }) => {
+test('a page loads over dial-up the first time (jerky, status bar, hourglass), then fades in from the cache', async ({ page }) => {
+  await prepare(page)
+  // Don't wait for every picture: the load is over in about a second.
+  await page.goto('/casino', { waitUntil: 'commit' })
+  const load = page.getByTestId('page-load')
+  await expect(load).toHaveCSS('animation-timing-function', /step-end|steps\(1/)
+  await expect(load).toHaveCSS('animation-duration', '1.1s')
+  await expect(page.getByTestId('status-bar')).toContainText(/Contacting host|Waiting for reply|Opening page \/casino/)
+  await expect(page.locator('html')).toHaveAttribute('data-loading', '')
+  expect(await page.evaluate(() => getComputedStyle(document.body).cursor)).toBe('progress')
+  // Then it's done, and gets out of the way.
+  await expect(load).toHaveCount(0)
+  await expect(page.getByTestId('status-bar')).toHaveCount(0)
+  await expect(page.locator('html')).not.toHaveAttribute('data-loading')
+  // Somewhere new loads over dial-up again…
+  await page.getByTestId('taskbar').getByRole('link', { name: 'Guestbook' }).click()
+  await expect(load).toHaveCSS('animation-duration', '1.1s')
+  await expect(load).toHaveCount(0)
+  // …but back somewhere already seen, it's cached: no blank page, status bar or hourglass, just a fade.
+  await page.evaluate(() => {
+    const w = window as unknown as { saw: string[] }
+    w.saw = []
+    new MutationObserver(() => {
+      if (document.querySelector('[data-testid="page-load"], [data-testid="status-bar"]')) w.saw.push('dial-up')
+      if ('loading' in document.documentElement.dataset) w.saw.push('loading')
+      if (document.querySelector('main')?.getAnimations().some((a) => (a as Animation & { effect: KeyframeEffect }).effect?.getKeyframes().some((k) => k.opacity !== undefined))) w.saw.push('fade')
+    }).observe(document.body, { childList: true, subtree: true, attributes: true })
+  })
+  await page.goBack()
+  await expect(page).toHaveURL(/\/casino$/)
+  await expect.poll(() => page.evaluate(() => (window as unknown as { saw: string[] }).saw)).toContain('fade')
+  const saw = await page.evaluate(() => (window as unknown as { saw: string[] }).saw)
+  expect(saw).not.toContain('dial-up')
+  expect(saw).not.toContain('loading')
+})
+
+test('scrolling is smooth: no repaint lag, and pictures scrolled to after the load show whole', async ({ page }) => {
+  await prepare(page)
+  await page.goto('/dealership')
+  await expect(page.getByTestId('page-load')).toHaveCount(0)
+  await expect(page.getByTestId('repaint-lag')).toHaveCount(0)
+  // A picture far down the page whose file hasn't been shown anywhere yet: scrolled to, it never "downloads".
+  await page.evaluate(() => {
+    const imgs = [...document.querySelectorAll('main img')]
+    const seen = new Set(imgs.filter((i) => i.getBoundingClientRect().top < innerHeight * 1.5).map((i) => i.getAttribute('src')))
+    imgs.find((i) => i.getBoundingClientRect().top > innerHeight * 2 && !seen.has(i.getAttribute('src')))?.setAttribute('data-e2e', 'fresh')
+  })
+  const fresh = page.locator('[data-e2e="fresh"]')
+  await fresh.evaluate((img) => img.scrollIntoView({ block: 'center' }))
+  await page.waitForTimeout(300)
+  expect(await fresh.evaluate((img) => img.getAnimations().length + (img as HTMLElement).style.maskImage.length)).toBe(0)
+})
+
+test('windows ease shut before they go', async ({ page }) => {
   await page.clock.install()
   await prepare(page, { virus: true })
   await page.goto('/casino')
-  await expect(page.getByTestId('page-wipe')).toHaveCSS('animation-timing-function', /cubic-bezier/)
   await page.clock.fastForward(26_000)
   const alert = page.getByRole('alertdialog', { name: 'Virus Alert' })
   await expect(alert).toBeVisible()
@@ -809,6 +861,8 @@ test('the Control Panel changes the whole site, and remembers', async ({ page })
   await expect(page.locator('html')).toHaveAttribute('data-theme', 'vapor')
   expect(await page.evaluate(() => getComputedStyle(document.body, '::before').backgroundImage)).toContain('gradient')
   expect(await page.getByTestId('casino').locator('h1').first().evaluate((h) => getComputedStyle(h).fontFamily)).toMatch(/Comic/)
+  // (The busy cursor while a page loads beats the chosen one; once it's loaded, the choice shows.)
+  await expect(page.locator('html')).not.toHaveAttribute('data-loading')
   expect(await page.evaluate(() => getComputedStyle(document.body).cursor)).toMatch(/url\(.*wait/)
   const pictures = await page.getByTestId('casino').locator('img').evaluateAll((imgs) => imgs.map((i) => i.getAttribute('src')))
   expect(pictures.length).toBeGreaterThan(5)
@@ -845,4 +899,84 @@ test('Daniel Cam is a live feed of the new selfies', async ({ page }) => {
   const first = await shown()
   expect(first).toMatch(/\/me\/MISC-(1[4-9]|2\d)\.JPG/)
   await expect.poll(shown, { timeout: 5_000 }).not.toBe(first)
+})
+
+/** Answers whatever the survey is asking right now (by its data-kind). */
+async function answerSurveyStep(page: Page) {
+  const step = page.getByTestId('survey').locator('fieldset')
+  const kind = await step.getAttribute('data-kind')
+  const id = await step.getAttribute('data-step')
+  if (kind === 'choice' || kind === 'flee') await step.getByRole('button').first().click()
+  else if (kind === 'text') {
+    await step.getByRole('textbox').pressSequentially('hi')
+    await expect(step.getByRole('textbox')).toHaveValue('Da')
+    await step.getByRole('button', { name: 'Next ›' }).click()
+  } else if (kind === 'scale' || kind === 'checks' || kind === 'select') await step.getByRole('button', { name: 'Next ›' }).click()
+  else if (await step.getByRole('button', { name: 'Start again' }).count()) await step.getByRole('button', { name: 'Start again' }).click()
+  else if (await step.getByRole('button', { name: 'Square 1' }).count()) {
+    await step.getByRole('button', { name: 'Square 1' }).click()
+    await step.getByRole('button', { name: 'Verify' }).click()
+    await step.getByRole('button', { name: /Continue/ }).click()
+  } else await step.getByRole('button', { name: 'Skip ad ›' }).click({ timeout: 6_000 })
+  // Wait for the next step (or the results) before going on.
+  await expect(page.getByTestId('survey').locator(`fieldset[data-step="${id}"]`)).toHaveCount(0)
+  return kind
+}
+
+test('the survey: every kind of question, an interruption, and it fits the screen', async ({ page }) => {
+  await prepare(page)
+  await page.goto('/survey')
+  await expect(page.getByText('Question 1 of 3')).toBeVisible()
+  const kinds = new Set<string | null>()
+  for (let i = 0; i < 16; i++) {
+    kinds.add(await answerSurveyStep(page))
+    expect(await horizontalOverflow(page)).toBeLessThanOrEqual(0)
+  }
+  expect([...kinds].sort()).toEqual(['checks', 'choice', 'flee', 'interrupt', 'scale', 'select', 'text'])
+  await expect(page.getByText(/Question 16 of 16/)).toBeVisible()
+  await expect(page.getByText('Almost there!!! (you are not almost there)')).toBeVisible()
+})
+
+test('the survey picks up where you left off, and the end compares you with everyone else before the horse', async ({ page }) => {
+  await prepare(page)
+  await page.goto('/survey')
+  await page.getByTestId('survey').locator('fieldset').waitFor()
+  // Five questions in, you wandered off to the casino. Back again, it carries on from question 6.
+  // (Not a refresh: that always goes back to the enter gate on the home page.)
+  await page.evaluate(() => sessionStorage.setItem('survey', JSON.stringify({ step: 5, answers: { heard: 'A horse' } })))
+  await page.goto('/casino')
+  await page.goto('/survey')
+  await expect(page.getByText('Question 6 of 6')).toBeVisible()
+  await answerSurveyStep(page)
+  await expect(page.getByText('Question 7 of 7')).toBeVisible()
+  // An hour later, all done (the unit tests answer every last step on the way here).
+  await page.evaluate(() => sessionStorage.setItem('survey', JSON.stringify({ step: 9999, answers: { rate: '10', like: 'Yes' } })))
+  await page.goto('/casino')
+  await page.goto('/survey')
+  const results = page.getByTestId('survey-results')
+  await expect(results).toContainText('YOUR ANSWERS vs EVERYONE ELSE’S')
+  await expect(results).toContainText('✔ You agree with everyone.')
+  await expect(results).toContainText('✘ Everyone else is right.')
+  expect(await horizontalOverflow(page)).toBeLessThanOrEqual(0)
+  await results.getByRole('button', { name: 'CLAIM MY HORSE »' }).click()
+  await expect(page).toHaveURL(/\/you-won$/)
+})
+
+test('home’s ad wall has POPNUKE: a skyscraper down the right on desktop, a banner on smaller screens', async ({ page }) => {
+  await prepare(page)
+  await page.goto('/')
+  const wall = page.getByTestId('ad-wall')
+  await wall.scrollIntoViewIfNeeded()
+  const shown = wall.locator('[data-ad="popnuke"]:visible')
+  await expect(shown).toHaveCount(1)
+  const wide = (page.viewportSize()?.width ?? 0) >= 1024
+  const box = (await shown.boundingBox())!
+  if (wide) {
+    expect(box.height).toBeGreaterThan(500) // the skyscraper
+    const others = await wall.locator('[data-ad]:visible:not([data-ad="popnuke"])').evaluateAll((els) => Math.max(...els.map((e) => e.getBoundingClientRect().right)))
+    expect(box.x).toBeGreaterThanOrEqual(others)
+  } else expect(box.height).toBeLessThan(200) // the banner
+  expect(await horizontalOverflow(page)).toBeLessThanOrEqual(0)
+  await shown.click()
+  await expect(page).toHaveURL(/\/popnuke$/)
 })

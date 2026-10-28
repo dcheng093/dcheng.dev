@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Link } from '../components/Link'
+import { Link } from 'react-router-dom'
 import { gifCursor } from '../lib/cursor'
 import { AdSlot } from '../components/ads/AdSlot'
 import { DealCard } from '../components/ads/DealCard'

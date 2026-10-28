@@ -1,5 +1,4 @@
-import { Link } from '../components/Link'
-import { useNavigate } from '../hooks/useNavigate'
+import { Link, useNavigate } from 'react-router-dom'
 import { Band, Piece } from '../components/collage/Band'
 import { AdSlot } from '../components/ads/AdSlot'
 import { DealCard } from '../components/ads/DealCard'
@@ -258,14 +257,24 @@ function CodingBand() {
 function AdWall() {
   const [squares] = useState(() => pickAds('button125', 4))
   return (
-    <div className="tile-smileys flex flex-wrap items-center justify-center gap-3 border-y-4 border-black p-4">
-      {squares.map((ad, i) => (
-        <AdSlot key={i} ad={ad} format="button125" className={i % 2 ? 'rotate-3' : '-rotate-2'} />
-      ))}
-      <AdSlot ad={adById('more-ram')} format="square" />
-      <AdSlot format="banner" kind="surreal" className="w-full max-w-[468px]" />
-      <BlinkieRow items={[blinkies.niceToNerds, blinkies.gamer, blinkies.caffeine, blinkies.peopleStrange]} className="w-full" />
-      <ButtonWall className="w-full max-w-[760px] bg-white/80 p-2" />
+    <div data-testid="ad-wall" className="tile-smileys flex items-center gap-3 border-y-4 border-black p-4">
+      <div className="flex min-w-0 flex-1 flex-wrap items-center justify-center gap-3">
+        {squares.map((ad, i) => (
+          <AdSlot key={i} ad={ad} format="button125" className={i % 2 ? 'rotate-3' : '-rotate-2'} />
+        ))}
+        <AdSlot ad={adById('more-ram')} format="square" />
+        <AdSlot format="banner" kind="surreal" className="w-full max-w-[468px]" />
+        <BlinkieRow items={[blinkies.niceToNerds, blinkies.gamer, blinkies.caffeine, blinkies.peopleStrange]} className="w-full" />
+        <ButtonWall className="w-full max-w-[760px] bg-white/80 p-2" />
+        {/* Smaller screens: a 600px-tall skyscraper would swamp the strip, so POPNUKE takes a banner at the end. */}
+        <div className="w-full max-w-[468px] lg:hidden">
+          <AdSlot ad={adById('popnuke')} format="banner" className="w-full" />
+        </div>
+      </div>
+      {/* The right-hand rail: POPNUKE's skyscraper, like every 2000s page had down the side. */}
+      <div className="hidden shrink-0 lg:block">
+        <AdSlot ad={adById('popnuke')} format="skyscraper" />
+      </div>
     </div>
   )
 }

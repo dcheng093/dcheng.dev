@@ -1,6 +1,5 @@
 import { useEffect, useMemo, useRef, useState, type RefObject } from 'react'
-import { useLocation } from 'react-router-dom'
-import { useNavigate } from '../../hooks/useNavigate'
+import { useLocation, useNavigate } from 'react-router-dom'
 import { useSfx } from '../../audio/audioContext'
 import { legendary, rollLegendary, sceneFor } from '../../content/objects'
 import { useStored } from '../../hooks/useLocalStorage'

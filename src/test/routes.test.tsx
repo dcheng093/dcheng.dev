@@ -1,11 +1,12 @@
 import { describe, expect, it, vi } from 'vitest'
-import { act, cleanup, render, screen, within } from '@testing-library/react'
+import { act, cleanup, fireEvent, render, screen, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { createMemoryRouter, RouterProvider } from 'react-router-dom'
 import { routes } from '../routes'
 import { WEBRING } from '../lib/sitemap'
 import { daniel } from '../content/daniel'
 import { VIRUS_ALERT_DELAY_MS } from '../components/VirusAlert'
+import { SURVEY } from '../content/survey'
 
 const renderAt = (path: string, { entered = true } = {}) => {
   if (entered) sessionStorage.setItem('entered', 'true')
@@ -266,5 +267,117 @@ describe('interactions', () => {
     const img = screen.getByAltText(daniel.name)
     await act(async () => img.dispatchEvent(new Event('error')))
     expect(screen.getByLabelText('placeholder: normal headshot')).toHaveTextContent('SUPPLY ME: headshot.jpg')
+  })
+})
+
+/** Answers whatever the survey is asking right now (by its data-kind), the quickest way through. */
+async function answerSurveyStep(user: ReturnType<typeof userEvent.setup>, advance: () => void) {
+  const step = (await screen.findByTestId('survey')).querySelector('fieldset')!
+  const box = within(step as HTMLElement)
+  switch (step.getAttribute('data-kind')) {
+    case 'choice':
+      return user.click(box.getAllByRole('button')[0])
+    case 'flee':
+      return user.click(box.getAllByRole('button')[0]) // Yes
+    case 'text':
+      await user.type(box.getByRole('textbox'), 'x')
+      return user.click(box.getByRole('button', { name: 'Next ›' }))
+    case 'scale':
+    case 'checks':
+    case 'select':
+      return user.click(box.getByRole('button', { name: 'Next ›' }))
+    case 'interrupt':
+      if (box.queryByRole('button', { name: 'Start again' })) return user.click(box.getByRole('button', { name: 'Start again' }))
+      if (box.queryByRole('button', { name: 'Square 1' })) {
+        await user.click(box.getByRole('button', { name: 'Square 1' }))
+        await user.click(box.getByRole('button', { name: 'Verify' }))
+        return user.click(box.getByRole('button', { name: /Continue/ }))
+      }
+      for (let i = 0; i < 3; i++) act(advance) // the ad break's countdown, a second at a time
+      return user.click(await box.findByRole('button', { name: 'Skip ad ›' }))
+  }
+}
+
+describe('the survey', () => {
+  it('can (just about) be finished: a hundred questions, three kinds of interruption, results, then the horse', { timeout: 60_000 }, async () => {
+    vi.useFakeTimers({ shouldAdvanceTime: true })
+    const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime })
+    const router = renderAt('/survey')
+    expect(await screen.findByText('Question 1 of 3')).toBeInTheDocument()
+    for (let i = 0; i < SURVEY.length; i++) await answerSurveyStep(user, () => vi.advanceTimersByTime(1_050))
+    const results = screen.getByTestId('survey-results')
+    expect(results).toHaveTextContent('YOUR ANSWERS vs EVERYONE ELSE’S')
+    expect(results).toHaveTextContent('0.0% unique')
+    await user.click(within(results).getByRole('button', { name: 'CLAIM MY HORSE »' }))
+    expect(router.state.location.pathname).toBe('/you-won')
+    vi.useRealTimers()
+  })
+
+  it('remembers where you were this visit', async () => {
+    const user = userEvent.setup()
+    renderAt('/survey')
+    await answerSurveyStep(user, () => {})
+    await answerSurveyStep(user, () => {})
+    expect(await screen.findByText('Question 3 of 3')).toBeInTheDocument()
+    cleanup()
+    renderAt('/survey')
+    expect(await screen.findByText('Question 3 of 3')).toBeInTheDocument()
+    expect(JSON.parse(sessionStorage.getItem('survey')!).answers.heard).toBe('A friend')
+  })
+
+  /** Jumps straight to the first question of a kind. */
+  const at = async (kind: string) => {
+    const step = SURVEY.findIndex((s) => s.kind === kind)
+    sessionStorage.setItem('survey', JSON.stringify({ step, answers: {} }))
+    renderAt('/survey')
+    return within((await screen.findByTestId('survey')).querySelector(`fieldset[data-kind="${kind}"]`) as HTMLElement)
+  }
+
+  it('the slider only ever says 10', async () => {
+    const q = await at('scale')
+    const slider = q.getByRole('slider', { name: 'Rating' })
+    fireEvent.change(slider, { target: { value: '3' } })
+    expect(slider).toHaveValue('10')
+    expect(q.getByText('(nice try)')).toBeInTheDocument()
+  })
+
+  it('"I like Daniel" will not come unticked; the others will', async () => {
+    const user = userEvent.setup()
+    const q = await at('checks')
+    const daniel = q.getByRole('checkbox', { name: 'Daniel' })
+    await user.click(daniel)
+    expect(daniel).toBeChecked()
+    expect(q.getByText('nice try')).toBeInTheDocument()
+    const kettles = q.getByRole('checkbox', { name: 'Kettles' })
+    await user.click(kettles)
+    expect(kettles).toBeChecked()
+    await user.click(kettles)
+    expect(kettles).not.toBeChecked()
+  })
+
+  it('whatever you type, it comes out as Daniel', async () => {
+    const user = userEvent.setup()
+    const q = await at('text')
+    await user.type(q.getByRole('textbox'), 'my mum')
+    expect(q.getByRole('textbox')).toHaveValue('Daniel')
+  })
+
+  it('No runs away three times, then gives up and becomes Yes', async () => {
+    const user = userEvent.setup()
+    const q = await at('flee')
+    const no = q.getByRole('button', { name: 'Neigh' })
+    for (let i = 0; i < 3; i++) await user.click(no)
+    expect(no).toHaveTextContent('Yes (we heard you)')
+    await user.click(no)
+    expect(JSON.parse(sessionStorage.getItem('survey')!).answers.human).toBe('Yes')
+  })
+})
+
+describe('home ad wall', () => {
+  it('has a POPNUKE ad (the skyscraper down the right on desktop, a banner on smaller screens)', () => {
+    renderAt('/')
+    const ads = screen.getByTestId('ad-wall').querySelectorAll('[data-ad="popnuke"]')
+    expect(ads).toHaveLength(2)
+    expect(ads[1].closest('.lg\\:block')).not.toBeNull()
   })
 })
