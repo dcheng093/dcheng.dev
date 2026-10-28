@@ -9,6 +9,12 @@ export type AudioApi = {
   unlock: () => void
   toggleMute: () => void
   setMix: (mix: MixId) => void
+  /** 📌 on: the visitor's pick plays everywhere instead of each page's theme song. */
+  locked: boolean
+  toggleLock: () => void
+  setLocked: (locked: boolean) => void
+  /** Null until audio is unlocked. */
+  getAnalyser: () => AnalyserNode | null
   sfx: (name: SfxName) => void
 }
 
@@ -19,6 +25,10 @@ export const AudioCtx = createContext<AudioApi>({
   unlock: () => {},
   toggleMute: () => {},
   setMix: () => {},
+  locked: false,
+  toggleLock: () => {},
+  setLocked: () => {},
+  getAnalyser: () => null,
   sfx: () => {},
 })
 

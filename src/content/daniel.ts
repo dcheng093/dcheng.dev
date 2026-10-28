@@ -51,6 +51,10 @@ export const daniel = {
     language: null as null | { greeting: string; translation: string },
   },
 
+  /** Melly, Daniel's Gify pet (gify.pet), shown in the floating pet window. */
+  petUrl:
+    'https://gify.pet/pet/pet.html?name=Melly&dob=1793163836&gender=m&element=Fire&pet=melon.gif&map=hills.jpg&background=1995.png&tablecolor=%23529d32&textcolor=black',
+
   /** Real links for /boring and the business-card popup. */
   links: {
     email: 'chengpeter37093@gmail.com',

@@ -3,8 +3,10 @@
 //   node scripts/asset-gallery/adopt.mjs id1 id2 ...  -> exactly these ids
 // Re-run any time; files for ids no longer chosen are left alone (delete them by hand).
 // Candidates are GIFs unless their entry sets `ext` (e.g. "jpg" for a static photo tile).
+// An entry's `slow` (e.g. 3) multiplies its frame delays on the way in, for tiles that are too fast as found.
 import { copyFile, mkdir, readFile, writeFile } from 'node:fs/promises'
 import { resolve } from 'node:path'
+import { slowGif } from './gif.mjs'
 
 const root = resolve(import.meta.dirname, '../..')
 const candidates = JSON.parse(await readFile(resolve(root, 'asset-research/candidates.json'), 'utf8'))
@@ -16,7 +18,17 @@ const chosen = wanted.length
 const outDir = resolve(root, 'public/gifs')
 await mkdir(outDir, { recursive: true })
 const file = (c) => `${c.id}.${c.ext ?? 'gif'}`
-for (const c of chosen) await copyFile(resolve(root, 'asset-research/candidates', file(c)), resolve(outDir, file(c)))
+for (const c of chosen) {
+  const from = resolve(root, 'asset-research/candidates', file(c))
+  if (!c.slow) {
+    await copyFile(from, resolve(outDir, file(c)))
+    continue
+  }
+  const b = Buffer.from(await readFile(from))
+  const delays = slowGif(b, c.slow)
+  await writeFile(resolve(outDir, file(c)), b)
+  console.log(`${file(c)}: slowed x${c.slow} (${[...new Set(delays)].join('/')} ms per frame)`)
+}
 
 const rows = chosen
   .map((c) => `| ${file(c)} | ${c.category} | ${c.source} | [source page](${c.sourcePage}) | [original](${c.assetUrl}) | ${c.terms} |`)

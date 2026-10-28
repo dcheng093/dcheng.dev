@@ -1,7 +1,7 @@
 /// <reference types="node" />
 import { describe, expect, it, vi } from 'vitest'
 import { POPUP_CAP, isSpecial, initialPopupState, popupReducer, type PopupState } from '../components/popups/popupState'
-import { pickAd, pickAds } from '../components/ads/pickAd'
+import { pickAd, pickAds, pickAdsIncluding } from '../components/ads/pickAd'
 import { ads } from '../content/ads'
 import { pickReply } from '../content/chatScript'
 import { nextHitCount } from '../lib/hitCounter'
@@ -17,6 +17,17 @@ import { CONFETTI_MAX, CONFETTI_MIN, confettiCount, throwConfetti } from '../lib
 import { Chiptune, SYNTH_SONGS } from '../audio/synth'
 import { fileLabel, findTrack, MIXES } from '../audio/tracks'
 import { MusicPlayer } from '../audio/music'
+import { PAGE_SONGS, pageSong } from '../audio/pageSongs'
+import { addHighScore, hit as aimHit, miss as aimMiss, newRound, spawn as spawnTarget, summary, targetScale, TARGET_MS } from '../lib/aim'
+import { buy, click as boil, cost, newKettle, perSecond, shouldWhistle, tick, UPGRADES } from '../lib/kettleClicker'
+import { dailyBrew, fortuneFor } from '../lib/oracle'
+import { fortunes } from '../content/fortunes'
+import { desktopReducer, type DesktopState } from '../lib/desktop'
+import { collect, progress } from '../lib/stickers'
+import { stickers } from '../content/stickers'
+import { frameStyle, timing, type BlinkieOpts } from '../lib/blinkie'
+import { DREAM_TEXTURES, PAGE_3D, sceneFor, TEXTURES } from '../three/pageScenes'
+import { existsSync } from 'node:fs'
 
 const spawn = (s: PopupState, variant: 'normal' | 'multiply' | 'dodge' = 'normal') =>
   popupReducer(s, { type: 'spawn', content: 'millionth', variant, fx: 0.5, fy: 0.5 })
@@ -74,6 +85,18 @@ describe('ads', () => {
       expect(ad.formats).toContain('skyscraper')
       expect(ad.kind).toBe('surreal')
     }
+  })
+
+  it('pickAdsIncluding always includes the pinned ad, in every slot over many seeds', () => {
+    const slots = new Set<number>()
+    for (let seed = 0; seed < 60; seed++) {
+      const got = pickAdsIncluding('skyscraper', 3, 'trust-me', mulberry32(seed))
+      expect(got).toHaveLength(3)
+      expect(new Set(got.map((a) => a.id)).size).toBe(3)
+      expect(got.every((a) => a.formats.includes('skyscraper'))).toBe(true)
+      slots.add(got.findIndex((a) => a.id === 'trust-me'))
+    }
+    expect([...slots].sort()).toEqual([0, 1, 2])
   })
 
   it('pickAds returns n ads of the format', () => {
@@ -250,5 +273,170 @@ describe('music', () => {
     player.start('nope')
     expect(start).toHaveBeenLastCalledWith(SYNTH_SONGS[0])
     start.mockRestore()
+  })
+})
+
+describe('page songs', () => {
+  it.each(WEBRING.filter((p) => p !== '/radio'))('%s has a theme song that exists', (path) => {
+    const id = pageSong(path)
+    expect(id).toBeDefined()
+    expect(MIXES.some((m) => m.id === id)).toBe(true)
+  })
+
+  it('/radio has none (you pick there), and paths are matched case- and slash-insensitively', () => {
+    expect(pageSong('/radio')).toBeUndefined()
+    expect(pageSong('/Dealership/')).toBe(PAGE_SONGS['/dealership'])
+    expect(pageSong('/nope')).toBeUndefined()
+  })
+
+  it('has at least 15 songs, the five new ones included', () => {
+    expect(MIXES.length).toBeGreaterThanOrEqual(15)
+    for (const id of ['insert-coin', 'pixel-pusher', 'steam-prophecy', 'startup-funk', 'sticker-pop']) expect(findTrack(id).id).toBe(id)
+  })
+})
+
+describe('aim trainer', () => {
+  it('scores hits, misses, accuracy and reaction time', () => {
+    const rng = mulberry32(1)
+    let s = spawnTarget(newRound(), 0, rng)
+    s = aimHit(s, 300, rng)
+    s = aimHit(s, 700, rng) // second target was born at 300
+    s = aimMiss(s, 900, rng)
+    const r = summary(s)
+    expect([s.hits, s.misses, r.shots, r.accuracy, r.avgMs]).toEqual([2, 1, 3, 67, 350])
+    expect(r.score).toBe(2 * 100 + 67 * 5 + (1000 - 350))
+  })
+
+  it('targets stay inside the play area and shrink to nothing', () => {
+    const rng = mulberry32(9)
+    for (let i = 0; i < 50; i++) {
+      const t = spawnTarget(newRound(), 0, rng).target!
+      expect(t.x).toBeGreaterThanOrEqual(0.08)
+      expect(t.x).toBeLessThanOrEqual(0.92)
+      expect(t.y).toBeGreaterThanOrEqual(0.1)
+      expect(t.y).toBeLessThanOrEqual(0.9)
+    }
+    const t = spawnTarget(newRound(), 1000, rng).target!
+    expect(targetScale(t, 1000)).toBe(1)
+    expect(targetScale(t, 1000 + TARGET_MS)).toBe(0)
+  })
+
+  it('keeps a top-5 table, best first, with 3-letter names', () => {
+    let table = [10, 50, 30, 20, 40].reduce((t, n, i) => addHighScore(t, 'ab' + i, n), [] as ReturnType<typeof addHighScore>)
+    table = addHighScore(table, 'z', 45)
+    expect(table.map((h) => h.score)).toEqual([50, 45, 40, 30, 20])
+    expect(table[1].name).toBe('Z--')
+    expect(table[0].name).toBe('AB1')
+  })
+})
+
+describe('kettle clicker', () => {
+  it('clicks, buys and ticks', () => {
+    let s = newKettle()
+    for (let i = 0; i < 15; i++) s = boil(s)
+    expect(buy(s, 'element').owned.element).toBe(1)
+    s = buy(s, 'element')
+    expect(s.degrees).toBe(0)
+    expect(buy(s, 'element')).toBe(s) // can't afford a second
+    expect(perSecond(s)).toBe(0.5)
+    s = tick(s, 10)
+    expect(s.degrees).toBe(5)
+    expect(s.total).toBe(20)
+  })
+
+  it('prices rise 15% per copy and it whistles once at 100°', () => {
+    expect(cost(UPGRADES[0], 0)).toBe(15)
+    expect(cost(UPGRADES[0], 1)).toBe(18)
+    const hot = { ...newKettle(), total: 100 }
+    expect(shouldWhistle(hot)).toBe(true)
+    expect(shouldWhistle({ ...hot, whistled: true })).toBe(false)
+  })
+})
+
+describe('magic kettle oracle', () => {
+  const day = new Date(2026, 9, 28)
+  it('gives the same answer to the same question on the same day, ignoring case and punctuation', () => {
+    expect(fortuneFor('Will I pass?', day, fortunes)).toBe(fortuneFor('  will i PASS ', day, fortunes))
+    expect(fortunes).toContain(fortuneFor('anything', day, fortunes))
+  })
+  it('spreads answers around and changes the daily brew day to day', () => {
+    const answers = new Set(Array.from({ length: 60 }, (_, i) => fortuneFor(`question ${i}`, day, fortunes)))
+    expect(answers.size).toBeGreaterThan(15)
+    const brews = new Set(Array.from({ length: 14 }, (_, i) => dailyBrew(new Date(2026, 9, i + 1), fortunes)))
+    expect(brews.size).toBeGreaterThan(5)
+  })
+})
+
+describe('desktop window manager', () => {
+  const open = (s: DesktopState, id: 'computer' | 'bin' | 'notepad') => desktopReducer(s, { type: 'open', id, x: 0, y: 0 })
+  it('opens, focuses, minimises and closes', () => {
+    let s = open(open(open({ windows: [] }, 'computer'), 'bin'), 'notepad')
+    expect(s.windows.map((w) => w.id)).toEqual(['computer', 'bin', 'notepad'])
+    s = desktopReducer(s, { type: 'focus', id: 'computer' })
+    expect(s.windows.at(-1)!.id).toBe('computer')
+    s = open(s, 'bin') // reopening brings it forward instead of duplicating
+    expect(s.windows.map((w) => w.id)).toEqual(['notepad', 'computer', 'bin'])
+    s = desktopReducer(s, { type: 'close', id: 'computer' })
+    expect(s.windows.map((w) => w.id)).toEqual(['notepad', 'bin'])
+  })
+  it('taskbar buttons minimise the front window and restore minimised ones', () => {
+    let s = open(open({ windows: [] }, 'computer'), 'bin')
+    s = desktopReducer(s, { type: 'taskbar', id: 'bin' })
+    expect(s.windows.find((w) => w.id === 'bin')!.minimised).toBe(true)
+    s = desktopReducer(s, { type: 'taskbar', id: 'bin' })
+    expect(s.windows.at(-1)).toMatchObject({ id: 'bin', minimised: false })
+    s = desktopReducer(s, { type: 'taskbar', id: 'computer' }) // behind: comes forward
+    expect(s.windows.at(-1)!.id).toBe('computer')
+  })
+})
+
+describe('sticker hunt', () => {
+  it('collects each sticker once and tracks completion', () => {
+    let have: string[] = []
+    have = collect(collect(have, 'shiba'), 'shiba')
+    expect(have).toEqual(['shiba'])
+    expect(progress(have, stickers)).toEqual({ found: 1, total: stickers.length, complete: false })
+    expect(progress(stickers.map((s) => s.id), stickers).complete).toBe(true)
+  })
+  it('hides at most one sticker per page, never on the sticker book, only on real pages', () => {
+    const pages = stickers.map((s) => s.page)
+    expect(new Set(pages).size).toBe(pages.length)
+    expect(pages).not.toContain('/stickers')
+    for (const p of pages) expect(WEBRING).toContain(p)
+  })
+})
+
+describe('blinkie maker', () => {
+  const base: BlinkieOpts = { text: 'HI', size: 'blinkie', font: 'pixel', fg: '#fff', bg: '#000', effect: 'blink' }
+  it('blinks by swapping colours, slower than the 3Hz flash threshold', () => {
+    expect(frameStyle(base, 0, 20)).toMatchObject({ fg: '#fff', bg: '#000', x: 65 })
+    expect(frameStyle(base, 1, 20)).toMatchObject({ fg: '#000', bg: '#fff' })
+    expect(1000 / timing('blink').delay).toBeLessThan(3)
+  })
+  it('scrolls from off the right edge to off the left', () => {
+    const o = { ...base, effect: 'scroll' as const }
+    expect(frameStyle(o, 0, 40).x).toBe(150)
+    expect(frameStyle(o, timing('scroll').frames, 40).x).toBe(-40)
+  })
+  it('sparkles land inside the image', () => {
+    const o = { ...base, size: 'button' as const, effect: 'sparkle' as const }
+    for (let i = 0; i < timing('sparkle').frames; i++)
+      for (const [x, y] of frameStyle(o, i, 10).sparkles) {
+        expect(x).toBeLessThan(88)
+        expect(y).toBeLessThan(31)
+      }
+  })
+})
+
+describe('3D pages', () => {
+  it('only decorates real pages, never Home, and keeps full worlds rare', () => {
+    for (const path of Object.keys(PAGE_3D)) expect(WEBRING).toContain(path)
+    expect(sceneFor('/')).toBeUndefined()
+    const worlds = Object.values(PAGE_3D).filter((s) => s.world)
+    expect(worlds.length).toBeLessThanOrEqual(3)
+    for (const s of Object.values(PAGE_3D)) expect(s.spinners.length).toBeLessThanOrEqual(3)
+  })
+  it('every texture exists in public/ (page worlds, spinners and the enter gate dream)', () => {
+    for (const url of [...Object.values(TEXTURES), ...Object.values(DREAM_TEXTURES)]) expect(existsSync(`public${url}`), url).toBe(true)
   })
 })

@@ -1,9 +1,15 @@
-import { expect, test, type Page } from '@playwright/test'
+import { expect, test, type Locator, type Page } from '@playwright/test'
 
-const ROUTES = ['/', '/dealership', '/shrine/segfault', '/shrine/kettle', '/shrine/chiikawa', '/guestbook', '/under-construction', '/you-won', '/checkout', '/leave', '/scan', '/casino', '/survey', '/work-from-home', '/boring']
+const ROUTES = ['/', '/dealership', '/shrine/segfault', '/shrine/kettle', '/shrine/chiikawa', '/guestbook', '/under-construction', '/you-won', '/checkout', '/leave', '/scan', '/casino', '/survey', '/work-from-home', '/arcade', '/desktop', '/radio', '/oracle', '/blinkie-maker', '/stickers', '/boring']
 
 /** Skip the enter gate (sessionStorage) and collect real errors, ignoring 404s for not-yet-supplied images. */
-async function prepare(page: Page, { skipGate = true } = {}) {
+async function prepare(page: Page, { skipGate = true, virus = false, pet = false } = {}) {
+  // Melly opens top-right over whatever is there; tuck her away except in her own test.
+  if (!pet) await page.addInitScript(() => localStorage.getItem('petMinimised') ?? localStorage.setItem('petMinimised', 'true'))
+  // The virus alert turns up 25s in; keep it out of every test but its own.
+  if (!virus) await page.addInitScript(() => sessionStorage.setItem('virusAlertSeen', 'true'))
+  // Melly lives on gify.pet; keep the tests off the real third-party site.
+  await page.route('https://gify.pet/**', (r) => r.fulfill({ contentType: 'text/html', body: '<p>Melly</p>' }))
   if (skipGate) await page.addInitScript(() => sessionStorage.setItem('entered', 'true'))
   const errors: string[] = []
   page.on('pageerror', (e) => errors.push(`pageerror: ${e.message}`))
@@ -12,6 +18,9 @@ async function prepare(page: Page, { skipGate = true } = {}) {
   })
   return errors
 }
+
+/** Windows pop in with a short scale animation; measure them only once it has finished. */
+const settled = (l: Locator) => l.evaluate((el) => Promise.all(el.getAnimations().map((a) => a.finished)))
 
 /**
  * How far content pokes past the device width. Lifts the root `overflow-x: clip` first (it would hide
@@ -98,16 +107,241 @@ test('the floating player changes the song on non-home pages', async ({ page }) 
   await page.getByTestId('boring').getByRole('link', { name: '/work-from-home', exact: true }).click()
   const player = page.getByTestId('mini-player')
   await expect(player).toBeVisible()
-  await expect(player.getByTestId('now-playing')).toContainText('System Default')
+  // Work-from-home's theme song.
+  await expect(player.getByTestId('now-playing')).toContainText('Elevator (Going Down)')
   await player.getByRole('button', { name: 'Next track' }).click()
-  await expect(player.getByTestId('now-playing')).toContainText('Dial-Up Remix')
-  // Back past the first track wraps round to the last of the new songs.
-  await player.getByRole('button', { name: 'Previous track' }).click()
-  await player.getByRole('button', { name: 'Previous track' }).click()
-  await expect(player.getByTestId('now-playing')).toContainText('Lo-Fi Beats to Debug To')
+  await expect(player.getByTestId('now-playing')).toContainText('Nightcore Daniel')
+  // Back past the first track wraps round to the last song.
+  for (let n = 0; n < 4; n++) await player.getByRole('button', { name: 'Previous track' }).click()
+  await expect(player.getByTestId('now-playing')).toContainText('Sticker Pop')
   await player.getByRole('button', { name: 'Minimise player' }).click()
   await expect(player.getByTestId('now-playing')).toHaveCount(0)
-  await expect(player).toContainText('Lo-Fi Beats to Debug To')
+  await expect(player).toContainText('Sticker Pop')
+})
+
+test('each page plays its own song unless the song is pinned', async ({ page }) => {
+  await prepare(page)
+  await page.goto('/')
+  await page.locator('[data-band="header"]').click({ position: { x: 5, y: 5 } })
+  const webring = page.getByRole('navigation', { name: 'Webring' })
+  await webring.getByRole('link', { name: 'Next »' }).click()
+  await expect(page.getByTestId('dealership')).toBeVisible()
+  const player = page.getByTestId('mini-player')
+  await expect(player.getByTestId('now-playing')).toContainText('Dealership Jingle')
+  await webring.getByRole('link', { name: 'Next »' }).click()
+  await expect(player.getByTestId('now-playing')).not.toContainText('Dealership Jingle')
+  await player.getByRole('button', { name: 'Lock song' }).click()
+  await expect(player.getByRole('button', { name: 'Lock song' })).toHaveAttribute('aria-pressed', 'true')
+  const pinned = (await player.getByTestId('now-playing').textContent())!
+  await webring.getByRole('link', { name: 'Next »' }).click()
+  await expect(player.getByTestId('now-playing')).toHaveText(pinned)
+})
+
+test("Melly's window minimises and stays minimised across pages and visits", async ({ page }) => {
+  await prepare(page, { pet: true })
+  await page.goto('/dealership')
+  const pet = page.getByTestId('pet-window')
+  // Phones start with Melly minimised; open her first there.
+  const restore = pet.getByRole('button', { name: 'Restore Melly.exe' })
+  await settled(pet)
+  if (await restore.isVisible()) await restore.click()
+  await expect(pet.frameLocator('iframe').getByText('Melly')).toBeVisible()
+  await settled(pet)
+  await pet.getByRole('button', { name: 'Minimise Melly.exe' }).click()
+  await expect(pet.locator('iframe')).toBeHidden()
+  await page.getByRole('navigation', { name: 'Webring' }).getByRole('link', { name: 'Next »' }).click()
+  await expect(pet.locator('iframe')).toBeHidden()
+  await page.goto('/casino')
+  await expect(pet.getByRole('button', { name: 'Restore Melly.exe' })).toBeVisible()
+  await settled(pet)
+  await pet.getByRole('button', { name: 'Restore Melly.exe' }).click()
+  await expect(pet.frameLocator('iframe').getByText('Melly')).toBeVisible()
+})
+
+test('a found sticker shows up in the sticker book', async ({ page }) => {
+  await prepare(page)
+  await page.goto('/dealership')
+  await page.getByTestId('hidden-sticker').click({ force: true })
+  await expect(page.getByRole('status').filter({ hasText: 'STICKER GET!' })).toBeVisible()
+  await page.goto('/stickers')
+  await expect(page.getByTestId('sticker-count')).toHaveText('1 / 12 FOUND')
+  await expect(page.getByAltText('Cupcake')).toBeVisible()
+})
+
+test('the spinning Daniel keeps spinning even when the OS asks for reduced motion', async ({ page }) => {
+  await page.emulateMedia({ reducedMotion: 'reduce' })
+  await prepare(page)
+  await page.goto('/')
+  const head = page.locator('[data-band="header"] img.animate-spin-y').first()
+  await expect(head).toHaveCSS('animation-iteration-count', 'infinite')
+  await expect(head).toHaveCSS('animation-name', 'spin-y')
+})
+
+test('the dealership always has the bouncing TRUST ME tower ad, even with reduce-motion on', async ({ page }) => {
+  await page.emulateMedia({ reducedMotion: 'reduce' })
+  await prepare(page)
+  await page.goto('/dealership')
+  const ad = page.getByRole('complementary', { name: 'Ad tower' }).getByText('YOU CAN TRUST ME, I AM DANIEL!').locator('xpath=..')
+  await expect(ad).toHaveCount(1)
+  await expect(ad.locator('img')).toHaveAttribute('src', '/me/full-body-cutout.png')
+  await expect(ad.getByText('TRUST »')).toBeVisible()
+  const anim = await ad.evaluate((el) => [el.querySelector('img')!, el.lastElementChild!].map((e) => `${getComputedStyle(e).animationName} ${getComputedStyle(e).animationIterationCount}`))
+  expect(anim).toEqual(['boing infinite', 'pulse-scale infinite'])
+})
+
+test('the blinkie maker downloads a real animated GIF', async ({ page }) => {
+  await prepare(page)
+  await page.goto('/blinkie-maker')
+  await page.getByLabel('Text', { exact: true }).fill('E2E RULZ')
+  const button = page.getByRole('button', { name: /DOWNLOAD/ })
+  await expect(button).toBeEnabled()
+  const [download] = await Promise.all([page.waitForEvent('download'), button.click()])
+  expect(download.suggestedFilename()).toBe('e2e-rulz-150x20.gif')
+  const chunks: Buffer[] = []
+  for await (const c of (await download.createReadStream())!) chunks.push(c as Buffer)
+  const gif = Buffer.concat(chunks)
+  expect(gif.subarray(0, 6).toString('latin1')).toBe('GIF89a')
+  expect(gif.length).toBeGreaterThan(200)
+})
+
+test('the aim trainer counts a hit', async ({ page }) => {
+  await prepare(page)
+  await page.goto('/arcade')
+  await page.getByRole('button', { name: 'PRESS START' }).click()
+  // The target shrinks every frame, so dispatch instead of waiting for it to hold still.
+  await page.getByTestId('aim-target').dispatchEvent('pointerdown')
+  await expect(page.getByText('HITS 1')).toBeVisible()
+})
+
+test("the desktop's notepad remembers what you typed, and windows drag", async ({ page }) => {
+  await prepare(page)
+  await page.goto('/desktop')
+  await page.getByRole('list', { name: 'Desktop icons' }).getByRole('button', { name: 'diary.txt' }).click()
+  const notepad = page.getByTestId('window-notepad')
+  await notepad.getByLabel('Notepad diary').fill('secret e2e diary')
+  await settled(notepad)
+  const bar = notepad.getByText('diary.txt - Notepad')
+  const before = (await notepad.boundingBox())!
+  const handle = (await bar.boundingBox())!
+  await page.mouse.move(handle.x + 40, handle.y + 5)
+  await page.mouse.down()
+  await page.mouse.move(handle.x + 100, handle.y + 65, { steps: 5 })
+  await page.mouse.up()
+  const after = (await notepad.boundingBox())!
+  expect(after.x - before.x).toBeGreaterThan(30)
+  await page.goto('/desktop')
+  await page.getByRole('list', { name: 'Desktop icons' }).getByRole('button', { name: 'diary.txt' }).click()
+  await expect(page.getByTestId('window-notepad').getByLabel('Notepad diary')).toHaveValue('secret e2e diary')
+})
+
+test('the Azerbaijan virus alert appears a while in and any button closes it', async ({ page }) => {
+  await page.clock.install()
+  await prepare(page, { virus: true })
+  await page.goto('/casino')
+  await expect(page.getByTestId('virus-alert')).toHaveCount(0)
+  await page.clock.fastForward(26_000)
+  const alert = page.getByRole('alertdialog', { name: 'Virus Alert' })
+  await expect(alert).toBeVisible()
+  await expect(alert).toContainText('smash your computer with a hammer')
+  await settled(alert)
+  expect(await horizontalOverflow(page)).toBeLessThanOrEqual(0)
+  // It can be dragged around by its title bar.
+  const before = (await alert.boundingBox())!
+  const bar = (await alert.getByTestId('virus-alert-titlebar').boundingBox())!
+  await page.mouse.move(bar.x + 30, bar.y + bar.height / 2)
+  await page.mouse.down()
+  await page.mouse.move(bar.x + 30, bar.y + bar.height / 2 + 90, { steps: 5 })
+  await page.mouse.up()
+  const after = (await alert.boundingBox())!
+  expect(after.y - before.y).toBeGreaterThan(60)
+  expect(Math.abs(after.x - before.x)).toBeLessThan(2)
+  await alert.getByRole('button', { name: 'No' }).click()
+  await expect(alert).toBeHidden()
+  // Once per visit.
+  await page.clock.fastForward(60_000)
+  await expect(alert).toBeHidden()
+})
+
+/** How many pixels a canvas has actually drawn (alpha > 0). */
+const drawnPixels = (l: Locator) =>
+  l.evaluate((c: HTMLCanvasElement) => {
+    const d = c.getContext('2d')!.getImageData(0, 0, c.width, c.height).data
+    let n = 0
+    for (let i = 3; i < d.length; i += 4) if (d[i]) n++
+    return n
+  })
+
+test('3D: a TextureTown world on /oracle, spinning dice on /casino, nothing on Home', async ({ page }) => {
+  const errors = await prepare(page)
+  await page.goto('/oracle')
+  const world = page.getByTestId('world-3d')
+  await expect(world).toHaveCount(1)
+  await expect.poll(() => drawnPixels(world), { timeout: 10_000 }).toBeGreaterThan(1000)
+  await expect(page.locator('html')).toHaveAttribute('data-world', 'mystic')
+
+  await page.goto('/casino')
+  const dice = page.getByTestId('spinner-3d')
+  await expect(dice).toHaveCount(2)
+  await expect.poll(() => drawnPixels(dice.first()), { timeout: 10_000 }).toBeGreaterThan(50)
+  await expect(page.getByTestId('world-3d')).toHaveCount(0)
+  await expect(page.locator('html')).not.toHaveAttribute('data-world')
+
+  await page.goto('/')
+  await expect(page.getByTestId('home')).toBeVisible()
+  await expect(page.getByTestId('spinner-3d')).toHaveCount(0)
+  expect(errors).toEqual([])
+})
+
+test('ads breathe instead of shaking, and nothing in a popup jiggles', async ({ page }) => {
+  await prepare(page)
+  await page.goto('/')
+  const banner = page.locator('[data-ad]').filter({ has: page.locator('.animate-breathe') }).first()
+  await banner.scrollIntoViewIfNeeded()
+  await expect(banner.locator('.animate-breathe').first()).toHaveCSS('animation-name', 'breathe')
+  await banner.hover()
+  await expect(banner).not.toHaveCSS('animation-name', 'jiggle')
+
+  await page.getByRole('button', { name: /CALL ME/ }).click()
+  const popup = page.getByTestId('popup')
+  await settled(popup)
+  const close = popup.getByRole('button', { name: 'Close' })
+  await close.hover()
+  await expect(close).not.toHaveCSS('animation-name', 'jiggle')
+})
+
+test('the enter gate floats on a 3D dream world that goes away on entering', async ({ page }) => {
+  const errors = await prepare(page, { skipGate: false })
+  await page.goto('/')
+  const gate = page.getByRole('dialog', { name: 'Enter the site' })
+  const dream = gate.getByTestId('world-3d')
+  await expect(dream).toHaveCount(1)
+  await expect.poll(() => drawnPixels(dream), { timeout: 10_000 }).toBeGreaterThan(1000)
+  // The gate's dream must not make the home page's tiles transparent underneath.
+  await expect(page.locator('html')).not.toHaveAttribute('data-world')
+  await gate.getByRole('button').click()
+  await expect(page.getByTestId('world-3d')).toHaveCount(0)
+  expect(errors).toEqual([])
+})
+
+test("Cyber Town door icons sit above their labels, not on them", async ({ page }) => {
+  await prepare(page)
+  await page.goto('/')
+  const doors = page.getByRole('list', { name: 'Cyber Town' }).getByRole('link')
+  await doors.first().scrollIntoViewIfNeeded()
+  for (const door of await doors.all()) {
+    const icon = (await door.locator('img').nth(1).boundingBox())!
+    const label = (await door.locator('span.font-comic').boundingBox())!
+    expect(icon.y + icon.height, await door.textContent() ?? '').toBeLessThanOrEqual(label.y + 1)
+  }
+})
+
+test('the loading wipe plays again over Home after CLICK HERE TO ENTER', async ({ page }) => {
+  await prepare(page, { skipGate: false })
+  await page.goto('/')
+  const first = await page.getByTestId('page-wipe').elementHandle()
+  await page.getByRole('dialog', { name: 'Enter the site' }).getByRole('button').click()
+  await expect.poll(() => first!.evaluate((e) => e.isConnected)).toBe(false)
+  await expect(page.getByTestId('page-wipe')).toHaveCSS('animation-name', 'page-wipe')
 })
 
 test('unknown routes blue-screen', async ({ page }) => {
@@ -126,6 +360,7 @@ test('business-card popup opens, drags, and closes', async ({ page }) => {
   expect(await horizontalOverflow(page)).toBeLessThanOrEqual(0)
 
   const bar = popup.locator('div').first()
+  await settled(popup)
   const before = await popup.boundingBox()
   const box = await bar.boundingBox()
   await page.mouse.move(box!.x + 20, box!.y + box!.height / 2)

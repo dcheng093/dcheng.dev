@@ -14,6 +14,12 @@ export const WEBRING: readonly string[] = [
   '/casino',
   '/survey',
   '/work-from-home',
+  '/arcade',
+  '/desktop',
+  '/radio',
+  '/oracle',
+  '/blinkie-maker',
+  '/stickers',
   '/leave',
 ]
 

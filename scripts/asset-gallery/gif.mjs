@@ -35,3 +35,30 @@ export function parseGif(b) {
   }
   return { bytes: b.length, width, height, frames, loopSeconds: delayCs / 100, globalPalette, localPalette, transparent }
 }
+
+/** Multiplies every frame delay in place (Graphic Control Extension blocks); returns the new delays in ms. */
+export function slowGif(b, factor) {
+  const flags = b[10]
+  let i = 13 + (flags & 0x80 ? 3 * (2 << (flags & 7)) : 0)
+  const delays = []
+  while (i < b.length) {
+    if (b[i] === 0x21) {
+      if (b[i + 1] === 0xf9) {
+        const d = Math.min(0xffff, Math.round(b.readUInt16LE(i + 4) * factor))
+        b.writeUInt16LE(d, i + 4)
+        delays.push(d * 10)
+      }
+      i += 2
+      while (i < b.length && b[i]) i += b[i] + 1
+      i++
+    } else if (b[i] === 0x2c) {
+      const pf = b[i + 9]
+      i += 10
+      if (pf & 0x80) i += 3 * (2 << (pf & 7))
+      i++
+      while (i < b.length && b[i]) i += b[i] + 1
+      i++
+    } else break
+  }
+  return delays
+}

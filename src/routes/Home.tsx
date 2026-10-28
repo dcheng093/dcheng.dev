@@ -27,6 +27,7 @@ const EDGES = {
   lease: [icons.moneyBag, assets.trophy, icons.horseRun, assets.newBadge, icons.rocket, assets.globe, icons.diamond],
   interests: [kawaii.shiba, kawaii.pug, kawaii.duckling, kawaii.hamster, kawaii.cupcake, kawaii.strawberry, icons.kawaiiBlob, kawaii.balloonBear],
   roots: [kawaii.moonCat, kawaii.hammockKitten, kawaii.poolBear, kawaii.chicksRow, kawaii.bluebird, kawaii.bunMail],
+  town: [cursors.joystick, assets.kettle, icons.floppy, icons.speaker, kawaii.cheerBlob, assets.newBadge, icons.smiley],
   destiny: [icons.question, kawaii.mochiStars, kawaii.butterflies, kawaii.fairy, icons.diamond, kawaii.twinkleStar, kawaii.pinkButterfly],
   end: [icons.flame, icons.skull, icons.candle, kawaii.angelChick, icons.flame, icons.crying],
 } satisfies Record<string, Slot[]>
@@ -49,6 +50,8 @@ export function Home() {
       <GifDivider slot={dividers.flowers} className="bg-white" />
       <RootsBand />
       <GifDivider slot={dividers.beads} className="bg-white" />
+      <CyberTownBand />
+      <GifDivider slot={dividers.caution} className="bg-black" />
       <DestinyBand />
       <GifDivider slot={dividers.flames} className="bg-black" />
       <EndBand />
@@ -343,7 +346,7 @@ function LeaseBand() {
         <span className="bg-white px-2"><ResettingCountdown seconds={42} /></span>
       </div>
       {models.slice(0, 3).map((m, i) => (
-        <DealCard key={m.name} model={m} slot={assets.misc[i + 3]} index={i} />
+        <DealCard key={m.name} model={m} index={i} />
       ))}
       <Link to="/dealership" className="w-full max-w-[420px]">
         <BigArrow direction="right">For 17,498 more Daniels, visit the dealership!</BigArrow>
@@ -419,6 +422,69 @@ function RootsBand() {
           <p>“Dear Daniel, please call more. Also what is a website.”</p>
         )}
         <p className="font-bold">{roots.pets}</p>
+      </div>
+    </Band>
+  )
+}
+
+/** The playground pages, plus a row of deeply suspicious "sponsored" buttons into the scam pages. */
+const TOWN: { to: string; label: string; blurb: string; slot: Slot; anim: string }[] = [
+  { to: '/arcade', label: "Daniel's Arcade", blurb: 'Aim Trainer 98 + Kettle Clicker', slot: cursors.joystick, anim: 'group-hover:animate-boing' },
+  { to: '/desktop', label: "Daniel's Desktop", blurb: 'Snoop around my PC', slot: icons.kidComputer, anim: 'group-hover:animate-shake' },
+  { to: '/radio', label: 'DANIEL FM', blurb: 'All Daniel, all the time', slot: icons.speaker, anim: 'group-hover:animate-pulse-scale' },
+  { to: '/oracle', label: 'The Magic Kettle', blurb: 'Ask it anything', slot: assets.kettle, anim: 'group-hover:animate-wobble' },
+  { to: '/blinkie-maker', label: 'Blinkie Maker', blurb: 'Make your own blinkie', slot: blinkies.iBite, anim: 'group-hover:animate-jank-x' },
+  { to: '/stickers', label: 'Sticker Book', blurb: '12 hidden stickers. Find them.', slot: kawaii.cheerBlob, anim: 'group-hover:animate-spin-z' },
+]
+
+// No strobe on these: they're loud enough already, and flashing is a seizure risk.
+const SPONSORED: { to: string; text: string; className: string }[] = [
+  { to: '/scan', text: '⚠ YOUR PC HAS (69) VIRUSES!!! CLICK TO SCAN', className: 'animate-shake bg-red-600 text-yellow-200 border-yellow-300' },
+  { to: '/casino', text: '🎰 FREE SPINS!!! (SPINS NOT FREE)', className: 'animate-pulse-scale bg-[#060] text-yellow-300 border-yellow-500' },
+  { to: '/survey', text: '📋 2 MINUTE SURVEY (47 MINUTES) WIN AN iPOD', className: 'animate-wobble bg-blue-700 text-white border-cyan-300' },
+  { to: '/work-from-home', text: '💷 I MAKE £5,000/WEEK FROM MY BEDROOM. ASK ME HOW', className: 'animate-jank-x bg-yellow-300 text-green-800 border-green-700' },
+]
+
+function CyberTownBand() {
+  return (
+    <Band
+      id="town"
+      edges={EDGES.town}
+      tile="tile-town"
+      cursor={cursors.arcade}
+      flow
+      title={
+        <h2 className="font-pixel text-2xl leading-relaxed text-white [text-shadow:3px_3px_0_#f0f,6px_6px_0_#000] sm:text-4xl">
+          <WavyText text="~ DANIEL'S CYBER TOWN ~" />
+        </h2>
+      }
+    >
+      <ul className="grid w-[min(640px,100%)] grid-cols-2 gap-3 sm:grid-cols-3" aria-label="Cyber Town">
+        {TOWN.map((t) => (
+          <li key={t.to}>
+            <Link to={t.to} className="win-raised group relative flex h-full flex-col items-center gap-1 p-2 text-center text-black">
+              <Img slot={assets.newBadge} width={34} className="absolute -right-2 -top-3 rotate-12" />
+              <span className="grid h-14 place-items-center">
+                {/* Fit the 56px-tall slot: wide things (blinkies) can be wide, tall things get narrower. */}
+                <Img slot={t.slot} width={Math.round(Math.min(110, (56 * t.slot.w) / t.slot.h, t.slot.w > 100 ? 110 : 52))} className={t.anim} />
+              </span>
+              <span className="font-comic text-sm font-bold">{t.label}</span>
+              <span className="font-[Tahoma,sans-serif] text-[11px] text-gray-700">{t.blurb}</span>
+            </Link>
+          </li>
+        ))}
+      </ul>
+      <div className="w-[min(640px,100%)] space-y-2 text-center">
+        <p className="font-[Tahoma,sans-serif] text-[10px] uppercase tracking-widest text-white">— sponsored links (do not click) —</p>
+        <ul className="flex flex-wrap justify-center gap-2" aria-label="Sponsored links">
+          {SPONSORED.map((s) => (
+            <li key={s.to}>
+              <Link to={s.to} className={`inline-block border-4 border-double px-3 py-1 font-impact text-sm shadow-[4px_4px_0_#000] sm:text-base ${s.className}`}>
+                {s.text}
+              </Link>
+            </li>
+          ))}
+        </ul>
       </div>
     </Band>
   )

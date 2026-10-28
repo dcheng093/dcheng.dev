@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState, type FormEvent } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { gifCursor } from '../lib/cursor'
-import { cursors, dividers, icons } from '../content/assets'
+import { assets, cursors, dividers, icons } from '../content/assets'
 import { Img } from '../components/media/Img'
 import { Blink, GifDivider, Marquee, RainbowText, Sticker, UnderConstruction as UcSign } from '../components/chaos/Chaos'
 import { useSfx } from '../audio/audioContext'
@@ -157,7 +157,7 @@ export function Checkout() {
           <tbody>
             <tr className="border-b">
               <td className="flex items-center gap-2 p-1">
-                <Img slot="headGrin" width={40} /> 1× Daniel (Used)
+                <Img slot={assets.misc[10]} width={40} /> 1× Daniel (Used)
               </td>
               <td className="p-1">
                 <input aria-label="Quantity" value={1} readOnly onFocus={() => setNote('Quantity is locked. There is only one Daniel.')} className="win-sunken w-12 bg-gray-200 px-1" />

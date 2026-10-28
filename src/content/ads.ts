@@ -1,4 +1,4 @@
-import type { AssetKey } from './assets'
+import { assets, type AssetKey, type Slot } from './assets'
 
 export type AdKind = 'daniel' | 'surreal' | 'scam' | 'classified'
 export type AdFormat = 'leaderboard' | 'banner' | 'button' | 'button125' | 'square' | 'skyscraper' | 'classified' | 'popup'
@@ -15,17 +15,18 @@ export type Ad = {
   price?: string
   cta: string
   to: AdTarget
-  img?: AssetKey | 'head' | 'body'
+  /** A named asset, 'head'/'body' shorthands, or any slot (e.g. one of the casual photos). */
+  img?: AssetKey | 'head' | 'body' | Slot
   palette: string
 }
 
 // No real brands. Every claim is false. Prices are in a currency we made up called "£".
 export const ads: Ad[] = [
   // --- Daniel as a product ---
-  { id: 'lease-daniel', kind: 'daniel', formats: ['leaderboard', 'banner', 'popup', 'square'], headline: 'LEASE DANIEL TODAY!!!', body: '0% APR • ONLY 3 PREVIOUS OWNERS • FULL SERVICE HISTORY (MISSING)', price: '£69/mo', cta: 'GET QUOTE', to: '/dealership', img: 'head', palette: 'bg-yellow-300 text-red-600' },
+  { id: 'lease-daniel', kind: 'daniel', formats: ['leaderboard', 'banner', 'popup', 'square'], headline: 'LEASE DANIEL TODAY!!!', body: '0% APR • ONLY 3 PREVIOUS OWNERS • FULL SERVICE HISTORY (MISSING)', price: '£69/mo', cta: 'GET QUOTE', to: '/dealership', img: 'headWink', palette: 'bg-yellow-300 text-red-600' },
   { id: 'daniel-sport', kind: 'daniel', formats: ['skyscraper', 'square'], headline: 'NEW!! DANIEL SPORT', body: '0-60 in 4 business days. Heated opinions as standard.', price: '£420/mo', cta: 'TEST DRIVE', to: '/checkout', img: 'body', palette: 'bg-red-600 text-yellow-200' },
-  { id: 'daniel-piscine', kind: 'daniel', formats: ['banner', 'skyscraper', 'popup'], headline: 'DANIEL — PISCINE EDITION', body: 'Survived 4 weeks of C. Smells faintly of coffee and despair.', price: '£42/mo', cta: 'ORDER NOW', to: '/shrine/segfault', img: 'head', palette: 'bg-cyan-300 text-blue-900' },
-  { id: 'daniel-refurb', kind: 'daniel', formats: ['button125', 'square'], headline: 'REFURBISHED DANIEL', body: 'Like new! (Is not new.)', price: '£9.99', cta: 'BUY', to: '/checkout', img: 'head', palette: 'bg-lime text-black' },
+  { id: 'daniel-piscine', kind: 'daniel', formats: ['banner', 'skyscraper', 'popup'], headline: 'DANIEL — PISCINE EDITION', body: 'Survived 4 weeks of C. Smells faintly of coffee and despair.', price: '£42/mo', cta: 'ORDER NOW', to: '/shrine/segfault', img: assets.misc[1], palette: 'bg-cyan-300 text-blue-900' },
+  { id: 'daniel-refurb', kind: 'daniel', formats: ['button125', 'square'], headline: 'REFURBISHED DANIEL', body: 'Like new! (Is not new.)', price: '£9.99', cta: 'BUY', to: '/checkout', img: assets.misc[0], palette: 'bg-lime text-black' },
   { id: 'daniel-warranty', kind: 'daniel', formats: ['banner', 'popup'], headline: 'YOUR DANIEL WARRANTY IS ABOUT TO EXPIRE', body: 'Call now to extend coverage on your Daniel. This is your final notice. This is not your final notice.', cta: 'EXTEND NOW', to: '/checkout', img: 'rotary', palette: 'bg-white text-red-700' },
   { id: 'trust-me', kind: 'daniel', formats: ['skyscraper', 'button125'], headline: 'YOU CAN TRUST ME, I AM DANIEL!', cta: 'TRUST', to: '/dealership', img: 'body', palette: 'bg-hotpink text-white' },
   { id: 'daniel-card', kind: 'daniel', formats: ['button', 'popup'], headline: 'EMAIL THE WEBMASTER', body: 'Business enquiries, love letters, complaints about the kettle.', cta: 'OPEN CARD', to: 'popup:business-card', img: 'email3d', palette: 'bg-blue-800 text-white' },
@@ -49,12 +50,12 @@ export const ads: Ad[] = [
   { id: 'millionth', kind: 'scam', formats: ['leaderboard', 'banner', 'popup', 'square'], headline: '!!! YOU ARE THE 1,000,000th VISITOR !!!', body: 'CLICK HERE TO CLAIM YOUR PRIZE. THIS IS NOT A TRICK.', cta: 'CLAIM PRIZE', to: '/you-won', img: 'trophy', palette: 'bg-yellow-300 text-red-600' },
   { id: 'more-ram', kind: 'scam', formats: ['banner', 'button125', 'popup', 'square'], headline: 'DOWNLOAD MORE RAM', body: 'Your computer is running at 3% speed. Click to fix instantly.', cta: 'DOWNLOAD', to: '/under-construction', img: 'typingPc', palette: 'bg-green-500 text-white' },
   { id: 'viruses', kind: 'scam', formats: ['popup', 'banner', 'skyscraper'], headline: '⚠ YOUR PC HAS 69 VIRUSES ⚠', body: 'Scan detected: segfault.exe, norminette.dll, kettle.sys', cta: 'REMOVE NOW', to: '/shrine/segfault', img: 'printer', palette: 'bg-red-600 text-white' },
-  { id: 'punch-monkey', kind: 'scam', formats: ['leaderboard', 'banner'], headline: 'PUNCH THE DANIEL & WIN £20!!!', body: 'Hit him 3 times to win', cta: 'PUNCH', to: '/you-won', img: 'head', palette: 'bg-orange-500 text-yellow-100' },
-  { id: 'one-trick', kind: 'scam', formats: ['square', 'skyscraper'], headline: 'LOCAL MAN DISCOVERS ONE WEIRD TRICK', body: 'Compilers HATE him.', cta: 'LEARN TRICK', to: '/shrine/norminette', img: 'head', palette: 'bg-white text-black' },
+  { id: 'punch-monkey', kind: 'scam', formats: ['leaderboard', 'banner'], headline: 'PUNCH THE DANIEL & WIN £20!!!', body: 'Hit him 3 times to win', cta: 'PUNCH', to: '/you-won', img: 'headShock', palette: 'bg-orange-500 text-yellow-100' },
+  { id: 'one-trick', kind: 'scam', formats: ['square', 'skyscraper'], headline: 'LOCAL MAN DISCOVERS ONE WEIRD TRICK', body: 'Compilers HATE him.', cta: 'LEARN TRICK', to: '/shrine/norminette', img: assets.misc[11], palette: 'bg-white text-black' },
   { id: 'prince', kind: 'scam', formats: ['popup', 'skyscraper'], headline: 'URGENT BUSINESS PROPOSAL', body: 'Dear friend, I am a prince of the Kettle Kingdom and require your bank details to transfer £42,000,000.', cta: 'REPLY', to: '/checkout', img: 'envelope', palette: 'bg-amber-100 text-amber-900' },
   { id: 'free-ipod', kind: 'scam', formats: ['button', 'button125'], headline: 'FREE MP3 PLAYER!!', body: 'just pay shipping (£999)', cta: 'FREE', to: '/you-won', img: 'newBadge', palette: 'bg-white text-blue-700' },
   { id: 'chain-letter', kind: 'scam', formats: ['popup', 'square'], headline: 'FORWARD THIS TO 10 FRIENDS', body: 'or you will have bad luck with semicolons for 7 years', cta: 'FORWARD', to: '/guestbook', img: 'envelope', palette: 'bg-pink-200 text-pink-900' },
-  { id: 'webcam', kind: 'scam', formats: ['button', 'square'], headline: 'DANIEL LIVE WEBCAM', body: 'He is just sitting there.', cta: 'WATCH', to: '/dealership', img: 'head', palette: 'bg-black text-red-500' },
+  { id: 'webcam', kind: 'scam', formats: ['button', 'square'], headline: 'DANIEL LIVE WEBCAM', body: 'He is just sitting there.', cta: 'WATCH', to: '/dealership', img: assets.misc[12], palette: 'bg-black text-red-500' },
   { id: 'phone-ring', kind: 'scam', formats: ['popup', 'button125'], headline: 'RING RING! IT’S FOR YOU', body: 'Daniel is calling. Answer to receive a free horse.', cta: 'ANSWER', to: '/shrine/horses', img: 'phone', palette: 'bg-yellow-200 text-black' },
   { id: 'free-scan', kind: 'scam', formats: ['popup', 'banner', 'square'], headline: 'FREE ONLINE VIRUS SCAN', body: 'Our scan found 1,337 problems on your computer before you even clicked. Impressive, right?', cta: 'SCAN NOW', to: '/scan', img: 'printer', palette: 'bg-blue-700 text-yellow-300' },
   { id: 'casino', kind: 'scam', formats: ['leaderboard', 'popup', 'skyscraper', 'button125'], headline: 'DANIEL’S ONLINE CASINO', body: '£500 SIGN-UP BONUS!!! (bonus cannot be withdrawn, spent, seen, or touched)', price: '£500 FREE', cta: 'PLAY NOW', to: '/casino', img: 'trophy', palette: 'bg-green-800 text-yellow-300' },
@@ -66,7 +67,7 @@ export const ads: Ad[] = [
   { id: 'free-smileys', kind: 'scam', formats: ['popup', 'button', 'button125'], headline: 'FREE SMILEYS FOR YOUR E-MAIL!!!', body: '10,000 animated emoticons. Only 1 of them is spyware.', cta: 'DOWNLOAD', to: 'popup:download', img: 'newBadge', palette: 'bg-yellow-300 text-purple-800' },
   { id: 'toolbar', kind: 'scam', formats: ['banner', 'popup', 'button'], headline: 'INSTALL THE DANIELBAR™', body: 'Search the web, but worse. Sets your homepage to Daniel forever.', cta: 'INSTALL', to: 'popup:download', img: 'surfer', palette: 'bg-gray-200 text-blue-900' },
   { id: 'cursor-pack', kind: 'scam', formats: ['button', 'button125', 'popup'], headline: 'FREE ANIMATED CURSORS', body: 'Your mouse, but it is a horse now.', cta: 'GET CURSORS', to: 'popup:download', img: 'arrow', palette: 'bg-hotpink text-white' },
-  { id: 'singles-daniel', kind: 'scam', formats: ['popup', 'square', 'banner'], headline: '4 DANIELS ARE ONLINE NEAR YOU', body: 'They are all the same Daniel. He has a lot of tabs open.', cta: 'CHAT NOW', to: 'popup:friend-request', img: 'head', palette: 'bg-pink-500 text-yellow-100' },
+  { id: 'singles-daniel', kind: 'scam', formats: ['popup', 'square', 'banner'], headline: '4 DANIELS ARE ONLINE NEAR YOU', body: 'They are all the same Daniel. He has a lot of tabs open.', cta: 'CHAT NOW', to: 'popup:friend-request', img: assets.misc[8], palette: 'bg-pink-500 text-yellow-100' },
   { id: 'spin-ad', kind: 'scam', formats: ['button125', 'square', 'popup'], headline: 'SPIN THE WHEEL!!!', body: 'Every spin is a winner*. *Not every spin.', cta: 'SPIN', to: 'popup:spin-to-win', img: 'trophy', palette: 'bg-red-500 text-yellow-200' },
   { id: 'ip-scare', kind: 'scam', formats: ['banner', 'button'], headline: 'YOUR IP IS SHOWING', body: 'Cover it up immediately.', cta: 'HIDE IP', to: 'popup:ip-alert', img: 'globe', palette: 'bg-red-700 text-white' },
 

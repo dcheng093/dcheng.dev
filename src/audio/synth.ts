@@ -153,6 +153,94 @@ export const SYNTH_SONGS: SynthSong[] = [
     ],
     drums: 'k-----h-s-----h-k-k---h-s-----h-',
   },
+  {
+    id: 'insert-coin',
+    label: 'Insert Coin',
+    bpm: 144,
+    leadWave: 'square',
+    bassWave: 'triangle',
+    transpose: 0,
+    lead: [
+      12, 16, 19, 24, 19, 16, 12, _, 14, 17, 21, 26, 21, 17, 14, _,
+      16, 19, 23, 28, 23, 19, 16, _, 24, _, 21, _, 19, _, 16, _,
+    ],
+    bass: [
+      0, _, 0, _, 0, _, 0, _, 2, _, 2, _, 2, _, 2, _,
+      4, _, 4, _, 4, _, 4, _, 7, _, 7, _, -5, _, -5, _,
+    ],
+    drums: 'k-h-s-h-k-hhs-h-k-h-s-h-k-s-s-ss',
+  },
+  {
+    id: 'pixel-pusher',
+    label: 'Pixel Pusher',
+    bpm: 126,
+    leadWave: 'square',
+    bassWave: 'square',
+    transpose: 0,
+    lead: [
+      19, _, 19, 21, _, 19, 16, _, 14, _, 16, _, 12, _, _, _,
+      19, _, 19, 21, _, 24, 23, _, 21, _, 19, _, 16, _, _, _,
+    ],
+    bass: [
+      0, _, 12, _, 0, _, 12, _, 5, _, 17, _, 5, _, 17, _,
+      0, _, 12, _, 0, _, 12, _, 7, _, 19, _, 7, _, 19, _,
+    ],
+    drums: 'k-h-s-hhk-h-s-h-'.repeat(2),
+  },
+  {
+    id: 'steam-prophecy',
+    label: 'Steam Prophecy',
+    bpm: 72,
+    legato: true,
+    leadWave: 'sine',
+    bassWave: 'triangle',
+    transpose: 0,
+    // A harmonic minor: the G# (11) is what makes it sound like a fortune teller.
+    lead: [
+      12, _, _, _, 15, _, 14, _, 12, _, 11, _, 12, _, _, _,
+      17, _, _, _, 15, _, 14, _, 15, _, _, _, 11, _, _, _,
+    ],
+    bass: [
+      0, _, _, _, _, _, _, _, -4, _, _, _, _, _, _, _,
+      -7, _, _, _, _, _, _, _, -5, _, _, _, -1, _, _, _,
+    ],
+    drums: 'k-------h-------k-------h---h---',
+  },
+  {
+    id: 'startup-funk',
+    label: 'Startup Funk',
+    bpm: 110,
+    swing: 0.15,
+    leadWave: 'sawtooth',
+    bassWave: 'square',
+    transpose: 0,
+    lead: [
+      _, _, 24, _, _, 22, _, 19, _, _, 17, _, 19, _, _, _,
+      _, _, 24, _, _, 22, _, 19, 22, _, 24, _, 27, _, 24, _,
+    ],
+    bass: [
+      0, _, 0, 12, _, 0, 10, _, 0, _, 0, 12, _, 7, _, 10,
+      5, _, 5, 17, _, 5, 15, _, 7, _, 7, 19, _, 7, 10, _,
+    ],
+    drums: 'k--hs-hkk-h-s-h-'.repeat(2),
+  },
+  {
+    id: 'sticker-pop',
+    label: 'Sticker Pop',
+    bpm: 138,
+    leadWave: 'triangle',
+    bassWave: 'square',
+    transpose: 0,
+    lead: [
+      24, _, 21, _, 16, _, 21, _, 23, _, 19, _, 16, _, 19, _,
+      21, _, 17, _, 14, _, 17, _, 19, 21, 23, 24, _, _, _, _,
+    ],
+    bass: [
+      0, _, _, 7, 0, _, _, 7, 4, _, _, 11, 4, _, _, 11,
+      5, _, _, 12, 5, _, _, 12, 7, _, _, 14, 7, _, 7, _,
+    ],
+    drums: 'k-h-s-h-'.repeat(4),
+  },
 ]
 
 const freq = (semi: number) => 220 * 2 ** (semi / 12)

@@ -15,6 +15,8 @@ window.matchMedia ??= ((query: string) => ({
   removeListener: () => {},
   dispatchEvent: () => false,
 })) as typeof window.matchMedia
+// jsdom has no canvas: say so quietly instead of logging "Not implemented" (the blinkie maker and paint cope with null).
+HTMLCanvasElement.prototype.getContext = (() => null) as typeof HTMLCanvasElement.prototype.getContext
 window.ResizeObserver ??= class {
   observe() {}
   unobserve() {}

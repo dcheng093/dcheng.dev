@@ -86,6 +86,23 @@ function MixList({ className = '' }: { className?: string }) {
   )
 }
 
+/** 📌 keeps the visitor's pick playing everywhere instead of each page's theme song. */
+function LockButton({ className = '' }: { className?: string }) {
+  const { locked, toggleLock } = useAudio()
+  return (
+    <button
+      type="button"
+      onClick={toggleLock}
+      aria-pressed={locked}
+      aria-label="Lock song"
+      title={locked ? 'Song locked: plays on every page' : 'Lock this song (otherwise each page plays its own)'}
+      className={`win-raised px-1 font-bold ${locked ? 'bg-yellow-300 [border-color:#404040_#fff_#fff_#404040]' : ''} ${className}`}
+    >
+      📌
+    </button>
+  )
+}
+
 export function Jukebox() {
   const { mix, muted } = useAudio()
   return (
@@ -93,6 +110,10 @@ export function Jukebox() {
       <div className={titleBar}>DANIELAMP 2.91 — choose your mix</div>
       <div className="win-sunken my-1 bg-black p-1 font-vt text-lg text-lime">
         <span className="animate-blink">▶</span> {findTrack(mix).label} {muted && '(muted)'}
+      </div>
+      <div className="mb-1 flex items-center justify-between gap-1">
+        <span className="text-[10px]">Each page has its own song. Pin one to keep it.</span>
+        <LockButton />
       </div>
       <MixList className="max-h-56" />
     </div>
@@ -136,6 +157,7 @@ export function MiniPlayer() {
             <button type="button" className={transport} onClick={() => skip(-1)} aria-label="Previous track">◀◀</button>
             <button type="button" className={transport} onClick={toggleMute} aria-label={muted ? 'Play' : 'Pause'}>{muted ? '▶' : '❚❚'}</button>
             <button type="button" className={transport} onClick={() => skip(1)} aria-label="Next track">▶▶</button>
+            <LockButton />
           </div>
           {/* Phones get just the transport: the full list would cover half the page. */}
           <MixList className="max-h-40 max-sm:hidden" />

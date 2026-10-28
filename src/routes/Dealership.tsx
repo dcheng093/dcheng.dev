@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom'
 import { gifCursor } from '../lib/cursor'
 import { AdSlot } from '../components/ads/AdSlot'
 import { DealCard } from '../components/ads/DealCard'
-import { pickAds } from '../components/ads/pickAd'
+import { pickAds, pickAdsIncluding } from '../components/ads/pickAd'
 import { Img } from '../components/media/Img'
 import { BigArrow, Blink, Marquee, ResettingCountdown, Sticker, ViewersNow, WavyText } from '../components/chaos/Chaos'
 import { assets, cursors, icons } from '../content/assets'
@@ -11,7 +11,8 @@ import { brands, howItWorks, models, pressClippings, testimonials } from '../con
 
 /** "DANIEL'S DISCOUNT DANIELS" — the LINGsCARS layout: paisley frame, left nav, deal grid, right ad tower. */
 export function Dealership() {
-  const [tower] = useState(() => [...pickAds('skyscraper', 3), ...pickAds('button125', 4)])
+  // Daniel's own bouncing "YOU CAN TRUST ME" skyscraper is always in the tower; only its slot is random.
+  const [tower] = useState(() => [...pickAdsIncluding('skyscraper', 3, 'trust-me'), ...pickAds('button125', 4, Math.random, ['trust-me'])])
   return (
     <div data-testid="dealership" className="tile-orange-flowers px-0 py-2 sm:px-3 lg:px-6" style={{ cursor: gifCursor(cursors.car) }}>
       <div className="mx-auto max-w-[1180px] border-4 border-[#7a00cc] bg-[#f4f4ff] text-black">
@@ -48,7 +49,7 @@ function Header() {
       <div className="flex flex-wrap items-center justify-center gap-3 p-2 sm:justify-between">
         <div className="flex min-w-0 flex-wrap items-center justify-center gap-2">
           <div className="border-4 border-red-600 bg-[repeating-linear-gradient(45deg,#fff_0_8px,#f33_8px_16px)] p-1">
-            <Img slot="headGrin" width={70} className="animate-wobble" />
+            <Img slot={assets.misc[5]} width={70} className="animate-wobble" />
           </div>
           <div>
             <p className="font-impact text-[clamp(1.5rem,8vw,3rem)] leading-none text-[#7a00cc]">
@@ -124,7 +125,7 @@ function DealGrid() {
       <h2 className="mb-2 bg-[#336] px-2 py-1 text-center font-impact text-2xl text-yellow-300">TOP CHEAP LEASE DANIELS</h2>
       <div className="grid grid-cols-1 justify-items-center gap-3 sm:grid-cols-2 xl:grid-cols-3">
         {models.map((m, i) => (
-          <DealCard key={m.name} model={m} slot={assets.misc[i % assets.misc.length]} index={i} />
+          <DealCard key={m.name} model={m} index={i} />
         ))}
       </div>
     </section>

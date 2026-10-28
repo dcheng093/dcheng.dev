@@ -2,7 +2,11 @@ import type { Ad, AdFormat } from '../../content/ads'
 import { assets } from '../../content/assets'
 import { Img } from '../media/Img'
 
-const imgSlot = (ad: Ad) => (ad.img === 'head' ? assets.headGrin : ad.img === 'body' ? assets.body : ad.img ? assets[ad.img] : null)
+const imgSlot = (ad: Ad) => {
+  if (!ad.img) return null
+  if (typeof ad.img === 'object') return ad.img
+  return ad.img === 'head' ? assets.headGrin : ad.img === 'body' ? assets.body : assets[ad.img]
+}
 
 /** The visual body of an ad, sized for its IAB-ish format. Click handling lives in AdSlot. */
 export function AdCreative({ ad, format }: { ad: Ad; format: AdFormat }) {
@@ -34,9 +38,9 @@ export function AdCreative({ ad, format }: { ad: Ad; format: AdFormat }) {
       const big = format === 'leaderboard'
       return (
         <div
-          className={`flex w-full items-center gap-2 overflow-hidden border-2 border-black px-2 ${ad.palette} ${big ? 'aspect-[728/90] max-w-[728px]' : 'aspect-[468/60] max-w-[468px]'}`}
+          className={`flex w-full animate-breathe items-center gap-2 overflow-hidden border-2 border-black px-2 ${ad.palette} ${big ? 'aspect-[728/90] max-w-[728px]' : 'aspect-[468/60] max-w-[468px]'}`}
         >
-          {slot && <Img slot={slot} width={big ? 70 : 48} className="shrink-0 animate-wobble" />}
+          {slot && <Img slot={slot} width={big ? 70 : 48} className="shrink-0" />}
           <div className="min-w-0 flex-1">
             <p className={`truncate font-impact ${big ? 'text-base sm:text-2xl' : 'text-sm sm:text-lg'}`}>{ad.headline}</p>
             {ad.body && <p className="hidden truncate font-comic text-[11px] sm:block">{ad.body}</p>}
@@ -79,7 +83,7 @@ export function AdCreative({ ad, format }: { ad: Ad; format: AdFormat }) {
     case 'popup':
       return (
         <div className={`flex flex-col items-center gap-2 p-2 text-center ${ad.palette}`}>
-          <span className="animate-shake font-impact text-xl leading-tight">{ad.headline}</span>
+          <span className="animate-breathe font-impact text-xl leading-tight">{ad.headline}</span>
           {slot && <Img slot={slot} width={80} />}
           {ad.body && <span className="font-comic text-xs">{ad.body}</span>}
           {ad.price && <span className="font-impact text-2xl">{ad.price}</span>}

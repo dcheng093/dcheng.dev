@@ -13,15 +13,19 @@ import type { MixId } from './tracks'
 export function AudioProvider({ children, silent = false }: { children: ReactNode; silent?: boolean }) {
   const [muted, setMuted] = useStored('muted', false)
   const [mix, setMixState] = useStored<MixId>('mix', 'system-default')
+  const [locked, setLocked] = useStored('songLock', false)
   const [unlocked, setUnlocked] = useState(false)
-  const graph = useRef<{ ctx: AudioContext; master: GainNode; music: MusicPlayer } | null>(null)
+  const graph = useRef<{ ctx: AudioContext; master: GainNode; analyser: AnalyserNode; music: MusicPlayer } | null>(null)
 
   const unlock = useCallback(() => {
     if (graph.current || typeof window.AudioContext !== 'function') return
     const ctx = new window.AudioContext()
     const master = ctx.createGain()
-    master.connect(ctx.destination)
-    graph.current = { ctx, master, music: new MusicPlayer(ctx, master) }
+    // Everything passes through the analyser so DANIEL FM's visualizer sees music and SFX alike.
+    const analyser = ctx.createAnalyser()
+    analyser.fftSize = 64
+    master.connect(analyser).connect(ctx.destination)
+    graph.current = { ctx, master, analyser, music: new MusicPlayer(ctx, master) }
     void ctx.resume()
     setUnlocked(true)
   }, [])
@@ -69,8 +73,20 @@ export function AudioProvider({ children, silent = false }: { children: ReactNod
   }, [sfx])
 
   const api = useMemo(
-    () => ({ unlocked, muted, mix, unlock, sfx, toggleMute: () => setMuted((m) => !m), setMix: setMixState }),
-    [unlocked, muted, mix, unlock, sfx, setMuted, setMixState],
+    () => ({
+      unlocked,
+      muted,
+      mix,
+      unlock,
+      sfx,
+      toggleMute: () => setMuted((m) => !m),
+      setMix: setMixState,
+      locked,
+      toggleLock: () => setLocked((l) => !l),
+      setLocked,
+      getAnalyser: () => graph.current?.analyser ?? null,
+    }),
+    [unlocked, muted, mix, unlock, sfx, setMuted, setMixState, locked, setLocked],
   )
   return <AudioCtx.Provider value={api}>{children}</AudioCtx.Provider>
 }

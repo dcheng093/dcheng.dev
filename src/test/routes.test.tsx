@@ -1,10 +1,11 @@
 import { describe, expect, it, vi } from 'vitest'
-import { act, render, screen, within } from '@testing-library/react'
+import { act, cleanup, render, screen, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { createMemoryRouter, RouterProvider } from 'react-router-dom'
 import { routes } from '../routes'
 import { WEBRING } from '../lib/sitemap'
 import { daniel } from '../content/daniel'
+import { VIRUS_ALERT_DELAY_MS } from '../components/VirusAlert'
 
 const renderAt = (path: string, { entered = true } = {}) => {
   if (entered) sessionStorage.setItem('entered', 'true')
@@ -25,13 +26,20 @@ const testIds: Record<string, string> = {
   '/casino': 'casino',
   '/survey': 'survey',
   '/work-from-home': 'work-from-home',
+  '/arcade': 'arcade',
+  '/desktop': 'desktop',
+  '/radio': 'radio',
+  '/oracle': 'oracle',
+  '/blinkie-maker': 'blinkie-maker',
+  '/stickers': 'stickers',
 }
 
 describe('routes', () => {
-  it.each(WEBRING)('%s renders', (path) => {
+  it.each(WEBRING)('%s renders', async (path) => {
     renderAt(path)
     const id = path.startsWith('/shrine/') ? 'shrine' : testIds[path]
-    expect(screen.getByTestId(id)).toBeInTheDocument()
+    // findBy: the Cyber Town pages are lazy routes and arrive a tick later.
+    expect(await screen.findByTestId(id)).toBeInTheDocument()
   })
 
   it.each(['/definitely/not/here', '/shrine/nope'])('%s shows the blue screen', (path) => {
@@ -48,6 +56,65 @@ describe('routes', () => {
     expect(screen.queryByTestId('mute')).toBeNull()
     expect(screen.queryByTestId('mini-player')).toBeNull()
     expect(screen.getByRole('link', { name: daniel.links.github! })).toHaveAttribute('href', daniel.links.github)
+  })
+
+  it('home links to every Cyber Town page and, via sponsored buttons, every scam page', () => {
+    renderAt('/')
+    const town = screen.getByRole('list', { name: 'Cyber Town' })
+    const hrefs = within(town).getAllByRole('link').map((a) => a.getAttribute('href'))
+    expect(hrefs).toEqual(['/arcade', '/desktop', '/radio', '/oracle', '/blinkie-maker', '/stickers'])
+    const sponsored = within(screen.getByRole('list', { name: 'Sponsored links' })).getAllByRole('link').map((a) => a.getAttribute('href'))
+    expect(sponsored).toEqual(['/scan', '/casino', '/survey', '/work-from-home'])
+  })
+
+  it('a Daniel model shows the same photo on the home page as at the dealership', () => {
+    const photosByName = (root: HTMLElement) =>
+      Object.fromEntries(
+        [...root.querySelectorAll('p.truncate')].map((name) => [name.textContent, name.parentElement!.querySelector('img')!.getAttribute('src')]),
+      )
+    renderAt('/')
+    const home = photosByName(document.querySelector('[data-band="lease"]')!)
+    cleanup()
+    renderAt('/dealership')
+    const dealership = photosByName(screen.getByTestId('dealership'))
+    expect(Object.keys(home)).toEqual(['Daniel Stoner', 'Daniel', 'Daniel Washee Washee'])
+    for (const [name, src] of Object.entries(home)) expect(src, name).toBe(dealership[name])
+  })
+
+  it('Melly the pet sits in a minimisable window on fun pages, not on /boring or the gags', async () => {
+    renderAt('/dealership')
+    const pet = screen.getByTestId('pet-window')
+    expect(within(pet).getByTitle('Melly the Gify pet')).toHaveAttribute('src', daniel.petUrl)
+    await userEvent.click(within(pet).getByRole('button', { name: 'Minimise Melly.exe' }))
+    expect(within(pet).getByTitle('Melly the Gify pet').parentElement).toHaveClass('hidden')
+    expect(JSON.parse(localStorage.getItem('petMinimised')!)).toBe(true)
+  })
+
+  it.each(['/boring', '/leave'])('%s has no pet window', (path) => {
+    renderAt(path)
+    expect(screen.queryByTestId('pet-window')).toBeNull()
+  })
+
+  it('collecting a hidden sticker saves it and shows a toast', async () => {
+    renderAt('/dealership')
+    await userEvent.click(screen.getByTestId('hidden-sticker'))
+    expect(JSON.parse(localStorage.getItem('stickers')!)).toEqual(['cupcake'])
+    expect(screen.getByRole('status')).toHaveTextContent(/STICKER GET! Cupcake \(1\/12\)/)
+    expect(screen.queryByTestId('hidden-sticker')).toBeNull()
+  })
+
+  it.each(['Yes', 'No', 'Cancel', 'Close'])('the Azerbaijan virus pops up once a while in, and "%s" closes it', async (label) => {
+    vi.useFakeTimers({ shouldAdvanceTime: true })
+    renderAt('/dealership')
+    expect(screen.queryByTestId('virus-alert')).toBeNull()
+    act(() => vi.advanceTimersByTime(VIRUS_ALERT_DELAY_MS))
+    const alert = screen.getByRole('alertdialog', { name: 'Virus Alert' })
+    expect(alert).toHaveTextContent('Hi, I am Azerbaijan virus')
+    expect(within(alert).queryByRole('button', { name: /minimi/i })).toBeNull()
+    await userEvent.click(within(alert).getByRole('button', { name: label }))
+    expect(screen.queryByRole('alertdialog')).toBeNull()
+    expect(sessionStorage.getItem('virusAlertSeen')).toBe('true')
+    vi.useRealTimers()
   })
 
   it('shows the enter gate on first visit and drops it after clicking', async () => {
