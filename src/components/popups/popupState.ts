@@ -22,6 +22,25 @@ export type PopupState = { popups: Popup[]; nextKey: number }
 
 export const POPUP_CAP = 8
 
+/** Popups that are more than an ad: little fake apps (drawn by SpecialPopup). `auto` ones join the random ambush. */
+export const SPECIAL_POPUPS = {
+  'business-card': { auto: false },
+  'ip-alert': { auto: true },
+  download: { auto: true },
+  'friend-request': { auto: true },
+  'quick-survey': { auto: true },
+  'spin-to-win': { auto: true },
+  'daniel-cam': { auto: true },
+  // POPNUKE's own ad: turns up after the visitor has closed a few pop-ups (then joins the rotation).
+  'popnuke-ad': { auto: false },
+  // First of the three pop-ups that greet you when you uninstall POPNUKE.
+  'welcome-back': { auto: false },
+} satisfies Record<string, { auto: boolean }>
+
+export type SpecialId = keyof typeof SPECIAL_POPUPS
+
+export const isSpecial = (content: string): content is SpecialId => Object.hasOwn(SPECIAL_POPUPS, content)
+
 export const initialPopupState: PopupState = { popups: [], nextKey: 1 }
 
 export function popupReducer(state: PopupState, action: PopupAction): PopupState {
@@ -61,7 +80,9 @@ const clamp01 = (n: number) => Math.min(0.95, Math.max(0, n))
 
 export type PopupApi = {
   open: (content: string, variant?: PopupVariant) => void
+  /** Several pop-ups at once (POPNUKE's uninstall revenge); the first can be a specific one. */
+  burst: (count: number, first?: string) => void
 }
 
-export const PopupContext = createContext<PopupApi>({ open: () => {} })
+export const PopupContext = createContext<PopupApi>({ open: () => {}, burst: () => {} })
 export const usePopups = () => useContext(PopupContext)

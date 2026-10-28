@@ -15,10 +15,16 @@ export const assets = {
   hero: me('hero-landscape.jpg', 960, 720, 'landscape hero photo'),
   headshot: me('headshot.jpg', 480, 640, 'normal headshot'),
   // File names are case-sensitive once deployed: match public/me/ exactly.
-  misc: [
-    'MISC-01.JPG', 'MISC-02.JPG', 'MISC-03.JPG', 'MISC-04.JPG', 'MISC-05.JPG', 'MISC-06.JPG', 'MISC-07.JPG',
-    'MISC-08.JPG', 'MISC-09.JPG', 'MISC-10.jpg', 'MISC-11.JPG', 'MISC-12.JPG', 'MISC-13.png',
-  ].map((file, i) => me(file, 400, 400, `casual photo #${i + 1}`)),
+  // New ones go on the end, so photo indices used around the site keep pointing at the same picture.
+  misc: (
+    [
+      'MISC-01.JPG', 'MISC-02.JPG', 'MISC-03.JPG', 'MISC-04.JPG', 'MISC-05.JPG', 'MISC-06.JPG', 'MISC-07.JPG',
+      'MISC-08.JPG', 'MISC-09.JPG', 'MISC-10.jpg', 'MISC-11.JPG', 'MISC-12.JPG', 'MISC-13.png',
+      // Close-up selfies: mostly square, three portrait.
+      ['MISC-14.JPG', 400, 534], ['MISC-15.JPG', 400, 512], 'MISC-16.JPG', 'MISC-17.JPG', 'MISC-18.JPG', 'MISC-19.JPG',
+      'MISC-20.JPG', 'MISC-21.JPG', 'MISC-22.JPG', ['MISC-23.JPG', 400, 545],
+    ] as (string | [string, number, number])[]
+  ).map((f, i) => (typeof f === 'string' ? me(f, 400, 400, `casual photo #${i + 1}`) : me(f[0], f[1], f[2], `casual photo #${i + 1}`))),
   hobbies: ['HOBBY-1.jpg', 'HOBBY-2.jpg', 'HOBBY-3.jpg'].map((file, i) => me(file, 400, 300, `hobby photo #${i + 1}`)),
 
   // Third-party GIFs (asset-research picks; credits in public/gifs/CREDITS.md)
@@ -45,6 +51,9 @@ export const assets = {
 } as const
 
 export type AssetKey = Exclude<keyof typeof assets, 'misc' | 'hobbies'>
+
+/** The close-up selfies (the end of `misc`): Daniel Cam, the Control Panel. */
+export const selfies = assets.misc.slice(13)
 
 // Kawaii clutter (asset-research category "kawaii"): GifConfetti strews these over every page,
 // and a few are placed by hand.
@@ -84,4 +93,121 @@ export const kawaii = {
   bunMail: gif('kw-bun-mail', 106, 69, 'bun posting a letter'),
   blushBun: gif('kw-blush-bun', 29, 38, 'blushing bun'),
   bluebird: gif('kw-bluebird', 46, 56, 'bluebird with a letter'),
+} as const
+
+// Webcore pass (GifCities; credits in public/gifs/CREDITS.md). Background tiles live in index.css instead.
+export const icons = {
+  kawaiiBlob: gif('ic-kawaii-blob', 50, 50, 'kawaii blob with flowers'),
+  kidComputer: gif('ic-kid-computer', 107, 98, 'kid typing at a computer'),
+  keyboard: gif('ic-keyboard', 100, 60, 'keyboard and mouse'),
+  skull: gif('ic-skull', 102, 99, 'smoking skull'),
+  siren: gif('ic-siren', 100, 157, 'flashing siren'),
+  pancakes: gif('ic-pancakes', 80, 93, 'stack of pancakes'),
+  teapot: gif('ic-teapot', 90, 90, 'steaming teapot'),
+  rearingHorse: gif('ic-rearing-horse', 70, 100, 'rearing horse'),
+  toothBuddy: gif('ic-tooth', 55, 68, 'tooth'),
+  candle: gif('ic-candle', 22, 89, 'flickering candle'),
+  floppy: gif('ic-floppy', 32, 32, 'floppy disk'),
+  floppyGuy: gif('ic-floppy-guy', 80, 70, 'dancing floppy disk'),
+  warning: gif('ic-warning', 64, 64, 'warning sign'),
+  virus: gif('ic-virus', 26, 26, 'virus bug'),
+  crying: gif('ic-crying', 50, 53, 'crying face'),
+  question: gif('ic-question', 100, 100, 'neon question mark'),
+  rocket: gif('ic-rocket', 70, 55, 'rocket'),
+  flame: gif('ic-flame', 20, 20, 'little flame'),
+  speaker: gif('ic-speaker', 30, 32, 'speaker'),
+  cherry: gif('ic-cherry', 70, 70, 'cherries'),
+  coffee: gif('ic-coffee', 54, 54, 'steaming coffee'),
+  diamond: gif('ic-diamond', 60, 60, 'diamond'),
+  horseRun: gif('ic-horse-run', 64, 44, 'galloping horse'),
+  smiley: gif('ic-smiley', 48, 48, 'smiley'),
+  moneyBag: gif('ic-money-bag', 64, 64, 'money bag'),
+  online: gif('ic-online', 14, 14, 'green online light'),
+} as const
+
+/** Mouse cursors: browsers show only the first frame and want 32×32 or smaller. */
+export const cursors = {
+  star: gif('cur-star', 16, 21, 'star cursor'),
+  pinkHeart: gif('cur-pink-heart', 30, 23, 'pink heart cursor'),
+  skullSmall: gif('cur-skull-small', 17, 22, 'small skull cursor'),
+  arcade: gif('cur-arcade', 28, 28, 'arcade button cursor'),
+  car: gif('cur-car', 32, 32, 'car cursor'),
+  starSmall: gif('cur-star-small', 12, 12, 'tiny star cursor'),
+  bear: gif('cur-bear', 32, 32, 'teddy bear cursor'),
+  atom: gif('cur-atom', 32, 31, 'atom cursor'),
+  pencil: gif('cur-pencil', 27, 25, 'pencil cursor'),
+  kawaiiBear: gif('cur-kawaii-bear', 30, 28, 'kawaii bear cursor'),
+  joystick: gif('cur-joystick', 31, 26, 'joystick cursor'),
+  mouse: gif('cur-mouse', 14, 19, 'computer mouse cursor'),
+  skull: gif('cur-skull', 32, 32, 'skull and crossbones cursor'),
+  pencilGuy: gif('cur-pencil-guy', 20, 32, 'pencil man cursor'),
+  arrow: gif('cur-arrow', 32, 32, 'arrow cursor'),
+  coffee: gif('cur-coffee', 29, 21, 'coffee cursor'),
+  horse: gif('cur-horse', 32, 32, 'horse cursor'),
+  grin: gif('cur-grin', 32, 32, 'grinning face cursor'),
+  moneyBag: gif('cur-money-bag', 32, 32, 'money bag cursor'),
+  fist: gif('cur-fist', 32, 32, 'fist cursor'),
+  back: gif('cur-back', 32, 27, 'back arrow cursor'),
+  coins: gif('cur-coins', 25, 25, 'coins cursor'),
+  dice: gif('cur-dice', 30, 30, 'dice cursor'),
+  pencilGreen: gif('cur-pencil-green', 32, 32, 'green pencil cursor'),
+  coin: gif('cur-coin', 14, 14, 'coin cursor'),
+  virus: gif('ic-virus', 26, 26, 'virus cursor'),
+} as const
+
+export const sparkles = [
+  gif('sp-green', 15, 15, 'green sparkle'),
+  gif('sp-cross', 23, 23, 'cross sparkle'),
+  gif('sp-cyan', 22, 22, 'cyan sparkle'),
+  gif('sp-twinkle', 32, 32, 'twinkle'),
+  gif('sp-white', 25, 25, 'white sparkle'),
+]
+
+export const dividers = {
+  rainbow: gif('hr-rainbow', 432, 14, 'rainbow bar'),
+  flames: gif('hr-flames', 600, 50, 'flames bar'),
+  flowers: gif('hr-flowers', 314, 50, 'flower garland'),
+  beads: gif('hr-beads', 357, 12, 'bead string'),
+  yellowDots: gif('hr-yellow-dots', 425, 20, 'yellow dots'),
+  caution: gif('hr-caution', 574, 51, 'caution tape'),
+  smileys: gif('hr-smileys', 384, 35, 'row of smileys'),
+  sparkleFlowers: gif('hr-sparkle-flowers', 520, 60, 'sparkly flowers'),
+  pinkDots: gif('hr-pink-dots', 382, 12, 'pink dots'),
+  rainbowDots: gif('hr-rainbow-dots', 600, 23, 'rainbow dots'),
+} as const
+
+export const blinkies = {
+  guestbook: gif('bl-guestbook', 150, 20, 'blinkie: Guestbook'),
+  chaos: gif('bl-chaos', 150, 20, 'blinkie: Chaos, Panic, Disorder - my work here is done'),
+  iBite: gif('bl-i-bite', 150, 20, 'blinkie: I bite'),
+  addictedPc: gif('bl-addicted-pc', 150, 20, 'blinkie: Addicted to my PC'),
+  iWillSurvive: gif('bl-i-will-survive', 150, 20, 'blinkie: I will survive'),
+  ohBloodyHell: gif('bl-oh-bloody-hell', 150, 20, 'blinkie: Oh bloody hell!!'),
+  trustNoOne: gif('bl-trust-no-one', 150, 20, 'blinkie: Trust no one'),
+  niceToNerds: gif('bl-nice-to-nerds', 150, 20, 'blinkie: Be nice to nerds'),
+  gamer: gif('bl-gamer', 150, 20, 'blinkie: Gamer!'),
+  caffeine: gif('bl-caffeine', 150, 20, "blinkie: There's too much blood in my caffeine system"),
+  rememberYou: gif('bl-remember-you', 150, 20, 'blinkie: I will remember you'),
+  peopleStrange: gif('bl-people-strange', 150, 20, 'blinkie: People are strange'),
+  metalRulz: gif('bl-metal-rulz', 150, 20, 'blinkie: Metal rulz'),
+} as const
+
+/** POPNUKE, the pop-up blocker (ad pop-up, tray badge, its download page). From GifCities; see CREDITS.md. */
+export const popnukeGifs = {
+  trefoilRust: gif('pn-trefoil-rust', 150, 120, 'rusty 3D radiation symbol'),
+  trefoilSpin: gif('pn-trefoil-spin', 50, 50, 'spinning radiation symbol'),
+  trefoilDisc: gif('pn-trefoil-disc', 57, 54, 'yellow radiation disc'),
+  trefoilGlow: gif('pn-trefoil-glow', 70, 70, 'glowing radiation symbol'),
+  radioactiveAward: gif('pn-radioactive-award', 200, 150, 'award: You have a radioactive site!'),
+  downloadNow: gif('pn-download-now', 187, 62, 'DOWNLOAD NOW button'),
+  dowloadHere: gif('pn-dowload-here', 156, 117, 'DOWLOAD HERE button (sic)'),
+  cutTheCrap: gif('pn-cut-the-crap', 160, 120, 'button: cut the crap and just download it'),
+  shieldRadiation: gif('pn-shield-radiation', 50, 42, 'radiation shield'),
+  shieldBlue: gif('pn-shield-blue', 90, 100, 'blue shield'),
+} as const
+
+export const buttons88 = {
+  click: gif('btn-click', 95, 38, 'CLICK button'),
+  bestViewed: gif('btn-best-viewed', 88, 31, 'This page is best viewed with: button'),
+  email: gif('btn-email', 84, 40, 'E-MAIL button'),
 } as const

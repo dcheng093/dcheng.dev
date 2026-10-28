@@ -1,8 +1,9 @@
 import { useEffect, useRef, useState, type FormEvent } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
-import { emojiCursor } from '../lib/cursor'
+import { gifCursor } from '../lib/cursor'
+import { assets, cursors, dividers, icons } from '../content/assets'
 import { Img } from '../components/media/Img'
-import { Blink, Marquee, RainbowText, Sticker, UnderConstruction as UcSign } from '../components/chaos/Chaos'
+import { Blink, GifDivider, Marquee, RainbowText, Sticker, UnderConstruction as UcSign } from '../components/chaos/Chaos'
 import { useSfx } from '../audio/audioContext'
 import { randomRoute } from '../lib/sitemap'
 
@@ -30,7 +31,7 @@ export function YouWon() {
   }
 
   return (
-    <div data-testid="you-won" className="tile-checker min-h-screen p-3 sm:p-6" style={{ cursor: emojiCursor('💰') }}>
+    <div data-testid="you-won" className="tile-pink-sparkles min-h-screen p-3 sm:p-6" style={{ cursor: gifCursor(cursors.moneyBag) }}>
       <div className="mx-auto flex max-w-xl flex-col items-center gap-4 text-center">
         <h1 className="animate-strobe border-4 border-black px-3 py-2 font-impact text-3xl sm:text-5xl">!!! CONGRATULATIONS !!!</h1>
         <p className="bg-white p-2 font-comic text-xl font-bold text-black">
@@ -76,8 +77,9 @@ export function UnderConstruction() {
     return () => window.clearInterval(id)
   }, [])
   return (
-    <div data-testid="under-construction" className="min-h-screen bg-[repeating-linear-gradient(45deg,#fc0_0_30px,#000_30px_60px)] p-3 sm:p-6" style={{ cursor: emojiCursor('🚧') }}>
+    <div data-testid="under-construction" className="min-h-screen bg-[repeating-linear-gradient(45deg,#fc0_0_30px,#000_30px_60px)] p-3 sm:p-6" style={{ cursor: gifCursor(cursors.fist) }}>
       <div className="mx-auto flex max-w-2xl flex-col items-center gap-4 bg-white/90 p-4 text-center text-black">
+        <GifDivider slot={dividers.caution} />
         <UcSign />
         <h1 className="font-impact text-3xl sm:text-5xl">THIS PAGE IS UNDER CONSTRUCTION</h1>
         <div className="flex gap-3">
@@ -113,18 +115,18 @@ export function Leave() {
   const navigate = useNavigate()
   const last = step >= LEAVE_PROMPTS.length - 1
   return (
-    <div data-testid="leave" className="grid min-h-screen grid-cols-1 place-items-center bg-[#008080] p-4" style={{ cursor: emojiCursor('🚪') }}>
+    <div data-testid="leave" className="grid min-h-screen grid-cols-1 place-items-center bg-[#008080] p-4" style={{ cursor: gifCursor(cursors.back, [0, 13]) }}>
       <div role="alertdialog" aria-label="Leave the site" className="win-raised w-[min(360px,100%)] p-0.5 font-[Tahoma,Verdana,sans-serif] text-sm text-black">
         <div className="bg-gradient-to-r from-win-title to-[#1084d0] px-1 font-bold text-white">Leave.exe</div>
         <div className="flex items-start gap-3 p-4">
-          <span className="text-3xl" aria-hidden>{step > 3 ? '😭' : '❓'}</span>
+          <Img slot={step > 3 ? icons.crying : icons.question} width={40} className="shrink-0" />
           <p className={step > 4 ? 'animate-shake font-bold' : ''}>{LEAVE_PROMPTS[step]}</p>
         </div>
         <div className="flex justify-center gap-2 pb-3">
           <button type="button" className="win-raised w-20 py-0.5" onClick={() => (last ? navigate('/') : setStep((s) => s + 1))}>
             Yes
           </button>
-          <button type="button" className="win-raised w-20 py-0.5" onClick={() => navigate(randomRoute('/leave'))}>
+          <button type="button" data-stay className="win-raised w-20 py-0.5" onClick={() => navigate(randomRoute('/leave'))}>
             No
           </button>
         </div>
@@ -139,7 +141,7 @@ export function Checkout() {
   const [note, setNote] = useState<string | null>(null)
   const navigate = useNavigate()
   return (
-    <div data-testid="checkout" className="tile-paisley min-h-screen p-3 sm:p-6" style={{ cursor: emojiCursor('🛒') }}>
+    <div data-testid="checkout" className="tile-marble min-h-screen p-3 sm:p-6" style={{ cursor: gifCursor(cursors.coins) }}>
       <div className="mx-auto max-w-2xl space-y-3 border-4 border-[#7a00cc] bg-white p-3 font-[Verdana,sans-serif] text-sm text-black">
         <Marquee className="bg-yellow-300 font-bold text-red-600">★ SECURE CHECKOUT ★ 128-BIT ENCRYPTION (we wrote the number 128 in a file) ★</Marquee>
         <h1 className="font-impact text-3xl text-[#7a00cc]">YOUR SHOPPING CART (1 item)</h1>
@@ -155,7 +157,7 @@ export function Checkout() {
           <tbody>
             <tr className="border-b">
               <td className="flex items-center gap-2 p-1">
-                <Img slot="headGrin" width={40} /> 1× Daniel (Used)
+                <Img slot={assets.misc[10]} width={40} /> 1× Daniel (Used)
               </td>
               <td className="p-1">
                 <input aria-label="Quantity" value={1} readOnly onFocus={() => setNote('Quantity is locked. There is only one Daniel.')} className="win-sunken w-12 bg-gray-200 px-1" />

@@ -11,7 +11,7 @@ const esc = (s) => String(s).replace(/[&<>"]/g, (ch) => ({ '&': '&amp;', '<': '&
 
 const card = (c) => {
   const m = c.measured ?? {}
-  const src = `candidates/${c.id}.gif`
+  const src = `candidates/${c.id}.${c.ext ?? 'gif'}`
   const scale3 = Math.min(3, Math.floor(480 / c.width) || 1)
   return `
 <section class="card" id="${esc(c.id)}" data-src="${esc(src)}">

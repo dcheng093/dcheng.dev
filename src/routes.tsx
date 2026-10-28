@@ -6,7 +6,11 @@ import { Shrine } from './routes/Shrine'
 import { Guestbook } from './routes/Guestbook'
 import { Boring } from './routes/Boring'
 import { Checkout, Leave, UnderConstruction, YouWon } from './routes/Traps'
+import { Casino, Scan, WorkFromHome } from './routes/Scams'
 import { FakeBSOD } from './routes/FakeBSOD'
+
+// Cyber Town pages load on demand: they carry their own games/encoders and most visitors never open all six.
+const lazyPage = <K extends string>(load: () => Promise<Record<K, () => React.JSX.Element>>, name: K) => async () => ({ Component: (await load())[name] })
 
 const fullscreen: RouteHandle = { noWebring: true }
 
@@ -16,6 +20,8 @@ export const routes: RouteObject[] = [
     path: '/',
     element: <RootLayout />,
     errorElement: <FakeBSOD />,
+    // Shown for a blink when the very first page loaded is one of the lazy Cyber Town pages.
+    hydrateFallbackElement: <p className="grid min-h-screen place-items-center bg-black font-pixel text-lime">LOADING…</p>,
     children: [
       { index: true, element: <Home /> },
       { path: 'dealership', element: <Dealership /> },
@@ -26,6 +32,20 @@ export const routes: RouteObject[] = [
       { path: 'under-construction', element: <UnderConstruction /> },
       { path: 'leave', element: <Leave />, handle: fullscreen },
       { path: 'checkout', element: <Checkout /> },
+      { path: 'scan', element: <Scan /> },
+      { path: 'casino', element: <Casino /> },
+      { path: 'survey', lazy: lazyPage(() => import('./routes/Survey'), 'Survey') },
+      { path: 'work-from-home', element: <WorkFromHome /> },
+      { path: 'arcade', lazy: lazyPage(() => import('./routes/Arcade'), 'Arcade') },
+      { path: 'desktop', lazy: lazyPage(() => import('./routes/Desktop'), 'Desktop') },
+      { path: 'radio', lazy: lazyPage(() => import('./routes/Radio'), 'Radio') },
+      { path: 'oracle', lazy: lazyPage(() => import('./routes/Oracle'), 'Oracle') },
+      { path: 'blinkie-maker', lazy: lazyPage(() => import('./routes/BlinkieMaker'), 'BlinkieMaker') },
+      { path: 'stickers', lazy: lazyPage(() => import('./routes/StickerBook'), 'StickerBook') },
+      { path: 'popnuke', lazy: lazyPage(() => import('./routes/Popnuke'), 'Popnuke') },
+      { path: 'settings', lazy: lazyPage(() => import('./routes/Settings'), 'Settings') },
+      // Secret: not in the webring or sitemap, so random links never spoil them.
+      { path: 'legendary/:id', lazy: lazyPage(() => import('./routes/Legendary'), 'Legendary') },
       { path: '*', element: <FakeBSOD />, handle: fullscreen },
     ],
   },

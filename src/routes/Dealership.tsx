@@ -1,19 +1,21 @@
 import { useState } from 'react'
 import { Link } from 'react-router-dom'
-import { emojiCursor } from '../lib/cursor'
+import { gifCursor } from '../lib/cursor'
 import { AdSlot } from '../components/ads/AdSlot'
 import { DealCard } from '../components/ads/DealCard'
-import { pickAds } from '../components/ads/pickAd'
+import { pickAds, pickAdsIncluding } from '../components/ads/pickAd'
 import { Img } from '../components/media/Img'
 import { BigArrow, Blink, Marquee, ResettingCountdown, Sticker, ViewersNow, WavyText } from '../components/chaos/Chaos'
-import { assets } from '../content/assets'
+import { assets, cursors, icons } from '../content/assets'
+import { DanielLogo } from '../components/DanielLogo'
 import { brands, howItWorks, models, pressClippings, testimonials } from '../content/dealership'
 
 /** "DANIEL'S DISCOUNT DANIELS" — the LINGsCARS layout: paisley frame, left nav, deal grid, right ad tower. */
 export function Dealership() {
-  const [tower] = useState(() => [...pickAds('skyscraper', 3), ...pickAds('button125', 4)])
+  // Daniel's own bouncing "YOU CAN TRUST ME" skyscraper is always in the tower; only its slot is random.
+  const [tower] = useState(() => [...pickAdsIncluding('skyscraper', 3, 'trust-me'), ...pickAds('button125', 4, Math.random, ['trust-me'])])
   return (
-    <div data-testid="dealership" className="tile-paisley px-0 py-2 sm:px-3 lg:px-6" style={{ cursor: emojiCursor('🚗') }}>
+    <div data-testid="dealership" className="tile-orange-flowers px-0 py-2 sm:px-3 lg:px-6" style={{ cursor: gifCursor(cursors.car) }}>
       <div className="mx-auto max-w-[1180px] border-4 border-[#7a00cc] bg-[#f4f4ff] text-black">
         <Header />
         <div className="grid grid-cols-1 lg:grid-cols-[170px_minmax(0,1fr)_150px]">
@@ -47,16 +49,14 @@ function Header() {
     <header className="border-b-4 border-[#7a00cc] bg-white">
       <div className="flex flex-wrap items-center justify-center gap-3 p-2 sm:justify-between">
         <div className="flex min-w-0 flex-wrap items-center justify-center gap-2">
-          <div className="border-4 border-red-600 bg-[repeating-linear-gradient(45deg,#fff_0_8px,#f33_8px_16px)] p-1">
-            <Img slot="headGrin" width={70} className="animate-wobble" />
-          </div>
+          <DanielLogo size={70} />
           <div>
             <p className="font-impact text-[clamp(1.5rem,8vw,3rem)] leading-none text-[#7a00cc]">
               DANIEL<span className="text-red-600">s</span>DANIELS<span className="text-sm">.com</span>
             </p>
             <p className="bg-yellow-300 px-1 font-[Verdana,sans-serif] text-[10px] font-bold sm:text-xs">DANIEL LEASING — CONTRACT HIRE — CHEAP LEASE DANIELS</p>
           </div>
-          <span className="text-4xl" aria-hidden>🚦</span>
+          <Img slot={icons.siren} width={34} />
         </div>
         <div className="flex items-center gap-2">
           <Img slot="forSale" width={260} />
@@ -124,7 +124,7 @@ function DealGrid() {
       <h2 className="mb-2 bg-[#336] px-2 py-1 text-center font-impact text-2xl text-yellow-300">TOP CHEAP LEASE DANIELS</h2>
       <div className="grid grid-cols-1 justify-items-center gap-3 sm:grid-cols-2 xl:grid-cols-3">
         {models.map((m, i) => (
-          <DealCard key={m.name} model={m} slot={assets.misc[i % assets.misc.length]} index={i} />
+          <DealCard key={m.name} model={m} index={i} />
         ))}
       </div>
     </section>
@@ -194,9 +194,7 @@ function Rocket() {
   return (
     <section className="flex flex-col items-center gap-2 text-center">
       <p className="max-w-md font-impact text-2xl text-red-600">I launch a nuclear rocket into the personal website industry</p>
-      <span className="animate-boing text-7xl" aria-hidden>
-        🚀
-      </span>
+      <Img slot={icons.rocket} width={140} className="animate-boing" />
       <Img slot="globe" />
     </section>
   )

@@ -6,32 +6,54 @@ import { pickAds } from '../components/ads/pickAd'
 import { Img } from '../components/media/Img'
 import { usePopups } from '../components/popups/popupState'
 import { Jukebox } from '../components/WebringBar'
-import { BigArrow, Blink, HitCounter, Marquee, RainbowText, ResettingCountdown, Sticker, UnderConstruction, ViewersNow, WavyText } from '../components/chaos/Chaos'
+import { ButtonWall } from '../components/chaos/ButtonWall'
+import { BigArrow, Blink, BlinkieRow, GifDivider, HitCounter, Marquee, RainbowText, ResettingCountdown, Sticker, UnderConstruction, ViewersNow, WavyText } from '../components/chaos/Chaos'
 import { ads } from '../content/ads'
-import { assets, type Slot } from '../content/assets'
+import { assets, blinkies, cursors, dividers, icons, kawaii, type Slot } from '../content/assets'
 import { daniel } from '../content/daniel'
 import { models } from '../content/dealership'
 import { randomRoute } from '../lib/sitemap'
 import { useState } from 'react'
-import { useUnlockOnGesture } from '../audio/audioContext'
 
 const adById = (id: string) => ads.find((a) => a.id === id)!
 const meSlot = (file: string, w: number, h: number, label: string): Slot => ({ src: `/me/${file}`, w, h, label })
 
+/** What each band heaps into its side gutters on wide screens (see Band's `edges`). */
+const EDGES = {
+  header: [assets.globe, kawaii.twinkleStar, assets.newBadge, kawaii.pastelSparkles, assets.arrow, kawaii.fairy, assets.email3d],
+  welcome: [kawaii.bearHeart, kawaii.smileHeart, kawaii.heartRain, kawaii.bouquetCat, kawaii.angelBaby, kawaii.pinkSparkles, kawaii.blushBun, kawaii.heartFloat],
+  coding: [icons.floppy, icons.virus, assets.typingPc, icons.warning, assets.surfer, icons.kidComputer, assets.printer],
+  games: [assets.trophy, icons.diamond, icons.smiley, icons.rocket, kawaii.twinkleStar, icons.cherry],
+  lease: [icons.moneyBag, assets.trophy, icons.horseRun, assets.newBadge, icons.rocket, assets.globe, icons.diamond],
+  interests: [kawaii.shiba, kawaii.pug, kawaii.duckling, kawaii.hamster, kawaii.cupcake, kawaii.strawberry, icons.kawaiiBlob, kawaii.balloonBear],
+  roots: [kawaii.moonCat, kawaii.hammockKitten, kawaii.poolBear, kawaii.chicksRow, kawaii.bluebird, kawaii.bunMail],
+  town: [cursors.joystick, assets.kettle, icons.floppy, icons.speaker, kawaii.cheerBlob, assets.newBadge, icons.smiley],
+  destiny: [icons.question, kawaii.mochiStars, kawaii.butterflies, kawaii.fairy, icons.diamond, kawaii.twinkleStar, kawaii.pinkButterfly],
+  end: [icons.flame, icons.skull, icons.candle, kawaii.angelChick, icons.flame, icons.crying],
+} satisfies Record<string, Slot[]>
+
 export function Home() {
-  useUnlockOnGesture()
   return (
     <div data-testid="home">
       <HeaderBand />
+      <GifDivider slot={dividers.rainbow} className="bg-white" />
       <WelcomeBand />
+      <GifDivider slot={dividers.sparkleFlowers} className="bg-white" />
       <AdStrip />
       <CodingBand />
       <AdWall />
       <GameBand />
+      <GifDivider slot={dividers.rainbowDots} className="bg-black" />
       <LeaseBand />
+      <GifDivider slot={dividers.smileys} className="bg-white" />
       <InterestsBand />
+      <GifDivider slot={dividers.flowers} className="bg-white" />
       <RootsBand />
+      <GifDivider slot={dividers.beads} className="bg-white" />
+      <CyberTownBand />
+      <GifDivider slot={dividers.caution} className="bg-black" />
       <DestinyBand />
+      <GifDivider slot={dividers.flames} className="bg-black" />
       <EndBand />
     </div>
   )
@@ -39,7 +61,7 @@ export function Home() {
 
 function HeaderBand() {
   return (
-    <Band id="header" tile="tile-clouds" cursor="✨" lgHeight={470}>
+    <Band id="header" edges={EDGES.header} tile="tile-sky" cursor={cursors.star} lgHeight={470}>
       <Piece lg="lg:left-[3%] lg:top-[30px]" className="[perspective:400px]">
         <Img slot="headGrin" width={170} className="animate-spin-y" />
       </Piece>
@@ -76,8 +98,9 @@ function WelcomeBand() {
   return (
     <Band
       id="welcome"
-      tile="tile-hearts"
-      cursor="💖"
+      edges={EDGES.welcome}
+      tile="tile-pink-twinkles"
+      cursor={cursors.pinkHeart}
       lgHeight={500}
       title={<h2 className="font-comic text-4xl font-bold text-hotpink [text-shadow:3px_3px_0_#fff,5px_5px_0_#000] sm:text-5xl">♥ WELCOME 2 MY HEART ♥</h2>}
     >
@@ -108,7 +131,7 @@ function WelcomeBand() {
         ))}
       </Piece>
       <Piece lg="lg:left-[38%] lg:top-[40px]" className="w-[220px]">
-        <p className="mb-1 font-comic font-bold text-purple-900">My fave emoticons:</p>
+        <p className="mb-1 inline-block bg-hotpink px-1 font-comic font-bold text-white">My fave emoticons:</p>
         <ul className="grid grid-cols-2 gap-x-3 bg-white/70 p-2 font-vt text-xl text-black">
           {daniel.emoticons.map((e) => (
             <li key={e}>{e}</li>
@@ -121,7 +144,7 @@ function WelcomeBand() {
       <Piece lg="lg:right-[4%] lg:top-[30px]" tilt={5} className="flex flex-col items-center gap-1">
         <Img slot="email3d" />
         <Link to="/guestbook" className="font-comic text-lg font-bold text-blue-800 underline">
-          <Blink>SIGN MY GUESTBOOK!!!</Blink>
+          <Blink className="bg-white px-1">SIGN MY GUESTBOOK!!!</Blink>
         </Link>
       </Piece>
       <Piece lg="lg:right-[20%] lg:top-[240px]" className="flex flex-col items-center">
@@ -162,8 +185,9 @@ function CodingBand() {
   return (
     <Band
       id="coding"
-      tile="tile-terminal"
-      cursor="💀"
+      edges={EDGES.coding}
+      tile="tile-green-grid"
+      cursor={cursors.skullSmall}
       lgHeight={600}
       title={
         <h2 className="font-vt text-3xl text-lime sm:text-5xl">
@@ -233,12 +257,24 @@ function CodingBand() {
 function AdWall() {
   const [squares] = useState(() => pickAds('button125', 4))
   return (
-    <div className="tile-checker flex flex-wrap items-center justify-center gap-3 border-y-4 border-black p-4">
-      {squares.map((ad, i) => (
-        <AdSlot key={i} ad={ad} format="button125" className={i % 2 ? 'rotate-3' : '-rotate-2'} />
-      ))}
-      <AdSlot ad={adById('more-ram')} format="square" />
-      <AdSlot format="banner" kind="surreal" className="w-full max-w-[468px]" />
+    <div data-testid="ad-wall" className="tile-smileys flex items-center gap-3 border-y-4 border-black p-4">
+      <div className="flex min-w-0 flex-1 flex-wrap items-center justify-center gap-3">
+        {squares.map((ad, i) => (
+          <AdSlot key={i} ad={ad} format="button125" className={i % 2 ? 'rotate-3' : '-rotate-2'} />
+        ))}
+        <AdSlot ad={adById('more-ram')} format="square" />
+        <AdSlot format="banner" kind="surreal" className="w-full max-w-[468px]" />
+        <BlinkieRow items={[blinkies.niceToNerds, blinkies.gamer, blinkies.caffeine, blinkies.peopleStrange]} className="w-full" />
+        <ButtonWall className="w-full max-w-[760px] bg-white/80 p-2" />
+        {/* Smaller screens: a 600px-tall skyscraper would swamp the strip, so POPNUKE takes a banner at the end. */}
+        <div className="w-full max-w-[468px] lg:hidden">
+          <AdSlot ad={adById('popnuke')} format="banner" className="w-full" />
+        </div>
+      </div>
+      {/* The right-hand rail: POPNUKE's skyscraper, like every 2000s page had down the side. */}
+      <div className="hidden shrink-0 lg:block">
+        <AdSlot ad={adById('popnuke')} format="skyscraper" />
+      </div>
     </div>
   )
 }
@@ -261,8 +297,9 @@ function GameBand() {
   return (
     <Band
       id="games"
+      edges={EDGES.games}
       tile="tile-stars"
-      cursor="🕹️"
+      cursor={cursors.arcade}
       lgHeight={660}
       title={
         <h2 className="font-pixel text-2xl text-yellow-300 sm:text-4xl">
@@ -308,8 +345,9 @@ function LeaseBand() {
   return (
     <Band
       id="lease"
-      tile="tile-paisley"
-      cursor="🚗"
+      edges={EDGES.lease}
+      tile="tile-blue-flowers"
+      cursor={cursors.car}
       flow
       title={<h2 className="wordart animate-pulse-scale text-4xl sm:text-6xl">LEASE DANIEL TODAY!!!</h2>}
     >
@@ -318,7 +356,7 @@ function LeaseBand() {
         <span className="bg-white px-2"><ResettingCountdown seconds={42} /></span>
       </div>
       {models.slice(0, 3).map((m, i) => (
-        <DealCard key={m.name} model={m} slot={assets.misc[i + 3]} index={i} />
+        <DealCard key={m.name} model={m} index={i} />
       ))}
       <Link to="/dealership" className="w-full max-w-[420px]">
         <BigArrow direction="right">For 17,498 more Daniels, visit the dealership!</BigArrow>
@@ -331,8 +369,9 @@ function InterestsBand() {
   return (
     <Band
       id="interests"
-      tile="tile-checker"
-      cursor="⭐"
+      edges={EDGES.interests}
+      tile="tile-lava-lamps"
+      cursor={cursors.starSmall}
       flow
       title={
         <h2 className="inline-block bg-black px-3 font-impact text-4xl sm:text-5xl">
@@ -373,7 +412,7 @@ function InterestsBand() {
 function RootsBand() {
   const { roots } = daniel
   return (
-    <Band id="roots" tile="tile-brick" cursor="🏠" flow title={<h2 className="bevel-text font-times text-4xl font-bold italic text-yellow-200 sm:text-5xl">~ ROOTS ~</h2>}>
+    <Band id="roots" edges={EDGES.roots} tile="tile-brick" cursor={cursors.bear} flow title={<h2 className="bevel-text font-times text-4xl font-bold italic text-yellow-200 sm:text-5xl">~ ROOTS ~</h2>}>
       <div className="w-[260px] -rotate-2 bg-white p-2 text-center text-black shadow-[6px_6px_0_#000]">
         <Img slot={meSlot('roots-1.jpg', 400, 300, 'hometown photo')} width={240} />
         <p className="font-comic font-bold">{roots.hometown}</p>
@@ -398,6 +437,70 @@ function RootsBand() {
   )
 }
 
+/** The playground pages, plus a row of deeply suspicious "sponsored" buttons into the scam pages. */
+const TOWN: { to: string; label: string; blurb: string; slot: Slot; anim: string }[] = [
+  { to: '/arcade', label: "Daniel's Arcade", blurb: 'Aim Trainer 98 + Kettle Clicker', slot: cursors.joystick, anim: 'group-hover:animate-boing' },
+  { to: '/desktop', label: "Daniel's Desktop", blurb: 'Snoop around my PC', slot: icons.kidComputer, anim: 'group-hover:animate-shake' },
+  { to: '/radio', label: 'DANIEL FM', blurb: 'All Daniel, all the time', slot: icons.speaker, anim: 'group-hover:animate-pulse-scale' },
+  { to: '/oracle', label: 'The Magic Kettle', blurb: 'Ask it anything', slot: assets.kettle, anim: 'group-hover:animate-wobble' },
+  { to: '/blinkie-maker', label: 'Blinkie Maker', blurb: 'Make your own blinkie', slot: blinkies.iBite, anim: 'group-hover:animate-jank-x' },
+  { to: '/stickers', label: 'Sticker Book', blurb: '12 hidden stickers. Find them.', slot: kawaii.cheerBlob, anim: 'group-hover:animate-spin-z' },
+]
+
+// No strobe on these: they're loud enough already, and flashing is a seizure risk.
+const SPONSORED: { to: string; text: string; className: string }[] = [
+  { to: '/scan', text: '⚠ YOUR PC HAS (69) VIRUSES!!! CLICK TO SCAN', className: 'animate-shake bg-red-600 text-yellow-200 border-yellow-300' },
+  { to: '/casino', text: '🎰 FREE SPINS!!! (SPINS NOT FREE)', className: 'animate-pulse-scale bg-[#060] text-yellow-300 border-yellow-500' },
+  { to: '/survey', text: '📋 2 MINUTE SURVEY (47 MINUTES) WIN AN iPOD', className: 'animate-wobble bg-blue-700 text-white border-cyan-300' },
+  { to: '/work-from-home', text: '💷 I MAKE £5,000/WEEK FROM MY BEDROOM. ASK ME HOW', className: 'animate-jank-x bg-yellow-300 text-green-800 border-green-700' },
+  { to: '/popnuke', text: '☢ POPNUKE: KILL ALL POP-UPS FOREVER (FREE*)', className: 'animate-wobble bg-black text-yellow-300 border-yellow-400' },
+]
+
+function CyberTownBand() {
+  return (
+    <Band
+      id="town"
+      edges={EDGES.town}
+      tile="tile-town"
+      cursor={cursors.arcade}
+      flow
+      title={
+        <h2 className="font-pixel text-2xl leading-relaxed text-white [text-shadow:3px_3px_0_#f0f,6px_6px_0_#000] sm:text-4xl">
+          <WavyText text="~ DANIEL'S CYBER TOWN ~" />
+        </h2>
+      }
+    >
+      <ul className="grid w-[min(640px,100%)] grid-cols-2 gap-3 sm:grid-cols-3" aria-label="Cyber Town">
+        {TOWN.map((t) => (
+          <li key={t.to}>
+            <Link to={t.to} className="win-raised group relative flex h-full flex-col items-center gap-1 p-2 text-center text-black">
+              <Img slot={assets.newBadge} width={34} className="absolute -right-2 -top-3 rotate-12" />
+              <span className="grid h-14 place-items-center">
+                {/* Fit the 56px-tall slot: wide things (blinkies) can be wide, tall things get narrower. */}
+                <Img slot={t.slot} width={Math.round(Math.min(110, (56 * t.slot.w) / t.slot.h, t.slot.w > 100 ? 110 : 52))} className={t.anim} />
+              </span>
+              <span className="font-comic text-sm font-bold">{t.label}</span>
+              <span className="font-[Tahoma,sans-serif] text-[11px] text-gray-700">{t.blurb}</span>
+            </Link>
+          </li>
+        ))}
+      </ul>
+      <div className="w-[min(640px,100%)] space-y-2 text-center">
+        <p className="font-[Tahoma,sans-serif] text-[10px] uppercase tracking-widest text-white">— sponsored links (do not click) —</p>
+        <ul className="flex flex-wrap justify-center gap-2" aria-label="Sponsored links">
+          {SPONSORED.map((s) => (
+            <li key={s.to}>
+              <Link to={s.to} className={`inline-block border-4 border-double px-3 py-1 font-impact text-sm shadow-[4px_4px_0_#000] sm:text-base ${s.className}`}>
+                {s.text}
+              </Link>
+            </li>
+          ))}
+        </ul>
+      </div>
+    </Band>
+  )
+}
+
 function DestinyBand() {
   const popups = usePopups()
   const navigate = useNavigate()
@@ -410,7 +513,7 @@ function DestinyBand() {
     { label: '???', slot: 'arrow', go: () => navigate(randomRoute('/')) },
   ]
   return (
-    <Band id="destiny" tile="tile-water" cursor="🔮" flow title={<h2 className="font-impact text-4xl text-white [text-shadow:0_0_8px_#0ff] sm:text-6xl"><WavyText text="CHOOSE YOUR DESTINY" /></h2>}>
+    <Band id="destiny" edges={EDGES.destiny} tile="tile-blue-swirl" cursor={cursors.atom} flow title={<h2 className="font-impact text-4xl text-white [text-shadow:0_0_8px_#0ff] sm:text-6xl"><WavyText text="CHOOSE YOUR DESTINY" /></h2>}>
       <Jukebox />
       <div className="grid w-[min(520px,100%)] grid-cols-2 gap-2 sm:grid-cols-3">
         {doors.map((d) => (
@@ -424,18 +527,41 @@ function DestinyBand() {
   )
 }
 
+/** The contents page: each chapter goes where its title says (a page, or a section further up this one). */
+const TOC: ({ label: string; to: string } | { label: string; scrollTo: string })[] = [
+  { label: 'Introduction', scrollTo: 'welcome' },
+  { label: 'Kettles', to: '/shrine/kettle' },
+  { label: 'Despair (Abridged)', to: '/shrine/norminette' },
+  { label: 'Horses', to: '/shrine/horses' },
+  { label: 'Segmentation', to: '/shrine/segfault' },
+  { label: 'The End', scrollTo: 'end' },
+  { label: 'The End (Director’s Cut)', to: '/leave' },
+]
+
 function EndBand() {
-  const toc = ['Introduction', 'Kettles', 'Despair (Abridged)', 'Horses', 'Segmentation', 'The End', 'The End (Director’s Cut)']
   return (
-    <Band id="end" tile="tile-flames" cursor="🔥" flow className="!bg-[linear-gradient(0deg,#000_0%,#000_40%,#f00_80%,#f80_100%)]">
+    <Band id="end" edges={EDGES.end} tile="tile-flames" cursor={icons.flame} flow className="!bg-[linear-gradient(0deg,#000_0%,#000_40%,#f00_80%,#f80_100%)]">
       <div className="w-[min(420px,100%)] bg-black/80 p-4 font-times text-white">
         <p className="mb-2 text-center text-2xl font-bold underline">TABLE OF CONTENTS</p>
         <ol className="list-inside list-decimal space-y-1">
-          {toc.map((t) => (
-            <li key={t}>
-              <Link to={randomRoute('/')} className="text-cyan-300 underline">
-                {t}
-              </Link>
+          {TOC.map((t) => (
+            <li key={t.label}>
+              {'to' in t ? (
+                <Link to={t.to} className="text-cyan-300 underline">
+                  {t.label}
+                </Link>
+              ) : (
+                <a
+                  href={`#${t.scrollTo}`}
+                  onClick={(e) => {
+                    e.preventDefault()
+                    document.getElementById(t.scrollTo)?.scrollIntoView({ behavior: 'smooth' })
+                  }}
+                  className="text-cyan-300 underline"
+                >
+                  {t.label}
+                </a>
+              )}
             </li>
           ))}
         </ol>

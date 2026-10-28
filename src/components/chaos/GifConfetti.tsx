@@ -2,6 +2,11 @@ import { useEffect, useRef, useState, type CSSProperties } from 'react'
 import { useLocation } from 'react-router-dom'
 import { Img } from '../media/Img'
 import { CONFETTI_MAX, confettiCount, throwConfetti } from '../../lib/confetti'
+import { chaosScale } from '../../lib/settings'
+import { useSettings } from '../settings/settingsState'
+
+// Enough pieces for the Chaos dial's MAXIMUM (twice the usual).
+const MOST = CONFETTI_MAX * 2
 
 /**
  * Kawaii GIFs strewn over the whole page at random spots, on top of the content but under popups and
@@ -15,8 +20,9 @@ export function GifConfetti() {
 
 function ConfettiLayer() {
   const ref = useRef<HTMLDivElement>(null)
-  const [pieces] = useState(() => throwConfetti(CONFETTI_MAX))
+  const [pieces] = useState(() => throwConfetti(MOST))
   const [count, setCount] = useState(0)
+  const shown = Math.min(MOST, Math.round(count * chaosScale(useSettings().settings.chaos).confetti))
 
   useEffect(() => {
     const el = ref.current
@@ -30,7 +36,7 @@ function ConfettiLayer() {
 
   return (
     <div ref={ref} data-testid="gif-confetti" aria-hidden className="pointer-events-none absolute inset-0 z-40 overflow-hidden">
-      {pieces.slice(0, count).map((p, i) => (
+      {pieces.slice(0, shown).map((p, i) => (
         <Img
           key={i}
           slot={p.slot}

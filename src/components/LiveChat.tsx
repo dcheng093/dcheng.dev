@@ -52,7 +52,7 @@ export function LiveChat() {
   return (
     <div className="win-raised fixed bottom-2 right-2 z-50 flex h-[min(360px,70vh)] w-[min(300px,calc(100vw-16px))] flex-col p-0.5 text-xs" role="dialog" aria-label="Live chat">
       <div className="flex items-center gap-1 bg-gradient-to-r from-red-700 to-yellow-500 px-1 py-0.5 font-bold text-white">
-        <Img slot="headGrin" width={20} />
+        <Img slot="headWink" width={20} />
         <span className="flex-1">DANIEL LIVE CHAT 24/7/366</span>
         <button type="button" aria-label="Minimise chat" onClick={() => setOpen(false)} className="win-raised grid h-4 w-4 place-items-center text-[10px] leading-none text-black">
           _

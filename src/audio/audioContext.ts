@@ -1,5 +1,6 @@
 import { createContext, useContext, useEffect } from 'react'
-import type { MixId, SfxName } from './synth'
+import type { SfxName } from './synth'
+import type { MixId } from './tracks'
 
 export type AudioApi = {
   unlocked: boolean
@@ -7,7 +8,16 @@ export type AudioApi = {
   mix: MixId
   unlock: () => void
   toggleMute: () => void
+  /** 0..1, shared by the music and the sound effects. */
+  volume: number
+  setVolume: (volume: number) => void
   setMix: (mix: MixId) => void
+  /** 📌 on: the visitor's pick plays everywhere instead of each page's theme song. */
+  locked: boolean
+  toggleLock: () => void
+  setLocked: (locked: boolean) => void
+  /** Null until audio is unlocked. */
+  getAnalyser: () => AnalyserNode | null
   sfx: (name: SfxName) => void
 }
 
@@ -17,7 +27,13 @@ export const AudioCtx = createContext<AudioApi>({
   mix: 'system-default',
   unlock: () => {},
   toggleMute: () => {},
+  volume: 0.5,
+  setVolume: () => {},
   setMix: () => {},
+  locked: false,
+  toggleLock: () => {},
+  setLocked: () => {},
+  getAnalyser: () => null,
   sfx: () => {},
 })
 

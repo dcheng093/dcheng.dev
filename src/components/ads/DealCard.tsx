@@ -1,12 +1,16 @@
 import { useLocation, useNavigate } from 'react-router-dom'
-import type { Model } from '../../content/dealership'
-import type { Slot } from '../../content/assets'
+import { models, type Model } from '../../content/dealership'
+import { assets } from '../../content/assets'
 import { randomRoute } from '../../lib/sitemap'
 import { Img } from '../media/Img'
 import { Sticker } from '../chaos/Chaos'
 
+/** Each model's photo, by its place in the catalogue, so a model looks the same on every page. */
+const modelPhoto = (model: Model) => assets.misc[Math.max(0, models.indexOf(model)) % assets.misc.length]
+
 /** LINGsCARS deal tile: photo, big monthly price, red/green CTA. */
-export function DealCard({ model, slot, index = 0 }: { model: Model; slot: Slot; index?: number }) {
+export function DealCard({ model, index = 0 }: { model: Model; index?: number }) {
+  const slot = modelPhoto(model)
   const navigate = useNavigate()
   const { pathname } = useLocation()
   const go = () => navigate(model.to === 'random' ? randomRoute(pathname) : model.to.startsWith('/') ? model.to : '/checkout')
