@@ -798,13 +798,22 @@ test('a page loads over dial-up the first time (jerky, status bar, hourglass), t
       if (document.querySelector('[data-testid="page-load"], [data-testid="status-bar"]')) w.saw.push('dial-up')
       if ('loading' in document.documentElement.dataset) w.saw.push('loading')
       const wipe = document.querySelector('[data-testid="page-wipe"]')
-      if (wipe && getComputedStyle(wipe).animationName === 'page-wipe') w.saw.push('blinds')
+      if (wipe && getComputedStyle(wipe).animationName === 'page-wipe') {
+        w.saw.push('blinds')
+        // Choppy, old-web frames; and never over the taskbar, which stays clickable while they sweep.
+        if (/steps\(6/.test(getComputedStyle(wipe).animationTimingFunction)) w.saw.push('stepped')
+        const bar = document.querySelector('[data-testid="taskbar"]')!.getBoundingClientRect()
+        if (wipe.getBoundingClientRect().top >= bar.bottom - 0.5) w.saw.push('below taskbar')
+        if (document.elementFromPoint(bar.left + bar.width / 2, bar.top + bar.height / 2)?.closest('[data-testid="taskbar"]')) w.saw.push('taskbar clickable')
+      }
     }).observe(document.body, { childList: true, subtree: true, attributes: true })
   })
   await page.goBack()
   await expect(page).toHaveURL(/\/casino$/)
   await expect.poll(() => page.evaluate(() => (window as unknown as { saw: string[] }).saw)).toContain('blinds')
   await expect(page.getByTestId('page-wipe')).toHaveCount(0) // and then it's gone
+  const sawBlinds = await page.evaluate(() => (window as unknown as { saw: string[] }).saw)
+  expect(sawBlinds).toEqual(expect.arrayContaining(['stepped', 'below taskbar', 'taskbar clickable']))
   const saw = await page.evaluate(() => (window as unknown as { saw: string[] }).saw)
   expect(saw).not.toContain('dial-up')
   expect(saw).not.toContain('loading')

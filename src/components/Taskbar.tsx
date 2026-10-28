@@ -18,6 +18,7 @@ const LINKS: { to: string; icon: string | Slot; label: string; className?: strin
 /**
  * The Win95 taskbar along the top of every page: the four places that matter, a system tray (mute, POPNUKE, a
  * clock), and Daniel's wobbling head on the right. Phones get icon-only buttons; nothing hides behind a menu.
+ * Its height (h-11) is where the cached-page blinds start (components/DialUp), so keep the two in step.
  */
 export function Taskbar() {
   const { pathname } = useLocation()

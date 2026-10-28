@@ -31,13 +31,16 @@ function remember(path: string) {
 }
 
 /** Mount with a new `key` on every page change. */
-export function PageLoad({ path }: { path: string }) {
+export function PageLoad({ path, belowTaskbar = false }: { path: string; belowTaskbar?: boolean }) {
   const [mode] = useState(() => arrival(visited().includes(path)))
-  return mode === 'dialup' ? <DialUpLoad path={path} /> : <CachedLoad />
+  return mode === 'dialup' ? <DialUpLoad path={path} /> : <CachedLoad belowTaskbar={belowTaskbar} />
 }
 
-/** A page already seen this visit: straight from the "cache", the Win95-blue blinds sweep off it. */
-function CachedLoad() {
+/**
+ * A page already seen this visit: straight from the "cache", the Win95-blue blinds sweep off it. They stop short of
+ * the taskbar (top-11 = Taskbar's h-11), so it never disappears; pages without one get the whole screen.
+ */
+function CachedLoad({ belowTaskbar }: { belowTaskbar: boolean }) {
   const [done, setDone] = useState(false)
   useEffect(() => {
     // The animation ending is the real signal; this catches browsers (and tests) that never run it.
@@ -50,7 +53,7 @@ function CachedLoad() {
       aria-hidden
       data-testid="page-wipe"
       onAnimationEnd={() => setDone(true)}
-      className="pointer-events-none fixed inset-0 z-[95] animate-page-wipe bg-[repeating-linear-gradient(90deg,#000080_0_14px,#1084d0_14px_28px)]"
+      className={`pointer-events-none fixed inset-x-0 bottom-0 ${belowTaskbar ? 'top-11' : 'top-0'} z-[95] animate-page-wipe bg-[repeating-linear-gradient(90deg,#000080_0_14px,#1084d0_14px_28px)]`}
     />
   )
 }
