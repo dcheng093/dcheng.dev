@@ -26,7 +26,12 @@ import { desktopReducer, type DesktopState } from '../lib/desktop'
 import { collect, progress } from '../lib/stickers'
 import { stickers } from '../content/stickers'
 import { frameStyle, timing, type BlinkieOpts } from '../lib/blinkie'
-import { DREAM_TEXTURES, PAGE_3D, sceneFor, TEXTURES } from '../three/pageScenes'
+import { PROC_TEXTURES, TEX } from '../three/pageScenes'
+import { LEGENDARIES, PAGE_3D, rollLegendary, sceneFor } from '../content/objects'
+import { moodOffset, poke, restingBody, step, type Personality } from '../lib/personality'
+import { hasGlyph, voxelWord } from '../lib/voxelFont'
+import { bounce, clampOffset, contains, isFree, nearestFree, place, MIN_SIZE } from '../three/space'
+import { shrines } from '../content/shrines'
 import { existsSync } from 'node:fs'
 
 const spawn = (s: PopupState, variant: 'normal' | 'multiply' | 'dodge' = 'normal') =>
@@ -429,14 +434,149 @@ describe('blinkie maker', () => {
 })
 
 describe('3D pages', () => {
-  it('only decorates real pages, never Home, and keeps full worlds rare', () => {
-    for (const path of Object.keys(PAGE_3D)) expect(WEBRING).toContain(path)
-    expect(sceneFor('/')).toBeUndefined()
-    const worlds = Object.values(PAGE_3D).filter((s) => s.world)
-    expect(worlds.length).toBeLessThanOrEqual(3)
-    for (const s of Object.values(PAGE_3D)) expect(s.spinners.length).toBeLessThanOrEqual(3)
+  const shrinePaths = shrines.map((s) => `/shrine/${s.slug}`)
+  const IN_SCOPE = [...WEBRING.filter((p) => p !== '/'), ...shrinePaths.filter((p) => !WEBRING.includes(p)), 'bsod']
+  const DANIEL = new Set(['photoCube', 'head', 'portrait'])
+
+  it.each(IN_SCOPE)('%s has 3-5 objects, 1-2 drifters and a photo of Daniel', (key) => {
+    const scene = sceneFor(key)
+    expect(scene, key).toBeDefined()
+    const { objects } = scene!
+    expect(objects.length).toBeGreaterThanOrEqual(3)
+    expect(objects.length).toBeLessThanOrEqual(5)
+    const drifters = objects.filter((o) => o.role === 'drifter').length
+    expect(drifters).toBeGreaterThanOrEqual(1)
+    expect(drifters).toBeLessThanOrEqual(2)
+    for (const o of objects) if (o.role === 'anchor') expect(o.spot, o.id).toBeDefined()
+    expect(objects.some((o) => DANIEL.has(o.shape)), `${key} needs a Daniel photo object`).toBe(true)
   })
-  it('every texture exists in public/ (page worlds, spinners and the enter gate dream)', () => {
-    for (const url of [...Object.values(TEXTURES), ...Object.values(DREAM_TEXTURES)]) expect(existsSync(`public${url}`), url).toBe(true)
+
+  it('never decorates Home, and keeps full worlds to six pages', () => {
+    expect(sceneFor('/')).toBeUndefined()
+    expect(Object.values(PAGE_3D).filter((s) => s.world).length).toBe(6)
+  })
+
+  it('object ids are unique, with names, lore and a made-of line', () => {
+    const all = [...Object.values(PAGE_3D).flatMap((s) => s.objects), ...LEGENDARIES]
+    expect(new Set(all.map((o) => o.id)).size).toBe(all.length)
+    for (const o of all) {
+      expect(o.name.length, o.id).toBeGreaterThan(0)
+      expect(o.lore.length, o.id).toBeGreaterThan(10)
+      expect(o.madeOf.length, o.id).toBeGreaterThan(0)
+      if (o.tex) expect(o.tex.startsWith('proc:') ? PROC_TEXTURES.includes(o.tex.slice(5) as never) : o.tex in TEX, `${o.id} texture ${o.tex}`).toBe(true)
+      if (o.shape === 'text') for (const ch of o.text ?? '') expect(hasGlyph(ch), `${o.id}: ${ch}`).toBe(true)
+    }
+  })
+
+  it('every image texture exists in public/', () => {
+    for (const url of Object.values(TEX)) expect(existsSync(`public${url}`), url).toBe(true)
+  })
+
+  it('a legendary turns up about 5% of the time, and never on Home or the gag pages', () => {
+    const rng = mulberry32(42)
+    let hits = 0
+    for (let i = 0; i < 20000; i++) if (rollLegendary('/casino', rng)) hits++
+    expect(hits / 20000).toBeGreaterThan(0.04)
+    expect(hits / 20000).toBeLessThan(0.06)
+    for (const p of ['/', '/boring', '/leave', '/legendary/goose']) expect(rollLegendary(p, () => 0)).toBeUndefined()
+    expect(LEGENDARIES.map((l) => l.id)).toEqual(['beef', 'planet-daniel', 'goose'])
+  })
+})
+
+describe('object personalities', () => {
+  const run = (p: Personality, cursor: { dx: number; dy: number } | null, frames = 60) => {
+    let b = restingBody()
+    for (let i = 0; i < frames; i++) b = step(p, b, cursor, i / 30, 1 / 30, () => 0.5)
+    return b
+  }
+  it('shy objects back away from the cursor; curious ones lean in', () => {
+    expect(run('shy', { dx: 40, dy: 0 }).ox).toBeLessThan(-20)
+    expect(run('curious', { dx: 40, dy: 0 }).ox).toBeGreaterThan(5)
+  })
+  it('watchers turn to face the cursor and stop spinning; excitable ones spin faster', () => {
+    const w = run('watcher', { dx: 200, dy: 0 })
+    expect(w.yaw).toBeGreaterThan(0.5)
+    expect(Math.abs(w.spinRate)).toBeLessThan(0.1)
+    expect(run('excitable', { dx: 10, dy: 0 }).spinRate).toBeGreaterThan(run('excitable', null).spinRate * 3)
+  })
+  it('lazy objects barely react; a flung object springs back home', () => {
+    expect(Math.abs(run('lazy', { dx: 10, dy: 0 }).ox)).toBeLessThan(1)
+    const { body, reaction } = poke('dramatic', restingBody(), { dx: 30, dy: 0 })
+    expect(reaction).toBe('fling')
+    expect(body.vx).toBeLessThan(0) // flung away from the click
+    let b = body
+    for (let i = 0; i < 300; i++) b = step('dramatic', b, null, i / 30, 1 / 30)
+    expect(Math.hypot(b.ox, b.oy)).toBeLessThan(5)
+  })
+  it('crashed pages glitch and sad pages droop until you hover stay', () => {
+    expect(moodOffset('crashed', 0.05, 0, false)).toMatchObject({ frozen: true, glitch: true })
+    expect(moodOffset('sad', 1, 0, false).dy).toBeGreaterThan(10)
+    expect(moodOffset('sad', 1, 0, true).dy).toBeLessThanOrEqual(0)
+  })
+})
+
+describe('voxel font', () => {
+  it('lays out words with a gap between letters', () => {
+    const one = voxelWord('I')
+    const two = voxelWord('II')
+    expect(one.width).toBe(5)
+    expect(two.width).toBe(11)
+    expect(two.pixels.length).toBe(one.pixels.length * 2)
+    for (const w of ['SALE', '£££', '404', '?', 'SEGFAULT']) expect(voxelWord(w).pixels.length).toBeGreaterThan(5)
+  })
+})
+
+describe('free space for 3D objects', () => {
+  const screen = { x: 0, y: 0, w: 1000, h: 800 }
+  const content = { x: 200, y: 0, w: 600, h: 800 } // a centred column, leaving 200px margins
+
+  it('keeps an object exactly where it was meant to be when that spot is clear', () => {
+    expect(nearestFree(100, 400, 150, screen, [content])).toEqual({ x: 25, y: 325, w: 150, h: 150 })
+  })
+
+  it('moves an object out from behind content to the nearest clear spot, fully inside the window', () => {
+    const spot = nearestFree(260, 400, 150, screen, [content])!
+    expect(isFree(spot, screen, [content])).toBe(true)
+    expect(spot.x + spot.w).toBeLessThanOrEqual(200)
+    expect(Math.abs(spot.y + 75 - 400)).toBeLessThan(40) // slid sideways, not off somewhere random
+  })
+
+  it('never places anything poking out of the window', () => {
+    const spot = nearestFree(990, 790, 150, screen, [])!
+    expect(contains(screen, spot)).toBe(true)
+  })
+
+  it('shrinks to fit a narrow margin, and gives up (drift instead) when even the smallest size has no room', () => {
+    const narrow = { x: 120, y: 0, w: 760, h: 800 } // 120px margins
+    const spot = place(60, 400, 168, screen, [narrow])!
+    expect(spot.w).toBeLessThan(168)
+    expect(spot.w).toBeLessThanOrEqual(120)
+    expect(place(500, 400, 168, screen, [{ x: MIN_SIZE / 2, y: 0, w: 1000, h: 800 }])).toBeNull()
+  })
+
+  it('drifters bounce off content and the window edge instead of passing behind or out', () => {
+    let r = { x: 150, y: 100, w: 40, h: 40 }
+    let vx = 300
+    let vy = 0
+    let turns = 0
+    for (let i = 0; i < 60; i++) {
+      const n = bounce(r, vx, vy, 1 / 30, screen, [content])
+      if (Math.sign(n.vx) !== Math.sign(vx)) turns++
+      r = { ...r, x: n.x, y: n.y }
+      vx = n.vx
+      vy = n.vy
+      expect(isFree(r, screen, [content])).toBe(true)
+    }
+    expect(turns).toBeGreaterThanOrEqual(2) // off the column, then off the window's left edge
+  })
+
+  it('a personality nudge is cut short rather than pushing an object behind something', () => {
+    const home = { x: 100, y: 100, w: 80, h: 80 }
+    const cut = clampOffset(home, 60, 0, screen, [content]) // 60px right would be behind the column
+    expect(cut.dx).toBeLessThan(20)
+    expect(isFree({ ...home, x: home.x + cut.dx }, screen, [content])).toBe(true)
+    expect(clampOffset(home, -40, 0, screen, [content])).toEqual({ dx: -40, dy: 0 })
+    expect(clampOffset(home, 0, 300, screen, [content]).dy).toBe(300) // straight down the clear margin: fine
+    expect(clampOffset(home, 0, 700, screen, [content]).dy).toBeLessThan(700) // off the bottom of the window: cut short
   })
 })

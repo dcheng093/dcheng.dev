@@ -183,7 +183,7 @@ function RecycleBin() {
   const [error, setError] = useState<string | null>(null)
   return (
     <div className="p-2">
-      <ul className="win-sunken max-h-40 overflow-y-auto bg-white">
+      <ul className="win-sunken max-h-40 overflow-y-auto overflow-x-hidden bg-white">
         {files.map((f) => (
           <li key={f}>
             <button type="button" onClick={() => setSel(f)} className={`w-full px-1 text-left font-mono ${sel === f ? 'bg-win-title text-white' : ''}`}>

@@ -74,7 +74,7 @@ function MixList({ className = '' }: { className?: string }) {
     if (ul && li) ul.scrollTop = li.offsetTop - (ul.clientHeight - li.offsetHeight) / 2
   }, [mix])
   return (
-    <ul ref={list} className={`win-sunken relative space-y-0.5 overflow-y-auto bg-white ${className}`}>
+    <ul ref={list} className={`win-sunken relative space-y-0.5 overflow-y-auto overflow-x-hidden bg-white ${className}`}>
       {MIXES.map((m) => (
         <li key={m.id} aria-current={m.id === mix}>
           <button type="button" onClick={() => pick(m.id)} className={`w-full px-1 text-left ${m.id === mix ? 'bg-win-title text-white' : 'hover:bg-gray-300'}`}>

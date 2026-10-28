@@ -82,7 +82,7 @@ export function Radio() {
                 className={`${n ? 'order-3' : ''} aspect-square rounded-full border-4 border-black bg-[radial-gradient(circle,#222_20%,#555_22%,#111_45%,#333_47%,#000_70%)] shadow-[inset_0_0_12px_#000]`}
               />
             ))}
-            <div className="order-2 space-y-2">
+            <div className="order-2 min-w-0 space-y-2">
               <div className="rounded border-4 border-black bg-[#9c3] p-1 font-vt text-lg leading-tight text-[#132] shadow-[inset_0_0_8px_#0006]" data-testid="radio-lcd">
                 <div className="flex justify-between">
                   <span>FM {freq(i)}</span>

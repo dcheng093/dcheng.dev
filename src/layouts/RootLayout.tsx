@@ -57,7 +57,7 @@ export function RootLayout() {
             <main className="relative">
               <Outlet />
               <HiddenSticker />
-              <Page3D />
+              <Page3D crashed={!!handle.noWebring && pathname !== '/leave'} />
               <GifConfetti />
             </main>
             {!handle.noWebring && <WebringBar />}

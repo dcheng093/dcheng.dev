@@ -1,40 +1,97 @@
 import * as THREE from 'three'
 import { mulberry32 } from '../lib/random'
-import { TEXTURES, type SpinnerSpec, type TextureId, type WorldId } from './pageScenes'
+import type { Pose } from './interact'
+import { TEXTURES, type ObjSpec, type TextureId, type WorldId } from './pageScenes'
 import { buildShape } from './shapes'
 import { disposeScene, fitWorld, register, texture } from './stage'
+import { mountCustomWorld } from './worlds'
 
 // Everything three.js-heavy is reached through this module, which pages load with import() so three.js
 // only downloads where there's 3D.
 
-const POOL = Object.keys(TEXTURES) as TextureId[]
-
-function lit(scene: THREE.Scene, ambient = 1.1, sun = 1.6) {
+export function lit(scene: THREE.Scene, ambient = 1.1, sun = 1.6) {
   scene.add(new THREE.AmbientLight(0xffffff, ambient))
   const light = new THREE.DirectionalLight(0xffffff, sun)
   light.position.set(2, 3, 4)
   scene.add(light)
 }
 
-/** A spinning, bobbing object in its own little canvas. Returns cleanup, or null without WebGL. */
-export function mountSpinner(canvas: HTMLCanvasElement, spec: SpinnerSpec, seed: number) {
+/** A soft additive glow disc, for legendaries. */
+function halo() {
+  const c = document.createElement('canvas')
+  c.width = c.height = 64
+  const g = c.getContext('2d')!
+  const grad = g.createRadialGradient(32, 32, 4, 32, 32, 32)
+  grad.addColorStop(0, 'rgba(255,230,140,0.9)')
+  grad.addColorStop(1, 'rgba(255,200,60,0)')
+  g.fillStyle = grad
+  g.fillRect(0, 0, 64, 64)
+  const sprite = new THREE.Sprite(new THREE.SpriteMaterial({ map: new THREE.CanvasTexture(c), blending: THREE.AdditiveBlending, depthWrite: false, transparent: true }))
+  sprite.scale.set(2.4, 2.4, 1)
+  sprite.material.opacity = 0.7
+  sprite.position.z = -0.8
+  return sprite
+}
+
+function objectScene(spec: ObjSpec) {
   const scene = new THREE.Scene()
   lit(scene)
   const camera = new THREE.PerspectiveCamera(35, 1, 0.1, 20)
   camera.position.z = 3.6
-  const tex = spec.texture ?? POOL[Math.floor(mulberry32(seed)() * POOL.length)]
-  const obj = buildShape(spec.shape, tex)
-  scene.add(obj)
-  const phase = seed % 7
+  const obj = buildShape(spec.shape, spec.tex, { text: spec.text, photo: spec.photo })
+  const pivot = new THREE.Group().add(obj)
+  scene.add(pivot)
+  if (spec.rarity === 'legendary') scene.add(halo())
+  // Some shapes animate a part of themselves (Planet Daniel's moon).
+  const orbits: THREE.Object3D[] = []
+  obj.traverse((o) => o.userData.orbit && orbits.push(o))
+  return { scene, camera, pivot, orbits }
+}
+
+/**
+ * A page object: the model is posed every frame by its behaviour driver (src/three/interact.ts).
+ * Returns cleanup, or null without WebGL.
+ */
+export function mountObject(canvas: HTMLCanvasElement, spec: ObjSpec, frame: (t: number, dt: number) => Pose) {
+  const { scene, camera, pivot, orbits } = objectScene(spec)
   const stop = register({
     scene,
     camera,
     target: canvas,
     visible: true,
-    update: (t) => {
-      obj.rotation.y = t * 1.1 + phase
-      obj.rotation.x = Math.sin(t * 0.7 + phase) * 0.5
-      obj.position.y = Math.sin(t * 1.6 + phase) * 0.08
+    update: (t, dt) => {
+      const p = frame(t, dt)
+      // Crashed objects (the BSOD) don't turn at all; everyone else spins, tilts and flips with their mood.
+      const spin = p.frozen ? 0.6 : p.spin
+      pivot.rotation.set(Math.sin(spin * 0.6) * 0.35 + p.pitch + p.flip, spin + p.yaw, 0)
+      pivot.position.y = p.frozen ? 0 : Math.sin(t * 1.6 + spec.id.length) * 0.07
+      for (const o of orbits) o.rotation.y = t * 0.9
+    },
+  })
+  if (!stop) {
+    disposeScene(scene)
+    return null
+  }
+  return () => {
+    stop()
+    disposeScene(scene)
+  }
+}
+
+/** The info window's big view: drag to turn it, otherwise it slowly turns by itself. */
+export function mountViewer(canvas: HTMLCanvasElement, spec: ObjSpec, drag: () => { yaw: number; pitch: number; active: boolean }) {
+  const { scene, camera, pivot, orbits } = objectScene(spec)
+  let auto = 0
+  const stop = register({
+    scene,
+    camera,
+    target: canvas,
+    visible: true,
+    update: (t, dt) => {
+      const d = drag()
+      if (!d.active) auto += dt * 0.6
+      pivot.rotation.set(d.pitch, d.yaw + auto, 0)
+      for (const o of orbits) o.rotation.y = t * 0.9
     },
   })
   if (!stop) {
@@ -49,7 +106,7 @@ export function mountSpinner(canvas: HTMLCanvasElement, spec: SpinnerSpec, seed:
 
 type World = { sky: number; fog: number; textures: TextureId[]; centre: Parameters<typeof buildShape>[0] }
 
-const WORLDS: Record<WorldId, World> = {
+const WORLDS: Record<'mystic' | 'neon' | 'glitch', World> = {
   mystic: { sky: 0x1a0630, fog: 0x2a0a4a, textures: ['blobs', 'orbs', 'nebula', 'marble'], centre: 'crystal' },
   neon: { sky: 0x05001c, fog: 0x14003c, textures: ['streaks', 'carpet', 'triangles', 'lava', 'swirls'], centre: 'coin' },
   glitch: { sky: 0x160000, fog: 0x340000, textures: ['streaks', 'binary', 'static', 'steel', 'lightning'], centre: 'knot' },
@@ -70,6 +127,7 @@ const PROPS: ((rng: () => number) => THREE.BufferGeometry)[] = [
  * texture, around a giant centrepiece, with the camera slowly orbiting. Rendered at a quarter resolution.
  */
 export function mountWorld(canvas: HTMLCanvasElement, id: WorldId) {
+  if (id === 'meadow' || id === 'painted' || id === 'space') return mountCustomWorld(canvas, id)
   const w = WORLDS[id]
   const rng = mulberry32(id.length * 9973)
   const scene = new THREE.Scene()
@@ -137,3 +195,4 @@ export function mountWorld(canvas: HTMLCanvasElement, id: WorldId) {
 
 
 export { mountDream } from './dream'
+

@@ -13,9 +13,9 @@ export default defineConfig({
     },
   },
   optimizeDeps: { entries: ["index.html"] },
-  // The biggest chunk is three.js (~585 kB), already split out and only loaded on pages with 3D (src/three/).
-  // The limit sits just above it so a bloated main bundle (~470 kB) would still warn.
-  build: { chunkSizeWarningLimit: 600 },
+  // The biggest chunk is the 3D code (three.js + all the object shapes, ~632 kB), already split out and only
+  // loaded on pages with 3D (src/three/). The limit sits just above it so a bloated main bundle (~480 kB) still warns.
+  build: { chunkSizeWarningLimit: 700 },
   test: {
     environment: "jsdom",
     setupFiles: ["./src/test/setup.ts"],

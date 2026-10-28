@@ -119,6 +119,32 @@ test('the floating player changes the song on non-home pages', async ({ page }) 
   await expect(player).toContainText('Sticker Pop')
 })
 
+test('hovering a track in the music list never shakes it (no jiggle, no sideways overflow)', async ({ page }) => {
+  test.skip((page.viewportSize()?.width ?? 1000) < 640, 'the track list is hidden on phones')
+  await prepare(page)
+  await page.goto('/casino')
+  await page.locator('[data-testid="casino"]').click({ position: { x: 5, y: 5 } }) // unlock audio so the player shows
+  const list = page.getByTestId('mini-player').locator('ul')
+  const track = list.getByRole('button').nth(3)
+  const box = (await track.boundingBox())!
+  await page.mouse.move(box.x + box.width - 3, box.y + box.height - 2) // the edge, where the loop used to start
+  await expect(track).not.toHaveCSS('animation-name', 'jiggle')
+  const overflowed = await list.evaluate(
+    (ul) =>
+      new Promise<boolean>((done) => {
+        let n = 0
+        let seen = false
+        const tick = () => {
+          seen ||= ul.scrollWidth > ul.clientWidth
+          if (++n < 30) requestAnimationFrame(tick)
+          else done(seen)
+        }
+        requestAnimationFrame(tick)
+      }),
+  )
+  expect(overflowed).toBe(false)
+})
+
 test('each page plays its own song unless the song is pinned', async ({ page }) => {
   await prepare(page)
   await page.goto('/')
@@ -271,7 +297,7 @@ const drawnPixels = (l: Locator) =>
     return n
   })
 
-test('3D: a TextureTown world on /oracle, spinning dice on /casino, nothing on Home', async ({ page }) => {
+test('3D: a TextureTown world on /oracle, objects on /casino, nothing on Home', async ({ page }) => {
   const errors = await prepare(page)
   await page.goto('/oracle')
   const world = page.getByTestId('world-3d')
@@ -280,16 +306,166 @@ test('3D: a TextureTown world on /oracle, spinning dice on /casino, nothing on H
   await expect(page.locator('html')).toHaveAttribute('data-world', 'mystic')
 
   await page.goto('/casino')
-  const dice = page.getByTestId('spinner-3d')
-  await expect(dice).toHaveCount(2)
-  await expect.poll(() => drawnPixels(dice.first()), { timeout: 10_000 }).toBeGreaterThan(50)
+  await expect(page.getByTestId('object-3d')).not.toHaveCount(0)
+  await expect.poll(() => drawnPixels(page.getByTestId('object-3d').first()), { timeout: 10_000 }).toBeGreaterThan(50)
   await expect(page.getByTestId('world-3d')).toHaveCount(0)
   await expect(page.locator('html')).not.toHaveAttribute('data-world')
 
   await page.goto('/')
   await expect(page.getByTestId('home')).toBeVisible()
-  await expect(page.getByTestId('spinner-3d')).toHaveCount(0)
+  await expect(page.getByTestId('object-3d')).toHaveCount(0)
   expect(errors).toEqual([])
+})
+
+// Every page except Home. (Exact per-page counts are pinned by the unit tests against the content itself.)
+const OBJECT_PAGES = [
+  '/dealership', '/guestbook', '/under-construction', '/you-won', '/checkout', '/scan', '/casino', '/survey', '/work-from-home',
+  '/arcade', '/desktop', '/radio', '/oracle', '/blinkie-maker', '/stickers', '/leave', '/this/does/not/exist',
+  '/shrine/chiikawa', '/shrine/battlestation', '/shrine/peripherals', '/shrine/segfault', '/shrine/norminette',
+  '/shrine/push-swap', '/shrine/kettle', '/shrine/horses', '/shrine/teeth',
+]
+
+test('every page except Home has 3-5 drawn 3D objects (just the 1-2 drifters on phones), with no sideways scroll', async ({ page }, info) => {
+  test.setTimeout(180_000)
+  const errors = await prepare(page)
+  const phone = (page.viewportSize()?.width ?? 1000) < 640
+  // A rare legendary may turn up too (5% per page); they always glow, so leave them out of the counts.
+  const ordinary = '[data-testid="object-3d"]:not(.animate-legend)'
+  for (const path of OBJECT_PAGES) {
+    await page.goto(path)
+    const objects = page.locator(ordinary)
+    await expect.poll(() => objects.count(), { message: `${path} on ${info.project.name}` }).toBeGreaterThanOrEqual(phone ? 1 : 3)
+    const n = await objects.count()
+    if (phone) {
+      expect(n, path).toBeLessThanOrEqual(2)
+      await expect(page.getByTestId('objects-page').locator(ordinary), `${path}: no margin objects on phones`).toHaveCount(0)
+    } else expect(n, path).toBeLessThanOrEqual(5)
+    await expect.poll(() => drawnPixels(objects.first()), { timeout: 10_000, message: path }).toBeGreaterThan(20)
+    expect(await horizontalOverflow(page), path).toBeLessThanOrEqual(0)
+  }
+  expect(errors).toEqual([])
+})
+
+/** Objects showing right now that are off-screen, or have something (content, text, floating UI) over them. */
+const hiddenObjects = (page: Page) =>
+  page.evaluate(() => {
+    // Background = nothing painted there: a transparent box, and not on top of an actual line of its text.
+    const background = (e: Element | null, x: number, y: number) => {
+      if (!e || e === document.documentElement || e === document.body || e.tagName === 'MAIN' || e.closest('[data-testid^="objects-"]')) return true
+      const cs = getComputedStyle(e)
+      if (cs.backgroundColor !== 'rgba(0, 0, 0, 0)' || cs.backgroundImage !== 'none') return false
+      if (/^(IMG|CANVAS|VIDEO|IFRAME|svg|BUTTON|INPUT|TEXTAREA|SELECT)$/.test(e.tagName)) return false
+      return ![...e.childNodes].some((n) => {
+        if (n.nodeType !== 3 || !n.textContent?.trim()) return false
+        const range = document.createRange()
+        range.selectNodeContents(n)
+        return [...range.getClientRects()].some((r) => x >= r.left && x <= r.right && y >= r.top && y <= r.bottom)
+      })
+    }
+    const out: string[] = []
+    for (const c of document.querySelectorAll<HTMLCanvasElement>('[data-testid="object-3d"]')) {
+      if (c.style.opacity === '0') continue
+      const r = c.getBoundingClientRect()
+      const drifting = !!c.closest('[data-testid="objects-screen"]')
+      if (drifting ? r.left < -1 || r.top < -1 || r.right > innerWidth + 1 || r.bottom > innerHeight + 1 : r.left < -1 || r.right > document.documentElement.clientWidth + 1)
+        out.push(`${c.dataset.object} out of the window`)
+      for (const fx of [0.3, 0.5, 0.7])
+        for (const fy of [0.3, 0.5, 0.7]) {
+          const x = r.left + r.width * fx
+          const y = r.top + r.height * fy
+          if (x < 0 || y < 0 || x > innerWidth || y > innerHeight) continue
+          const e = document.elementFromPoint(x, y)
+          if (!background(e, x, y)) {
+            out.push(`${c.dataset.object} covered by <${e?.tagName.toLowerCase()} ${String(e?.className).slice(0, 40)}>`)
+            break
+          }
+        }
+    }
+    return [...new Set(out)]
+  })
+
+test('3D objects are never hidden behind content or floating UI, or outside the window, even while scrolling', async ({ page }) => {
+  test.setTimeout(240_000)
+  await prepare(page)
+  const problems: string[] = []
+  for (const path of OBJECT_PAGES) {
+    await page.goto(path)
+    await page.locator('[data-testid="object-3d"]').first().waitFor()
+    for (const scroll of [0, 0.6, 1.2]) {
+      await page.evaluate((k) => window.scrollTo(0, innerHeight * k), scroll)
+      await page.waitForTimeout(700) // long enough for a drifter or dodging anchor to slip clear
+      for (const p of await hiddenObjects(page)) problems.push(`${path} @${scroll}: ${p}`)
+    }
+  }
+  expect(problems).toEqual([])
+})
+
+test('clicking an object in the margin opens its properties window, not whatever is underneath', async ({ page }) => {
+  test.skip((page.viewportSize()?.width ?? 1000) < 640, 'phones only get drifters')
+  await prepare(page)
+  await page.goto('/casino')
+  const die = page.locator('[data-object="dice-a"]')
+  await expect.poll(() => drawnPixels(die), { timeout: 10_000 }).toBeGreaterThan(20)
+  const box = (await die.boundingBox())!
+  await page.mouse.click(box.x + box.width / 2, box.y + box.height / 2)
+  const win = page.getByTestId('object-window')
+  await expect(win).toBeVisible()
+  await expect(win).toContainText('Lucky Die')
+  await expect(win).toContainText('Made of:')
+  // The Lucky Die is excitable, but nobody is ever told that.
+  await expect(win).not.toContainText(/excitable|personality/i)
+  await expect.poll(() => drawnPixels(win.getByTestId('object-viewer')), { timeout: 10_000 }).toBeGreaterThan(200)
+  await expect(page).toHaveURL(/\/casino$/)
+  await win.getByRole('button', { name: /Close/ }).click()
+  await expect(win).toHaveCount(0)
+})
+
+test('the crash screen keeps its objects, and clicking one does not reboot you somewhere else', async ({ page }) => {
+  test.skip((page.viewportSize()?.width ?? 1000) < 640, 'phones only get drifters')
+  await prepare(page)
+  await page.goto('/this/does/not/exist')
+  await expect(page.getByTestId('bsod')).toBeVisible()
+  // The crash screen still covers the site's floating chat button.
+  const chat = page.getByRole('button', { name: /LIVE CHAT/ })
+  const cb = (await chat.boundingBox())!
+  expect(await page.evaluate(([x, y]) => document.elementFromPoint(x, y)?.closest('[data-testid="bsod"]') !== null, [cb.x + 5, cb.y + 5])).toBe(true)
+  // Whichever crashed object has room to show at this screen size.
+  const shown = page.locator('[data-testid="object-3d"]:not([style*="opacity: 0"])').first()
+  await expect.poll(() => drawnPixels(shown), { timeout: 10_000 }).toBeGreaterThan(20)
+  const box = (await shown.boundingBox())!
+  await page.mouse.click(box.x + box.width / 2, box.y + box.height / 2)
+  await expect(page.getByTestId('object-window')).toBeVisible()
+  await expect(page).toHaveURL(/does\/not\/exist$/)
+})
+
+test('a summoned legendary unlocks its page; unseen ones stay sealed', async ({ page }) => {
+  // Objects only ever show where there's free space; a 375px-tall landscape phone has none for a goose.
+  test.skip((page.viewportSize()?.height ?? 1000) < 400, 'no free space on a landscape phone')
+  await prepare(page)
+  await page.goto('/legendary/beef')
+  await expect(page.getByTestId('sealed')).toBeVisible()
+  await page.goto('/scan?summon=goose')
+  const goose = page.locator('[data-object="goose"]')
+  await expect.poll(() => drawnPixels(goose), { timeout: 10_000 }).toBeGreaterThan(20)
+  await expect(goose).not.toHaveCSS('opacity', '0') // it has found somewhere visible to be
+  // It drifts; catch it where it is right now.
+  const box = (await goose.boundingBox())!
+  await page.mouse.click(box.x + box.width / 2, box.y + box.height / 2)
+  const win = page.getByTestId('object-window')
+  await expect(win).toContainText('LEGENDARY')
+  await win.getByRole('link', { name: /Visit its page/ }).click()
+  await expect(page).toHaveURL(/\/legendary\/goose$/)
+  await expect(page.getByTestId('first-seen')).not.toBeEmpty()
+  await expect.poll(() => drawnPixels(page.getByTestId('object-viewer')), { timeout: 10_000 }).toBeGreaterThan(200)
+})
+
+test('the three new shrine worlds draw', async ({ page }) => {
+  await prepare(page)
+  for (const [path, id] of [['/shrine/horses', 'meadow'], ['/shrine/chiikawa', 'painted'], ['/shrine/battlestation', 'space']]) {
+    await page.goto(path)
+    await expect.poll(() => drawnPixels(page.getByTestId('world-3d')), { timeout: 10_000, message: path }).toBeGreaterThan(1000)
+    await expect(page.locator('html')).toHaveAttribute('data-world', id)
+  }
 })
 
 test('ads breathe instead of shaking, and nothing in a popup jiggles', async ({ page }) => {

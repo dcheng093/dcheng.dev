@@ -346,7 +346,7 @@ export class Chiptune {
   }
 }
 
-export type SfxName = 'click' | 'hover' | 'ding' | 'error' | 'coin'
+export type SfxName = 'click' | 'hover' | 'ding' | 'error' | 'coin' | 'honk'
 
 export function playSfx(ctx: AudioContext, dest: AudioNode, name: SfxName) {
   const t = ctx.currentTime
@@ -363,5 +363,8 @@ export function playSfx(ctx: AudioContext, dest: AudioNode, name: SfxName) {
     case 'coin':
       blip(ctx, dest, 'square', 988, t, 0.08, 0.08)
       return blip(ctx, dest, 'square', 1319, t + 0.08, 0.3, 0.08)
+    case 'honk': // the goose
+      blip(ctx, dest, 'sawtooth', 330, t, 0.16, 0.12)
+      return blip(ctx, dest, 'sawtooth', 277, t + 0.18, 0.28, 0.12)
   }
 }

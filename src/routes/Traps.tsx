@@ -126,7 +126,7 @@ export function Leave() {
           <button type="button" className="win-raised w-20 py-0.5" onClick={() => (last ? navigate('/') : setStep((s) => s + 1))}>
             Yes
           </button>
-          <button type="button" className="win-raised w-20 py-0.5" onClick={() => navigate(randomRoute('/leave'))}>
+          <button type="button" data-stay className="win-raised w-20 py-0.5" onClick={() => navigate(randomRoute('/leave'))}>
             No
           </button>
         </div>

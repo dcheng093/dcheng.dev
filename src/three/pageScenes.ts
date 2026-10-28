@@ -1,5 +1,7 @@
-// Which pages get 3D, and what. Plain data (no three.js import) so it can live in the main bundle;
-// the 3D code itself only downloads on pages listed here.
+import type { PageMood, Personality, Reaction } from '../lib/personality'
+
+// The vocabulary shared by the 3D content (src/content/objects.ts) and the 3D code (src/three/*):
+// textures, shapes, worlds and the object spec. Plain data, no three.js import, so it can sit in the main bundle.
 
 /** Daniel's TextureTown textures plus a few of the site's own tiles. Static first frames get used. */
 export const TEXTURES = {
@@ -42,39 +44,91 @@ export const DREAM_TEXTURES = {
   lightning: '/me/048.GIF',
 } as const
 
-export type ShapeId = 'dice' | 'teapot' | 'crystal' | 'cd' | 'floppy' | 'coin' | 'knot' | 'gem' | 'donut' | 'star' | 'octa'
-export type WorldId = 'mystic' | 'neon' | 'glitch'
+/** The newest texture pack. */
+export const MORE_TEXTURES = {
+  worldMap: '/me/013C.jpg',
+  grass: '/me/073C.jpg',
+  grass2: '/me/ATF_8.png',
+  tieDye: '/me/089C.jpg',
+  tieDyeSpiral: '/me/090C.jpg',
+  tieDyeCircle: '/me/091C.jpg',
+  skyClouds: '/me/BACKGR12.JPG',
+  beef: '/me/BEEF.JPG',
+  wispySky: '/me/CLOUD2.JPG',
+  earth: '/me/EARTH_C.JPG',
+  tree: '/me/FRAXINS3.png',
+  galaxy: '/me/GALAXY2.JPG',
+  purpleMetal: '/me/METAL7.JPG',
+  painting: '/me/Painting.png',
+  bronze: '/me/SC009.JPG',
+  copper: '/me/SC010.JPG',
+  goldMetal: '/me/SC027.JPG',
+  puffySky: '/me/SKY1.png',
+  goose: '/me/cc200455.jpg',
+  kaleidoscope: '/me/cio60415.jpg',
+  cosmic: '/me/cio60416.jpg',
+  dollars: '/gifs/bg-dollar-bills.gif',
+} as const
 
-/** A spinning object, positioned inside the page like the hidden stickers (percent of the page). */
-export type SpinnerSpec = { shape: ShapeId; texture?: TextureId; top: string; left: string; size?: number }
+/** Every image texture by name. */
+export const TEX = { ...TEXTURES, ...DREAM_TEXTURES, ...MORE_TEXTURES } as const
+export type TexName = keyof typeof TEX
 
-export type PageScene = { world?: WorldId; spinners: SpinnerSpec[] }
+/** Textures drawn in code (src/three/procTextures.ts). Listed here so content can name them. */
+export const PROC_TEXTURES = [
+  'felt', 'barcode', 'receipt', 'paper', 'code', 'keycaps', 'enamel', 'hay', 'bricks', 'card', 'chip', 'caution', 'iris',
+  'tiles', 'sad', 'wood', 'checkbox', 'creditCard', 'cassette', 'vinyl', 'tarot', 'giftWrap', 'speaker',
+] as const
+export type ProcName = (typeof PROC_TEXTURES)[number]
+export type TexRef = TexName | `proc:${ProcName}`
 
-/** Full TextureTown worlds on three pages only (so it stays special); spinners where they fit. Never on Home. */
-export const PAGE_3D: Record<string, PageScene> = {
-  '/oracle': { world: 'mystic', spinners: [{ shape: 'crystal', texture: 'blobs', top: '6%', left: '8%', size: 120 }] },
-  '/arcade': {
-    world: 'neon',
-    spinners: [
-      { shape: 'coin', top: '4%', left: '6%' },
-      { shape: 'gem', texture: 'triangles', top: '62%', left: '90%' },
-    ],
-  },
-  '/shrine/segfault': { world: 'glitch', spinners: [{ shape: 'knot', texture: 'streaks', top: '8%', left: '88%', size: 130 }] },
-  '/casino': {
-    spinners: [
-      { shape: 'dice', top: '10%', left: '6%' },
-      { shape: 'dice', top: '46%', left: '91%', size: 90 },
-    ],
-  },
-  '/shrine/kettle': { spinners: [{ shape: 'teapot', texture: 'marble', top: '14%', left: '88%', size: 130 }] },
-  '/radio': { spinners: [{ shape: 'cd', top: '3%', left: '86%', size: 120 }] },
-  '/desktop': { spinners: [{ shape: 'floppy', top: '6%', left: '93%', size: 96 }] },
-  '/dealership': { spinners: [{ shape: 'gem', texture: 'lava', top: '30%', left: '3%', size: 90 }] },
-  '/stickers': { spinners: [{ shape: 'star', texture: 'blobs', top: '4%', left: '90%', size: 110 }] },
-  '/under-construction': { spinners: [{ shape: 'octa', texture: 'steel', top: '20%', left: '88%' }] },
-  '/guestbook': { spinners: [{ shape: 'donut', texture: 'graph', top: '10%', left: '4%' }] },
-  '/scan': { spinners: [{ shape: 'knot', texture: 'binary', top: '70%', left: '90%', size: 100 }] },
+export const SHAPES = [
+  // the originals
+  'dice', 'teapot', 'crystal', 'cd', 'floppy', 'coin', 'knot', 'gem', 'donut', 'star', 'octa',
+  // Daniel himself
+  'photoCube', 'head', 'portrait',
+  // stuff
+  'car', 'trophy', 'gift', 'coinStack', 'cash', 'creditCard', 'receipt', 'barcode', 'playingCard', 'pokerChip',
+  'clipboard', 'checkbox', 'pencil', 'book', 'quill', 'envelope', 'cone', 'hardHat', 'bricks', 'magnifier', 'shield',
+  'virus', 'laptop', 'monitor', 'keyboard', 'mouse', 'headset', 'mousepad', 'joystick', 'cassette', 'vinyl', 'note',
+  'tarot', 'eye', 'candle', 'moon', 'palette', 'voxelHeart', 'door', 'suitcase', 'sadFace', 'mug', 'teaBag', 'sugarCube',
+  'horseshoe', 'carrot', 'hayBale', 'tooth', 'toothbrush', 'dentures', 'mouthwash', 'skull', 'normSlab', 'redX',
+  'warning', 'numberStack', 'arrows', 'heart', 'cloud', 'globe',
+  // legendaries
+  'beef', 'goose', 'planet',
+  // chunky voxel letters (uses `text`)
+  'text',
+] as const
+export type ShapeId = (typeof SHAPES)[number]
+
+export type WorldId = 'mystic' | 'neon' | 'glitch' | 'meadow' | 'painted' | 'space'
+export type Rarity = 'common' | 'rare' | 'legendary'
+export type ObjSize = 's' | 'm' | 'l'
+
+/** One 3D object on a page. Its personality is felt, never shown. */
+export type ObjSpec = {
+  id: string
+  name: string
+  lore: string
+  /** "Made of" line in the info window. */
+  madeOf: string
+  shape: ShapeId
+  tex?: TexRef
+  /** Voxel text for shape 'text'. */
+  text?: string
+  /** Which casual photo (photoCube/portrait start) or cut-out (head) to use. */
+  photo?: number
+  personality: Personality
+  /** Overrides the personality's usual click reaction ('secret' = a hidden doorway to a random page). */
+  reaction?: Reaction
+  size: ObjSize
+  /** Anchors sit in the margins and scroll with the page; drifters roam the screen behind the content. */
+  role: 'anchor' | 'drifter'
+  /** Anchors: position as % of the page. */
+  spot?: { top: string; left: string }
+  rarity: Rarity
 }
 
-export const sceneFor = (pathname: string): PageScene | undefined => PAGE_3D[pathname.toLowerCase().replace(/\/+$/, '') || '/']
+export type PageScene = { world?: WorldId; mood?: PageMood; objects: ObjSpec[] }
+
+export const SIZE_PX: Record<ObjSize, number> = { s: 96, m: 168, l: 300 }

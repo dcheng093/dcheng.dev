@@ -42,6 +42,7 @@
   --animate-squash: squash 0.25s steps(3);
   /* A barely-there zoom for ads that sit in a strip: anything bigger pushes wide banners out of view. */
   --animate-breathe: breathe 2.4s ease-in-out infinite;
+  --animate-legend: legend 1.6s ease-in-out infinite;
 
   @keyframes jank-x {
     from { translate: -12px 0; }
@@ -128,6 +129,10 @@
     from { clip-path: inset(0 0 0 0); }
     to { clip-path: inset(0 0 0 100%); }
   }
+  @keyframes legend {
+    0%, 100% { filter: drop-shadow(0 0 4px #ffd84a) drop-shadow(0 0 10px #ffb300); }
+    50% { filter: drop-shadow(0 0 10px #fff3a0) drop-shadow(0 0 22px #ffcc00); }
+  }
   @keyframes breathe {
     0%, 100% { scale: 1; }
     50% { scale: 1.025; }
@@ -144,11 +149,12 @@
   }
   /* Everything clickable on the fun site squishes when pressed and jiggles on hover. Not on /boring, not on
      things that already animate, and never on ads or inside windows: ads don't wiggle, and a jiggling ad or ✕
-     pokes out of its popup. */
+     pokes out of its popup. Nor inside scrolling lists: a jiggling row overflows sideways, a scrollbar pops in,
+     the row slides out from under the cursor, the scrollbar goes, the row is hovered again… a violent loop. */
   :where(button, a, [role='button'], summary):not(.boring *, [data-ad], [data-ad] *, [role='dialog'] *, [role='alertdialog'] *):active {
     scale: 0.93;
   }
-  :where(button, a.win-raised, a:has(> img)):not([class*='animate-']):not(.boring *, [data-ad], [data-ad] *, [role='dialog'] *, [role='alertdialog'] *):hover {
+  :where(button, a.win-raised, a:has(> img)):not([class*='animate-']):not(.boring *, [data-ad], [data-ad] *, [role='dialog'] *, [role='alertdialog'] *, .overflow-y-auto *, .overflow-x-auto *, .overflow-auto *):hover {
     animation: var(--animate-jiggle);
   }
   body {
@@ -262,6 +268,11 @@
   }
   .tile-town {
     background: #000 url('/gifs/bg-cyan-circuit.gif');
+  }
+  /* Hovering a 3D object (they sit behind the page, so this is set from JS). */
+  html.over-3d,
+  html.over-3d * {
+    cursor: pointer !important;
   }
   /* Pages with a 3D TextureTown world (see src/three/pageScenes.ts): the page's own tile steps aside. */
   html[data-world] main > :first-child {

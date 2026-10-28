@@ -42,6 +42,8 @@ export const routes: RouteObject[] = [
       { path: 'oracle', lazy: lazyPage(() => import('./routes/Oracle'), 'Oracle') },
       { path: 'blinkie-maker', lazy: lazyPage(() => import('./routes/BlinkieMaker'), 'BlinkieMaker') },
       { path: 'stickers', lazy: lazyPage(() => import('./routes/StickerBook'), 'StickerBook') },
+      // Secret: not in the webring or sitemap, so random links never spoil them.
+      { path: 'legendary/:id', lazy: lazyPage(() => import('./routes/Legendary'), 'Legendary') },
       { path: '*', element: <FakeBSOD />, handle: fullscreen },
     ],
   },
