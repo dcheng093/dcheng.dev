@@ -1,5 +1,7 @@
-import { useState, type CSSProperties } from 'react'
+import { useId, useState, type CSSProperties } from 'react'
 import { assets, type AssetKey, type Slot } from '../../content/assets'
+import { danielPick, danielSwap } from '../../lib/settings'
+import { useSettings } from '../settings/settingsState'
 
 type Props = {
   slot: Slot | AssetKey
@@ -12,13 +14,35 @@ type Props = {
 
 const resolve = (slot: Slot | AssetKey): Slot => (typeof slot === 'string' ? assets[slot] : slot)
 
+/** Everything Daniel Density can turn an image into. */
+const DANIELS = [...assets.misc, assets.headGrin, assets.headShock, assets.headWink]
+
 /** Low-res image that degrades to a "SUPPLY ME" placeholder when the file isn't in public/ yet. */
 export function Img({ slot, width, className = '', style, alt = '' }: Props) {
   const s = resolve(slot)
   const [missing, setMissing] = useState(false)
+  const spot = useId()
+  const { density } = useSettings().settings
   const w = width ?? s.w
   const h = Math.round((w * s.h) / s.w)
   if (missing) return <Placeholder slot={s} width={w} height={h} className={className} style={style} />
+  // Daniel Density (Control Panel): some images become Daniel, in the same box. Photos of him already are him.
+  if (!s.src.startsWith('/me/') && danielSwap(s.src, spot, density)) {
+    const d = DANIELS[danielPick(s.src, spot, DANIELS.length)]
+    return (
+      <img
+        src={d.src}
+        width={w}
+        height={h}
+        alt={alt}
+        loading="lazy"
+        draggable={false}
+        data-daniel=""
+        className={`max-w-full h-auto object-cover ${className}`}
+        style={{ ...style, aspectRatio: `${w} / ${h}` }}
+      />
+    )
+  }
   return (
     <img
       src={s.src}

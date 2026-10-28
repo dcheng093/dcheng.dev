@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
-import { Link, useNavigate } from 'react-router-dom'
+import { Link } from '../components/Link'
+import { useNavigate } from '../hooks/useNavigate'
 import { gifCursor } from '../lib/cursor'
 import { cursors, dividers, icons, type Slot } from '../content/assets'
 import { payout, spinReels, type Face } from '../lib/slots'

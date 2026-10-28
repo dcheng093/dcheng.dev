@@ -1,4 +1,5 @@
-import { Link, useParams } from 'react-router-dom'
+import { useParams } from 'react-router-dom'
+import { Link } from '../components/Link'
 import { useSfx } from '../audio/audioContext'
 import { WavyText } from '../components/chaos/Chaos'
 import { Viewer3D } from '../components/three/Viewer3D'

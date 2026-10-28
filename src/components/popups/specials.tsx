@@ -1,8 +1,9 @@
 import { useEffect, useState, type ReactNode } from 'react'
-import { Link, useNavigate } from 'react-router-dom'
+import { Link } from '../Link'
+import { useNavigate } from '../../hooks/useNavigate'
 import { daniel } from '../../content/daniel'
 import { useSfx } from '../../audio/audioContext'
-import { icons, popnukeGifs } from '../../content/assets'
+import { icons, popnukeGifs, selfies } from '../../content/assets'
 import { POPNUKE_3D, PRODUCT } from '../../content/popnuke'
 import { Viewer3D } from '../three/Viewer3D'
 import { Img } from '../media/Img'
@@ -29,7 +30,56 @@ export function SpecialPopup({ id, close }: SpecialProps & { id: SpecialId }) {
       return <PopnukeAd close={close} />
     case 'welcome-back':
       return <WelcomeBack />
+    case 'daniel-cam':
+      return <DanielCam close={close} />
   }
+}
+
+/** A "live webcam" of Daniel: his selfies cross-fading one into the next, and a viewer count nobody believes. */
+function DanielCam({ close }: SpecialProps) {
+  const navigate = useNavigate()
+  const [frame, setFrame] = useState(0)
+  const [viewers, setViewers] = useState(3)
+  useEffect(() => {
+    const id = window.setInterval(() => {
+      setFrame((f) => (f + 1) % selfies.length)
+      setViewers((v) => Math.max(1, v + Math.round(Math.random() * 4 - 2)))
+    }, 2000)
+    return () => window.clearInterval(id)
+  }, [])
+  return (
+    <div className="space-y-2 text-center font-[Tahoma,Verdana,sans-serif] text-black" data-testid="daniel-cam">
+      <p className="font-impact text-xl text-red-600">
+        DANIEL CAM <span className="animate-blink">● LIVE</span>
+      </p>
+      <div className="win-sunken relative mx-auto aspect-square w-48 overflow-hidden bg-black">
+        {selfies.map((s, i) => (
+          <img
+            key={s.src}
+            src={s.src}
+            alt={i === frame ? 'Daniel, live (probably)' : ''}
+            className={`absolute inset-0 h-full w-full object-cover transition-opacity duration-700 ease-in-out ${i === frame ? 'opacity-100' : 'opacity-0'}`}
+          />
+        ))}
+        <span className="absolute bottom-1 left-1 bg-black/70 px-1 font-vt text-sm text-lime">REC ● {viewers} watching</span>
+      </div>
+      <div className="flex justify-center gap-2">
+        <button
+          type="button"
+          className="win-raised animate-pulse-scale bg-yellow-300 px-2 py-0.5 font-bold"
+          onClick={() => {
+            close()
+            navigate('/under-construction')
+          }}
+        >
+          💸 TIP $5
+        </button>
+        <button type="button" className="win-raised px-2 py-0.5" onClick={close}>
+          Leave stream
+        </button>
+      </div>
+    </div>
+  )
 }
 
 /** POPNUKE's ad: a pop-up advertising a pop-up blocker. 3D emblem, 2D GIFs, and both buttons go to the page. */

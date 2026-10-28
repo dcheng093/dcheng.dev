@@ -6,6 +6,7 @@ import { AdSlot } from '../ads/AdSlot'
 import { isSpecial, type Popup } from './popupState'
 import { SpecialPopup } from './specials'
 import { useDrag } from '../../hooks/useDrag'
+import { useClosing } from '../../hooks/useClosing'
 
 const TITLES = ['Microsoft Internet Exploder', 'Netscrape Navigator', 'IMPORTANT MESSAGE!!!', 'Catastrophe.exe', 'Daniel Alert', 'Untitled - Notepad', 'SYSTEM WARNING', 'You Have (1) New Message', 'Free_Stuff.exe']
 
@@ -16,6 +17,7 @@ export function PopupWindow({ popup, z, onClose, onMove }: Props) {
   const [closeX, setCloseX] = useState(0)
   const ad = ads.find((a) => a.id === popup.content)
   const title = TITLES[popup.key % TITLES.length]
+  const shut = useClosing(onClose)
 
   // Opened too low to fit (short screens, tall pop-ups)? Nudge it up so its buttons are reachable:
   // a fixed window can't be scrolled to. offsetHeight ignores the pop-in scale animation.
@@ -45,7 +47,9 @@ export function PopupWindow({ popup, z, onClose, onMove }: Props) {
       aria-label={title}
       data-testid="popup"
       data-variant={popup.variant}
-      className="win-raised fixed max-h-[calc(100vh-16px)] w-[min(320px,calc(100vw-16px))] animate-pop-in overflow-y-auto p-0.5 font-[Tahoma,Verdana,sans-serif] text-xs shadow-[6px_6px_0_rgba(0,0,0,0.5)]"
+      data-closing={shut.closing || undefined}
+      onAnimationEnd={shut.onAnimationEnd}
+      className={`win-raised fixed max-h-[calc(100vh-16px)] w-[min(320px,calc(100vw-16px))] ${shut.closing ? 'pointer-events-none animate-pop-out' : 'animate-pop-in'} overflow-y-auto p-0.5 font-[Tahoma,Verdana,sans-serif] text-xs shadow-[6px_6px_0_rgba(0,0,0,0.5)]`}
       style={{ left: `min(${popup.fx * 100}vw, calc(100vw - min(320px, 100vw - 16px) - 8px))`, top: `${popup.fy * 100}vh`, zIndex: z }}
     >
       <div
@@ -59,7 +63,7 @@ export function PopupWindow({ popup, z, onClose, onMove }: Props) {
           type="button"
           aria-label="Close"
           onPointerEnter={(e) => e.pointerType === 'mouse' && dodge()}
-          onClick={onClose}
+          onClick={shut.close}
           className="win-raised relative z-10 grid h-4 w-4 place-items-center text-[10px] font-bold leading-none text-black transition-transform duration-75"
           style={{ transform: `translateX(${closeX}px)` }}
         >
@@ -67,7 +71,7 @@ export function PopupWindow({ popup, z, onClose, onMove }: Props) {
         </button>
       </div>
       <div className="bg-white p-2">
-        {isSpecial(popup.content) ? <SpecialPopup id={popup.content} close={onClose} /> : ad ? <AdSlot ad={ad} format="popup" className="w-full" /> : <p>404 popup not found. Close me. CLOSE ME.</p>}
+        {isSpecial(popup.content) ? <SpecialPopup id={popup.content} close={shut.close} /> : ad ? <AdSlot ad={ad} format="popup" className="w-full" /> : <p>404 popup not found. Close me. CLOSE ME.</p>}
       </div>
       {popup.variant === 'multiply' && <p className="px-1 pt-0.5 text-[10px] text-gray-700">Closing this window may open more windows.</p>}
     </div>

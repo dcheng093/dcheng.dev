@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
 import { useStored } from '../hooks/useLocalStorage'
+import { useSettings } from '../components/settings/settingsState'
 import { AudioCtx } from './audioContext'
 import { MusicPlayer } from './music'
 import { playSfx, type SfxName } from './synth'
@@ -17,7 +18,11 @@ export function AudioProvider({ children, silent = false }: { children: ReactNod
   const [mix, setMixState] = useStored<MixId>('mix', 'system-default')
   const [locked, setLocked] = useStored('songLock', false)
   const [unlocked, setUnlocked] = useState(false)
-  const graph = useRef<{ ctx: AudioContext; master: GainNode; analyser: AnalyserNode; music: MusicPlayer } | null>(null)
+  // The Control Panel's Sounds applet balances music against sound effects, under the master volume.
+  const { music: musicLevel, sfx: sfxLevel } = useSettings().settings
+  const graph = useRef<{ ctx: AudioContext; master: GainNode; musicBus: GainNode; sfxBus: GainNode; analyser: AnalyserNode; music: MusicPlayer } | null>(
+    null,
+  )
 
   const unlock = useCallback(() => {
     if (graph.current || typeof window.AudioContext !== 'function') return
@@ -27,7 +32,11 @@ export function AudioProvider({ children, silent = false }: { children: ReactNod
     const analyser = ctx.createAnalyser()
     analyser.fftSize = 64
     master.connect(analyser).connect(ctx.destination)
-    graph.current = { ctx, master, analyser, music: new MusicPlayer(ctx, master) }
+    const musicBus = ctx.createGain()
+    const sfxBus = ctx.createGain()
+    musicBus.connect(master)
+    sfxBus.connect(master)
+    graph.current = { ctx, master, musicBus, sfxBus, analyser, music: new MusicPlayer(ctx, musicBus) }
     void ctx.resume()
     setUnlocked(true)
   }, [])
@@ -42,8 +51,11 @@ export function AudioProvider({ children, silent = false }: { children: ReactNod
   // Volume only touches the gain, so dragging a slider never restarts the song.
   useEffect(() => {
     const g = graph.current
-    if (g) g.master.gain.value = muted || silent ? 0 : 0.6 * volume
-  }, [muted, silent, volume, unlocked])
+    if (!g) return
+    g.master.gain.value = muted || silent ? 0 : 0.6 * volume
+    g.musicBus.gain.value = musicLevel
+    g.sfxBus.gain.value = sfxLevel
+  }, [muted, silent, volume, musicLevel, sfxLevel, unlocked])
 
   useEffect(() => () => {
     graph.current?.music.stop()
@@ -53,7 +65,7 @@ export function AudioProvider({ children, silent = false }: { children: ReactNod
   const sfx = useCallback(
     (name: SfxName) => {
       const g = graph.current
-      if (g && !muted && !silent) playSfx(g.ctx, g.master, name)
+      if (g && !muted && !silent) playSfx(g.ctx, g.sfxBus, name)
     },
     [muted, silent],
   )

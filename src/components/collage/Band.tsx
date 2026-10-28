@@ -1,4 +1,4 @@
-import type { CSSProperties, ReactNode } from 'react'
+import { useEffect, useRef, type CSSProperties, type ReactNode, type RefObject } from 'react'
 import type { Slot } from '../../content/assets'
 import { gifCursor } from '../../lib/cursor'
 import { Img } from '../media/Img'
@@ -23,8 +23,11 @@ type BandProps = {
  * <Piece> pins itself absolutely with its own lg: classes so the band becomes a collage.
  */
 export function Band({ id, tile, cursor, title, lgHeight = 600, flow = false, edges, className = '', children }: BandProps) {
+  const ref = useRef<HTMLElement>(null)
+  useOffscreenPause(ref)
   return (
     <section
+      ref={ref}
       id={id}
       data-band={id}
       className={`relative overflow-x-clip border-y-4 border-double border-white ${tile} ${className}`}
@@ -76,4 +79,25 @@ function Gutter({ side, items }: { side: 'left' | 'right'; items: readonly Slot[
       ))}
     </aside>
   )
+}
+
+// Home is ~20 bands and 400 looping animations. Bands well off screen get `data-offscreen`, which pauses their
+// animations (index.css): nobody can see them, and the page stays smooth. One observer for every band.
+let observer: IntersectionObserver | undefined
+const offscreenObserver = () =>
+  (observer ??= new IntersectionObserver(
+    (entries) => {
+      for (const e of entries) e.target.toggleAttribute('data-offscreen', !e.isIntersecting)
+    },
+    { rootMargin: '300px 0px' },
+  ))
+
+function useOffscreenPause(ref: RefObject<HTMLElement | null>) {
+  useEffect(() => {
+    const el = ref.current
+    if (!el || typeof IntersectionObserver === 'undefined') return
+    const io = offscreenObserver()
+    io.observe(el)
+    return () => io.unobserve(el)
+  }, [ref])
 }

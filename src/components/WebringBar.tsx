@@ -1,5 +1,6 @@
 import { useEffect, useRef } from 'react'
-import { Link, useLocation } from 'react-router-dom'
+import { useLocation } from 'react-router-dom'
+import { Link } from './Link'
 import { neighbour, randomRoute } from '../lib/sitemap'
 import { useAudio } from '../audio/audioContext'
 import { findTrack, MIXES, type MixId } from '../audio/tracks'
@@ -33,8 +34,11 @@ export function WebringBar() {
   )
 }
 
-/** Tiny mute toggle + mix picker, deliberately parked somewhere silly. */
-export function MuteButton() {
+/**
+ * Tiny spinning mute toggle. It lives in the taskbar's tray; pages without a taskbar (the fullscreen gags) get the
+ * `floating` one, parked top-left.
+ */
+export function MuteButton({ floating = false }: { floating?: boolean }) {
   const { muted, toggleMute, unlocked } = useAudio()
   if (!unlocked) return null
   return (
@@ -43,7 +47,7 @@ export function MuteButton() {
       onClick={toggleMute}
       aria-label={muted ? 'Unmute' : 'Mute'}
       data-testid="mute"
-      className="fixed left-1 top-1 z-50 grid h-7 w-7 animate-spin-z overflow-hidden place-items-center rounded-full border border-black bg-white text-sm"
+      className={`${floating ? 'fixed left-1 top-1 z-50 h-7 w-7' : 'relative h-6 w-6 shrink-0'} grid animate-spin-z overflow-hidden place-items-center rounded-full border border-black bg-white text-sm`}
     >
       <Img slot={icons.speaker} width={18} className={muted ? 'opacity-40 grayscale' : ''} />
       {muted && <span aria-hidden className="absolute inset-0 m-auto h-0.5 w-6 rotate-45 bg-red-600" />}
@@ -109,7 +113,7 @@ export function VolumeSlider({ className = '' }: { className?: string }) {
   const pct = Math.round(volume * 100)
   return (
     <label className={`flex items-center gap-1 ${className}`}>
-      <span aria-hidden className="w-4 text-center">{muted || pct === 0 ? '🔇' : pct < 50 ? '🔉' : '🔊'}</span>
+      <Img slot={icons.speaker} width={16} className={muted || pct === 0 ? 'opacity-40 grayscale' : ''} />
       <input
         type="range"
         min={0}
@@ -187,7 +191,8 @@ export function MiniPlayer() {
           </div>
           <VolumeSlider className="mb-1" />
           {/* Phones get just the transport and volume: the full list would cover half the page. */}
-          <MixList className="max-h-40 max-sm:hidden" />
+          {/* Phones (either way up) skip the list: on a short screen it covered half the page. ◀◀ ▶▶ still pick. */}
+          <MixList className="max-h-40 max-sm:hidden [@media(max-height:500px)]:hidden" />
         </div>
       )}
     </section>

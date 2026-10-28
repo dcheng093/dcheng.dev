@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState, type FormEvent } from 'react'
-import { Link, useNavigate } from 'react-router-dom'
+import { Link } from '../components/Link'
+import { useNavigate } from '../hooks/useNavigate'
 import { gifCursor } from '../lib/cursor'
 import { assets, cursors, dividers, icons } from '../content/assets'
 import { Img } from '../components/media/Img'

@@ -16,7 +16,8 @@
   --color-cyber: #00ffff;
   --color-bsod: #0000aa;
 
-  /* Mostly steps() timing so motion looks like a 6fps GIF, not a smooth tween. */
+  /* Decorations use steps() timing so they move like a 6fps GIF, not a smooth tween. The chassis (page changes,
+     windows opening and closing) is eased instead: the junk is chunky, the site carrying it is smooth. */
   --animate-jank-x: jank-x 1.2s steps(4) infinite alternate;
   --animate-wobble: wobble 0.5s steps(2) infinite;
   --animate-pulse-scale: pulse-scale 0.8s steps(3) infinite alternate;
@@ -32,13 +33,14 @@
   --animate-wave: wave 1s steps(4) infinite;
   --animate-trail: trail 0.7s steps(5) forwards;
   /* Interaction feedback: one-shot, so nothing here loops or flashes. */
-  --animate-pop-in: pop-in 0.3s steps(4) both;
+  --animate-pop-in: pop-in 0.22s cubic-bezier(0.2, 0.8, 0.2, 1) both;
+  --animate-pop-out: pop-out 0.12s ease-in forwards;
   --animate-jiggle: jiggle 0.3s steps(3);
   --animate-burst: burst 0.6s ease-out forwards;
   --animate-toast: toast 2.6s ease-out forwards;
   --animate-steam: steam 2.2s linear infinite;
   --animate-float-up: float-up 0.9s ease-out forwards;
-  --animate-page-wipe: page-wipe 0.4s steps(6) forwards;
+  --animate-page-wipe: page-wipe 0.45s cubic-bezier(0.7, 0, 0.3, 1) forwards;
   --animate-squash: squash 0.25s steps(3);
   /* A barely-there zoom for ads that sit in a strip: anything bigger pushes wide banners out of view. */
   --animate-breathe: breathe 2.4s ease-in-out infinite;
@@ -98,6 +100,9 @@
     from { opacity: 1; scale: 1; }
     to { opacity: 0; scale: 0.3; translate: 0 14px; }
   }
+  @keyframes pop-out {
+    to { scale: 0.85; opacity: 0; }
+  }
   @keyframes pop-in {
     from { scale: 0.3; opacity: 0; }
     60% { scale: 1.08; opacity: 1; }
@@ -146,6 +151,14 @@
 @layer base {
   html {
     overflow-x: clip;
+    /* Jumps to an #anchor land below the sticky taskbar. */
+    scroll-padding-top: 48px;
+  }
+  /* Page changes cross-fade underneath the blinds (View Transitions; links opt in via components/Link). */
+  ::view-transition-old(root),
+  ::view-transition-new(root) {
+    animation-duration: 0.22s;
+    animation-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
   }
   /* Everything clickable on the fun site squishes when pressed and jiggles on hover. Not on /boring, not on
      things that already animate, and never on ads or inside windows: ads don't wiggle, and a jiggling ad or ✕
@@ -165,6 +178,79 @@
   }
   img {
     image-rendering: pixelated;
+  }
+  /* Daniel Control Panel themes (components/settings): two still layers over everything, clicks pass through.
+     Overlays, not recolours: every page has its own hand-picked palette, so a tint keeps them all intact. */
+  html[data-theme] body::before,
+  html[data-theme] body::after {
+    content: '';
+    position: fixed;
+    inset: 0;
+    pointer-events: none;
+    z-index: 2147483000;
+  }
+  html[data-theme='night'] body::before,
+  .theme-preview[data-theme='night']::before {
+    background: rgb(255 150 60 / 0.22);
+    mix-blend-mode: multiply;
+  }
+  html[data-theme='night'] body::after,
+  .theme-preview[data-theme='night']::after {
+    background: rgb(0 0 30 / 0.26);
+  }
+  html[data-theme='crt'] body::before,
+  .theme-preview[data-theme='crt']::before {
+    background: #00ff6a;
+    mix-blend-mode: color;
+    opacity: 0.75;
+  }
+  html[data-theme='crt'] body::after,
+  .theme-preview[data-theme='crt']::after {
+    background:
+      radial-gradient(ellipse at center, transparent 55%, rgb(0 0 0 / 0.55)),
+      repeating-linear-gradient(to bottom, rgb(0 0 0 / 0.28) 0 1px, transparent 1px 3px);
+  }
+  html[data-theme='vapor'] body::before,
+  .theme-preview[data-theme='vapor']::before {
+    background: linear-gradient(160deg, #ff71ce, #b967ff 45%, #01cdfe);
+    mix-blend-mode: soft-light;
+    opacity: 0.85;
+  }
+  html[data-theme='vapor'] body::after,
+  .theme-preview[data-theme='vapor']::after {
+    background:
+      linear-gradient(to top, rgb(1 205 254 / 0.45) 1px, transparent 1px) 0 0 / 48px 48px,
+      linear-gradient(to right, rgb(255 113 206 / 0.45) 1px, transparent 1px) 0 0 / 48px 48px;
+    mask-image: linear-gradient(to top, #000, transparent 40%);
+    transform: perspective(300px) rotateX(55deg);
+    transform-origin: bottom;
+  }
+  /* The Control Panel's Display preview: the same layers, inside a little box. */
+  .theme-preview {
+    position: relative;
+    overflow: hidden;
+    isolation: isolate;
+  }
+  .theme-preview[data-theme]::before,
+  .theme-preview[data-theme]::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    z-index: 1;
+  }
+  html[data-font='comic'] body,
+  html[data-font='comic'] body * {
+    font-family: 'Comic Sans MS', 'Comic Sans', 'Comic Neue', cursive !important;
+  }
+  html[data-cursor],
+  html[data-cursor] *:not(input, textarea, select, [contenteditable]) {
+    cursor: var(--site-cursor) !important;
+  }
+  /* Home bands scrolled well out of view (collage/Band): their animations wait until they're back. */
+  [data-offscreen],
+  [data-offscreen] * {
+    animation-play-state: paused !important;
   }
 }
 

@@ -31,6 +31,8 @@ export const PAGE_SONGS: Record<string, MixId> = {
   '/desktop': 'startup-funk',
   '/stickers': 'sticker-pop',
   '/popnuke': 'nuke-it',
+  // Control Panel music: the sound of fiddling with settings at 2am.
+  '/settings': 'lofi-debug',
 }
 
 export const pageSong = (pathname: string): MixId | undefined => PAGE_SONGS[pathname.toLowerCase().replace(/\/+$/, '') || '/']

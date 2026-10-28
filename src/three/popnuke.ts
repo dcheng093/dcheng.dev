@@ -10,6 +10,7 @@ import { disposeScene, register } from './stage'
  * Quarter-resolution and on the shared renderer, like every other 3D thing on the site.
  */
 const PANES = 10
+const SCRUB_S = 0.12
 const SHARDS = 6
 
 const clamp01 = (x: number) => Math.max(0, Math.min(1, x))
@@ -86,13 +87,16 @@ export function mountPopnukeHero(canvas: HTMLCanvasElement, progress: () => numb
   ro.observe(canvas)
 
   const look = new THREE.Vector3()
+  // The demo eases after the scroll position rather than jumping with it (one wheel notch is a big jump):
+  // a short exponential follow, like GSAP's `scrub`.
+  let p = clamp01(progress())
   const stop = register({
     scene,
     camera,
     target: canvas,
     visible: true,
-    update: (t) => {
-      const p = clamp01(progress())
+    update: (t, dt) => {
+      p += (clamp01(progress()) - p) * (1 - Math.exp(-dt / SCRUB_S))
       emblem.rotation.set(Math.sin(t * 0.7) * 0.25, t * 0.9, 0)
 
       for (const { pane, from, hit, shards } of panes) {

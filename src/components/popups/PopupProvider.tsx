@@ -6,6 +6,8 @@ import { useSfx } from '../../audio/audioContext'
 import { PopupContext, SPECIAL_POPUPS, initialPopupState, popupReducer, type PopupVariant } from './popupState'
 import { PopupWindow } from './PopupWindow'
 import { usePopnuke } from '../popnuke/popnukeState'
+import { chaosScale } from '../../lib/settings'
+import { useSettings } from '../settings/settingsState'
 import { ambush } from '../../lib/popnuke'
 
 /** Everything the random ambush can throw: popup-format ads plus the interactive specials. */
@@ -28,6 +30,8 @@ export function PopupProvider({ auto, children }: { auto: boolean; children: Rea
   )
 
   const nuke = usePopnuke()
+  // Chaos dial: half as many ambushes when calm, twice as many at MAXIMUM.
+  const ambushRate = chaosScale(useSettings().settings.chaos).ambushRate
   useRandomInterval(
     () => {
       switch (ambush(nuke.installed, nuke.closed, nuke.adShown)) {
@@ -41,8 +45,8 @@ export function PopupProvider({ auto, children }: { auto: boolean; children: Rea
           return open(pick(nuke.adShown ? [...ambushPool, 'popnuke-ad'] : ambushPool), pick<PopupVariant>(['normal', 'normal', 'multiply', 'dodge']))
       }
     },
-    auto ? 14_000 : null,
-    auto ? 32_000 : null,
+    auto ? 14_000 / ambushRate : null,
+    auto ? 32_000 / ambushRate : null,
   )
 
   const burst = useCallback(

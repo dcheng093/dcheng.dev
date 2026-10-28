@@ -43,7 +43,7 @@ export function HiddenSticker() {
           key={toast.key}
           role="status"
           onAnimationEnd={() => setToast(null)}
-          className="win-raised fixed left-1/2 top-12 z-[96] animate-toast px-3 py-1 font-pixel text-[10px] text-black shadow-[4px_4px_0_#000] sm:text-xs"
+          className="win-raised fixed left-1/2 top-14 z-[96] animate-toast px-3 py-1 font-pixel text-[10px] text-black shadow-[4px_4px_0_#000] sm:text-xs"
         >
           ★ {toast.text} ★
         </p>

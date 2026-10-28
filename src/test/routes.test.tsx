@@ -33,6 +33,7 @@ const testIds: Record<string, string> = {
   '/blinkie-maker': 'blinkie-maker',
   '/stickers': 'stickers',
   '/popnuke': 'popnuke',
+  '/settings': 'settings',
 }
 
 describe('routes', () => {
@@ -97,6 +98,62 @@ describe('routes', () => {
     ])
   })
 
+  it('the taskbar links Home, Guestbook, Settings and Donate, shows where you are, and the logo goes home', () => {
+    renderAt('/guestbook')
+    const bar = screen.getByRole('navigation', { name: 'Main' })
+    const links = within(bar).getAllByRole('link')
+    expect(links.map((a) => [a.getAttribute('aria-label'), a.getAttribute('href')])).toEqual([
+      ['Home', '/'],
+      ['Guestbook', '/guestbook'],
+      ['Settings', '/settings'],
+      ['DONATE', '/under-construction'],
+      ["Daniel Cheng's World Wide Web Site: home", '/'],
+    ])
+    expect(within(bar).getByRole('link', { name: 'Guestbook' })).toHaveAttribute('aria-current', 'page')
+    expect(within(bar).getByRole('link', { name: 'Home' })).not.toHaveAttribute('aria-current')
+    expect(within(bar).getByAltText('Daniel')).toHaveAttribute('src', '/me/head-grind.png')
+  })
+
+  it.each(['/boring', '/leave', '/this/does/not/exist'])('%s has no taskbar', (path) => {
+    renderAt(path)
+    expect(screen.queryByRole('navigation', { name: 'Main' })).toBeNull()
+  })
+
+  it('the dealership logo is Daniel grinning again', () => {
+    renderAt('/dealership')
+    expect(within(screen.getByTestId('dealership').querySelector('header')!).getByAltText('Daniel')).toHaveAttribute('src', '/me/head-grind.png')
+  })
+
+  it('Control Panel: a change is only saved on Apply or OK, Cancel forgets it, and the theme lands on <html>', async () => {
+    renderAt('/settings')
+    const panel = await screen.findByTestId('settings')
+    await userEvent.click(within(panel).getByRole('button', { name: 'Display Properties' }))
+    let dialog = screen.getByTestId('applet')
+    await userEvent.click(within(dialog).getByRole('radio', { name: /CRT Hacker/ }))
+    expect(screen.getByTestId('theme-preview')).toHaveAttribute('data-theme', 'crt')
+    expect(document.documentElement.dataset.theme).toBeUndefined()
+    await userEvent.click(within(dialog).getByRole('button', { name: 'Cancel' }))
+    await act(() => new Promise((r) => setTimeout(r, 350))) // eases shut
+    expect(screen.queryByTestId('applet')).toBeNull()
+    expect(document.documentElement.dataset.theme).toBeUndefined()
+
+    await userEvent.click(within(panel).getByRole('button', { name: 'Display Properties' }))
+    dialog = screen.getByTestId('applet')
+    await userEvent.click(within(dialog).getByRole('radio', { name: /CRT Hacker/ }))
+    await userEvent.click(within(dialog).getByRole('button', { name: 'Apply' }))
+    expect(document.documentElement.dataset.theme).toBe('crt')
+    expect(JSON.parse(localStorage.getItem('settings')!).theme).toBe('crt')
+    delete document.documentElement.dataset.theme
+  })
+
+  it('Daniel Density at 100% turns every picture into Daniel', () => {
+    localStorage.setItem('settings', JSON.stringify({ density: 100 }))
+    renderAt('/casino')
+    const pictures = [...screen.getByTestId('casino').querySelectorAll('img')]
+    expect(pictures.length).toBeGreaterThan(5)
+    expect(pictures.every((img) => img.getAttribute('src')!.startsWith('/me/'))).toBe(true)
+  })
+
   it('the POPNUKE tray badge only shows once it is installed', () => {
     renderAt('/casino')
     expect(screen.queryByTestId('popnuke-badge')).toBeNull()
@@ -139,6 +196,7 @@ describe('routes', () => {
     expect(alert).toHaveTextContent('Hi, I am Albanian virus')
     expect(within(alert).queryByRole('button', { name: /minimi/i })).toBeNull()
     await userEvent.click(within(alert).getByRole('button', { name: label }))
+    act(() => vi.advanceTimersByTime(400)) // it eases shut first
     expect(screen.queryByRole('alertdialog')).toBeNull()
     expect(sessionStorage.getItem('virusAlertSeen')).toBe('true')
     vi.useRealTimers()

@@ -1,4 +1,5 @@
-import { Link, useNavigate } from 'react-router-dom'
+import { Link } from '../components/Link'
+import { useNavigate } from '../hooks/useNavigate'
 import { Band, Piece } from '../components/collage/Band'
 import { AdSlot } from '../components/ads/AdSlot'
 import { DealCard } from '../components/ads/DealCard'

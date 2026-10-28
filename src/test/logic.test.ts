@@ -34,6 +34,8 @@ import { hasGlyph, voxelWord } from '../lib/voxelFont'
 import { bounce, clampOffset, contains, isFree, nearestFree, place, MIN_SIZE } from '../three/space'
 import { shrines } from '../content/shrines'
 import { existsSync } from 'node:fs'
+import { govern } from '../three/stage'
+import { DEFAULT_SETTINGS, chaosScale, danielPick, danielSwap, mergeSettings } from '../lib/settings'
 
 const spawn = (s: PopupState, variant: 'normal' | 'multiply' | 'dodge' = 'normal') =>
   popupReducer(s, { type: 'spawn', content: 'millionth', variant, fx: 0.5, fy: 0.5 })
@@ -596,5 +598,42 @@ describe('POPNUKE', () => {
     expect(ambush(false, 3, false)).toBe('popnuke-ad')
     expect(ambush(false, 1, false)).toBe('normal')
     expect(ambush(false, 5, true)).toBe('normal')
+  })
+})
+
+describe('Control Panel settings', () => {
+  it('fills anything missing or invalid with the defaults', () => {
+    expect(mergeSettings(undefined)).toEqual(DEFAULT_SETTINGS)
+    expect(mergeSettings({ theme: 'crt', density: 250, chaos: 'apocalypse', music: -1, comicSans: 'yes' })).toEqual({ ...DEFAULT_SETTINGS, theme: 'crt', density: 100, music: 0 })
+  })
+
+  it('"normal" chaos is the site exactly as it was', () => {
+    expect(chaosScale('normal')).toEqual({ confetti: 1, ambushRate: 1, trail: 1, burst: 1 })
+    expect(chaosScale('calm').confetti).toBeLessThan(1)
+    expect(chaosScale('max').ambushRate).toBeGreaterThan(1)
+  })
+
+  it('Daniel Density: never at 0, always at 100, about right in between, and stable', () => {
+    const keys = Array.from({ length: 1000 }, (_, i) => `:r${i}:`)
+    expect(keys.some((k) => danielSwap('/gifs/a.gif', k, 0))).toBe(false)
+    expect(keys.every((k) => danielSwap('/gifs/a.gif', k, 100))).toBe(true)
+    const half = keys.filter((k) => danielSwap('/gifs/a.gif', k, 50)).length
+    expect(half).toBeGreaterThan(400)
+    expect(half).toBeLessThan(600)
+    expect(keys.map((k) => danielSwap('/gifs/b.gif', k, 30))).toEqual(keys.map((k) => danielSwap('/gifs/b.gif', k, 30)))
+    expect(new Set(keys.map((k) => danielPick('/gifs/a.gif', k, 26))).size).toBe(26)
+  })
+})
+
+describe('3D frame governor', () => {
+  const run = (frames: number[], start = { frameMs: 1000 / 60, work: 0 }) => frames.reduce((s, w) => govern(s, w), start)
+  it('stays at 60fps while frames are light, even through a one-off spike (a shader compiling)', () => {
+    expect(run([...Array(60).fill(6), 400, ...Array(30).fill(6)]).frameMs).toBeCloseTo(1000 / 60)
+  })
+  it('drops to 30fps when frames stay heavy, and comes back once they are light again', () => {
+    const slow = run(Array(60).fill(14))
+    expect(slow.frameMs).toBeCloseTo(1000 / 30)
+    expect(run(Array(60).fill(9), slow).frameMs).toBeCloseTo(1000 / 30) // in between: no flip-flopping
+    expect(run(Array(60).fill(5), slow).frameMs).toBeCloseTo(1000 / 60)
   })
 })

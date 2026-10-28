@@ -13,7 +13,8 @@ import { Page3D } from '../components/three/Page3D'
 import { LiveChat } from '../components/LiveChat'
 import { PetWindow } from '../components/PetWindow'
 import { PopnukeProvider } from '../components/popnuke/PopnukeProvider'
-import { TrayBadge } from '../components/popnuke/TrayBadge'
+import { Taskbar } from '../components/Taskbar'
+import { SettingsProvider } from '../components/settings/SettingsProvider'
 import { VirusAlert } from '../components/VirusAlert'
 import { MiniPlayer, MuteButton, WebringBar } from '../components/WebringBar'
 import { useStored } from '../hooks/useLocalStorage'
@@ -31,6 +32,7 @@ export function RootLayout() {
   const [entered, setEntered] = useStored('entered', false, 'session')
 
   return (
+    <SettingsProvider active={!handle.calm}>
     <AudioProvider silent={handle.calm}>
       {handle.calm ? (
         <>
@@ -56,8 +58,7 @@ export function RootLayout() {
           {/* While the gate is up the site sits mounted but unpainted underneath it: the gate is opaque, and
               painting the whole animated collage behind it would just eat the frame budget of its 3D dream. */}
           <div className={entered ? 'contents' : 'invisible'}>
-            <MuteButton />
-            <TrayBadge />
+            {handle.noWebring ? <MuteButton floating /> : <Taskbar />}
             <main className="relative">
               <Outlet />
               <HiddenSticker />
@@ -74,6 +75,7 @@ export function RootLayout() {
         </PopnukeProvider>
       )}
     </AudioProvider>
+    </SettingsProvider>
   )
 }
 

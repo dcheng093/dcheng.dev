@@ -157,7 +157,7 @@ export function buildShape(shape: ShapeId, tex?: TexRef, extra: Extra = {}): THR
     case 'photoCube':
       return new THREE.Mesh(
         box(1.15, 1.15, 1.15),
-        Array.from({ length: 6 }, (_, i) => new THREE.MeshLambertMaterial({ map: texture(PHOTOS[(photo + i) % PHOTOS.length]) })),
+        Array.from({ length: 6 }, (_, i) => new THREE.MeshLambertMaterial({ map: texture(PHOTOS[(photo + i) % PHOTOS.length], 1, true) })),
       )
     case 'head':
       return card(texture(HEADS[photo % HEADS.length]), 1.9, 1.9)

@@ -4,6 +4,9 @@ import { moodOffset, poke, restingBody, step, type Body, type PageMood } from '.
 import type { ObjSpec } from './pageScenes'
 import { bounce, clampOffset, contains, floatingObstacles, isFree, MIN_SIZE, nearestFree, overlaps, SHRINK, type Rect } from './space'
 
+/** How long a drifter takes to fade out before hopping (matches the canvas's opacity transition in Page3D). */
+const HOP_FADE_S = 0.18
+
 /**
  * Brains for the 3D objects (no three.js here). The objects sit BEHIND the page content with
  * pointer-events off, so hover and clicks are worked out from the cursor position instead of DOM events:
@@ -207,6 +210,7 @@ export function drive(el: HTMLElement, canvas: HTMLCanvasElement, spec: ObjSpec,
   let lost = false // a drifter with nowhere visible to be
   let shown = size // a drifter's on-screen size: smaller than `size` when the screen is short of room
   let retryAt = 0
+  let hopAt = 0 // a covered drifter fades out where it is first, then reappears (fading in) somewhere clear
   // Anchors step aside when floating UI (Melly, the player, popups) scrolls over them, then drift back.
   const dodge = { x: 0, y: 0, tx: 0, ty: 0, at: -1, cornered: false }
 
@@ -223,7 +227,9 @@ export function drive(el: HTMLElement, canvas: HTMLCanvasElement, spec: ObjSpec,
       if (Number.isNaN(d.x) || !isFree(here, v, obs)) {
         // Starting out, respawning after a burst, or content scrolled over it: hop to the nearest clear spot.
         // (When the screen has no room at all it stays out of sight, and only looks again twice a second.)
-        if (t >= retryAt) {
+        if (!Number.isNaN(d.x) && !lost && !hopAt) hopAt = t + HOP_FADE_S
+        if (t >= retryAt && t >= hopAt) {
+          hopAt = 0
           const spot = Number.isNaN(d.x) ? freeSpot(size, rng, obs) : nearestFree(d.x + shown / 2, d.y + shown / 2, shown, v, obs, 500, 24) ?? freeSpot(size, rng, obs)
           lost = !spot
           if (spot) {
@@ -234,6 +240,7 @@ export function drive(el: HTMLElement, canvas: HTMLCanvasElement, spec: ObjSpec,
         }
       } else {
         lost = false
+        hopAt = 0 // uncovered again before it got round to hopping
         const next = bounce(here, d.vx + Math.sin(t * 0.3 + entry.seed) * 8, d.vy + Math.cos(t * 0.25 + entry.seed) * 6, dt, v, obs)
         d.x = next.x
         d.y = next.y
@@ -275,7 +282,7 @@ export function drive(el: HTMLElement, canvas: HTMLCanvasElement, spec: ObjSpec,
     if (dx !== entry.body.ox + m.dx) entry.body.vx = 0
     if (dy !== entry.body.oy + m.dy) entry.body.vy = 0
 
-    const hidden = t < entry.hiddenUntil || lost || dodge.cornered
+    const hidden = t < entry.hiddenUntil || lost || dodge.cornered || hopAt > 0
     canvas.style.opacity = hidden ? '0' : ''
     const sq = entry.body.squash
     const base = entry.drift ? `translate(${entry.drift.x}px, ${entry.drift.y}px) ` : `translate(${dodge.x}px, ${dodge.y}px) `

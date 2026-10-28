@@ -168,6 +168,14 @@ export const PAGE_3D: Record<string, PageScene> = {
       obj('ceo-portrait', 'Daniel Cheng, CEO', 'portrait', 'lazy', 's', 'gold frame, photo #3', 'Founder, CEO, CFO, CTO and receptionist of Daniel Cheng Software Ltd.', { photo: 2, spot: R(75) }),
     ],
   },
+  '/settings': {
+    objects: [
+      obj('settings-ini', 'SETTINGS.INI', 'floppy', 'nervous', 's', 'plastic, 2KB of opinions', 'Every setting you have ever changed, saved on a floppy that nobody will ever open again.', { spot: L(30) }),
+      obj('control-keyboard', 'The Control Keyboard', 'keyboard', 'showoff', 'm', 'beige plastic, one sticky key', 'Ctrl, Alt and Delete all at once is not a setting. Daniel checked.', { spot: R(35) }),
+      obj('selfie-cube', 'Selfie Cube', 'photoCube', 'curious', 's', 'six close-ups of Daniel', 'Six angles, all of them too close. This is what 100% Daniel Density looks like.', { photo: 13, spot: R(75) }),
+      obj('runaway-mouse', 'The Mouse That Got Away', 'mouse', 'shy', 's', 'grey plastic, a ball inside', 'Changed its own pointer speed to MAXIMUM and left.'),
+    ],
+  },
   '/stickers': {
     objects: [
       obj('sticker-star', 'Gold Star', 'star', 'showoff', 'm', 'purple blobs', 'You get one of these for finding all the stickers. You do not get this one.', { tex: 'blobs', spot: R(4) }),

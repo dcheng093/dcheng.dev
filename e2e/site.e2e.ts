@@ -1,6 +1,6 @@
 import { expect, test, type Locator, type Page } from '@playwright/test'
 
-const ROUTES = ['/', '/dealership', '/shrine/segfault', '/shrine/kettle', '/shrine/chiikawa', '/guestbook', '/under-construction', '/you-won', '/checkout', '/leave', '/scan', '/casino', '/survey', '/work-from-home', '/arcade', '/desktop', '/radio', '/oracle', '/blinkie-maker', '/stickers', '/popnuke', '/boring']
+const ROUTES = ['/', '/dealership', '/shrine/segfault', '/shrine/kettle', '/shrine/chiikawa', '/guestbook', '/under-construction', '/you-won', '/checkout', '/leave', '/scan', '/casino', '/survey', '/work-from-home', '/arcade', '/desktop', '/radio', '/oracle', '/blinkie-maker', '/stickers', '/popnuke', '/settings', '/boring']
 
 /** Skip the enter gate (sessionStorage) and collect real errors, ignoring 404s for not-yet-supplied images. */
 async function prepare(page: Page, { skipGate = true, virus = false, pet = false } = {}) {
@@ -122,7 +122,8 @@ test('the floating player changes the song on non-home pages', async ({ page }) 
 })
 
 test('hovering a track in the music list never shakes it (no jiggle, no sideways overflow)', async ({ page }) => {
-  test.skip((page.viewportSize()?.width ?? 1000) < 640, 'the track list is hidden on phones')
+  const { width = 1000, height = 1000 } = page.viewportSize() ?? {}
+  test.skip(width < 640 || height <= 500, 'the floating track list is hidden on phones')
   await prepare(page)
   await page.goto('/casino')
   await page.locator('[data-testid="casino"]').click({ position: { x: 5, y: 5 } }) // unlock audio so the player shows
@@ -248,6 +249,8 @@ test("the desktop's notepad remembers what you typed, and windows drag", async (
   const notepad = page.getByTestId('window-notepad')
   await notepad.getByLabel('Notepad diary').fill('secret e2e diary')
   await settled(notepad)
+  // Typing scrolled the page; back to the top so the title bar isn't tucked under the sticky taskbar.
+  await page.evaluate(() => window.scrollTo(0, 0))
   const bar = notepad.getByText('diary.txt - Notepad')
   const before = (await notepad.boundingBox())!
   const handle = (await bar.boundingBox())!
@@ -322,7 +325,7 @@ test('3D: a TextureTown world on /oracle, objects on /casino, nothing on Home', 
 // Every page except Home. (Exact per-page counts are pinned by the unit tests against the content itself.)
 const OBJECT_PAGES = [
   '/dealership', '/guestbook', '/under-construction', '/you-won', '/checkout', '/scan', '/casino', '/survey', '/work-from-home',
-  '/arcade', '/desktop', '/radio', '/oracle', '/blinkie-maker', '/stickers', '/popnuke', '/leave', '/this/does/not/exist',
+  '/arcade', '/desktop', '/radio', '/oracle', '/blinkie-maker', '/stickers', '/popnuke', '/settings', '/leave', '/this/does/not/exist',
   '/shrine/chiikawa', '/shrine/battlestation', '/shrine/peripherals', '/shrine/segfault', '/shrine/norminette',
   '/shrine/push-swap', '/shrine/kettle', '/shrine/horses', '/shrine/teeth',
 ]
@@ -582,7 +585,8 @@ test('the music has a volume slider that starts at half, sticks between pages, a
 
 /** Closes the topmost pop-up, if there is one. Returns whether it did. */
 async function closeTopPopup(page: Page) {
-  const popup = page.getByTestId('popup').last() // the newest is on top; older ones may be covered
+  // The newest is on top (older ones may be covered); ones already easing shut don't count.
+  const popup = page.locator('[data-testid="popup"]:not([data-closing])').last()
   if (!(await popup.count())) return false
   await settled(popup)
   await popup.getByRole('button', { name: 'Close' }).click()
@@ -705,14 +709,16 @@ test('business-card popup opens, drags, and closes', async ({ page }) => {
 
 test('a dodging close button stays clickable and never sends you anywhere', async ({ page }, info) => {
   test.skip(!/desktop|tablet-landscape/.test(info.project.name), 'dodging is mouse-only')
+  // Only 1 ambush in 4 is a dodger, so the hunt below is luck: usually a few steps, now and then forty.
+  test.setTimeout(180_000)
   await page.clock.install()
   await prepare(page)
   await page.goto('/')
-  const dodgers = page.locator('[data-testid="popup"][data-variant="dodge"]')
+  const dodgers = page.locator('[data-testid="popup"][data-variant="dodge"]:not([data-closing])')
   // Ambush popups pick a random variant; close the others (topmost first: "multiply" ones split into
   // overlapping pairs) and wait for the next until a dodger turns up.
   for (let i = 0; i < 60 && (await dodgers.count()) === 0; i++) {
-    const other = page.locator('[data-testid="popup"]:not([data-variant="dodge"])').last()
+    const other = page.locator('[data-testid="popup"]:not([data-variant="dodge"]):not([data-closing])').last()
     if (await other.count()) await other.getByRole('button', { name: 'Close' }).click()
     else await page.clock.fastForward(33_000)
   }
@@ -746,4 +752,97 @@ test('live chat answers', async ({ page }) => {
   await expect(page.getByTestId('typing')).toBeVisible()
   await expect(page.getByTestId('typing')).toBeHidden({ timeout: 6000 })
   await expect(page.getByRole('dialog', { name: 'Live chat' }).locator('p')).toHaveCount(3)
+})
+
+test('the taskbar stays stuck to the top, fits the screen, and its buttons go where they say', async ({ page }) => {
+  await prepare(page)
+  await page.goto('/dealership')
+  const bar = page.getByTestId('taskbar')
+  await expect(bar).toBeVisible()
+  expect(await bar.evaluate((n) => n.scrollWidth - n.clientWidth)).toBeLessThanOrEqual(0)
+  await page.evaluate(() => window.scrollTo(0, 1500))
+  await expect.poll(async () => (await bar.boundingBox())!.y).toBe(0)
+  // First click unlocks the audio; the mute button lives in the tray.
+  await bar.getByTestId('tray').click()
+  await expect(bar.getByTestId('tray').getByTestId('mute')).toBeVisible()
+  await bar.getByRole('link', { name: 'DONATE' }).click()
+  await expect(page).toHaveURL(/\/under-construction$/)
+  await expect(bar.getByRole('link', { name: 'DONATE' })).toHaveAttribute('aria-current', 'page')
+  await bar.getByRole('link', { name: /home$/ }).click() // the logo
+  await expect(page).toHaveURL(/\/$/)
+})
+
+test('page changes are eased, and windows ease shut before they go', async ({ page }) => {
+  await page.clock.install()
+  await prepare(page, { virus: true })
+  await page.goto('/casino')
+  await expect(page.getByTestId('page-wipe')).toHaveCSS('animation-timing-function', /cubic-bezier/)
+  await page.clock.fastForward(26_000)
+  const alert = page.getByRole('alertdialog', { name: 'Virus Alert' })
+  await expect(alert).toBeVisible()
+  await alert.getByRole('button', { name: 'No' }).click()
+  await expect(alert).toHaveCSS('animation-name', 'pop-out')
+  await expect(alert).toHaveCount(0)
+})
+
+/** Opens a Control Panel applet, lets `change` fiddle with it, and presses OK. */
+async function inApplet(page: Page, name: string, change: (dialog: Locator) => Promise<unknown>) {
+  await page.getByRole('button', { name: `${name} Properties` }).click()
+  const dialog = page.getByTestId('applet')
+  await change(dialog)
+  await dialog.getByRole('button', { name: 'OK' }).click()
+  await expect(dialog).toHaveCount(0)
+}
+
+test('the Control Panel changes the whole site, and remembers', async ({ page }) => {
+  await prepare(page)
+  await page.goto('/settings')
+  await inApplet(page, 'Display', async (d) => {
+    await d.getByRole('radio', { name: /Vaporwave/ }).check()
+    await d.getByRole('checkbox', { name: /Comic Sans Mode/ }).check()
+  })
+  await inApplet(page, 'Mouse', (d) => d.getByRole('radio', { name: 'Busy (hourglass)' }).check())
+  await inApplet(page, 'Sounds', (d) => d.getByRole('slider', { name: 'Music' }).fill('40'))
+  await inApplet(page, 'Daniel', (d) => d.getByRole('slider', { name: 'Daniel Density' }).fill('100'))
+
+  await page.goto('/casino')
+  await expect(page.locator('html')).toHaveAttribute('data-theme', 'vapor')
+  expect(await page.evaluate(() => getComputedStyle(document.body, '::before').backgroundImage)).toContain('gradient')
+  expect(await page.getByTestId('casino').locator('h1').first().evaluate((h) => getComputedStyle(h).fontFamily)).toMatch(/Comic/)
+  expect(await page.evaluate(() => getComputedStyle(document.body).cursor)).toMatch(/url\(.*wait/)
+  const pictures = await page.getByTestId('casino').locator('img').evaluateAll((imgs) => imgs.map((i) => i.getAttribute('src')))
+  expect(pictures.length).toBeGreaterThan(5)
+  expect(pictures.filter((src) => !src?.startsWith('/me/'))).toEqual([])
+  expect(JSON.parse((await page.evaluate(() => localStorage.getItem('settings')))!).music).toBe(0.4)
+  // /boring stays boring.
+  await page.goto('/boring')
+  await expect(page.locator('html')).not.toHaveAttribute('data-theme', /./)
+})
+
+test('the Chaos dial scales the GIF confetti (Normal is the site as it always was)', async ({ page }) => {
+  await prepare(page)
+  const count = async (chaos: string) => {
+    await page.evaluate((c) => localStorage.setItem('settings', JSON.stringify({ chaos: c })), chaos)
+    await page.goto('/dealership')
+    await page.getByTestId('gif-confetti').waitFor({ state: 'attached' })
+    await page.waitForTimeout(300)
+    return page.getByTestId('gif-confetti').locator('img').count()
+  }
+  await page.goto('/dealership')
+  const normal = await count('normal')
+  expect(await count('calm')).toBeLessThan(normal)
+  expect(await count('max')).toBeGreaterThan(normal)
+})
+
+test('Daniel Cam is a live feed of the new selfies', async ({ page }) => {
+  await prepare(page)
+  await page.goto('/settings')
+  await page.getByRole('button', { name: 'Daniel Properties' }).click()
+  await page.getByTestId('applet').getByRole('button', { name: /Watch Daniel Cam/ }).click()
+  const cam = page.getByTestId('daniel-cam')
+  await expect(cam).toBeVisible()
+  const shown = () => cam.locator('img.opacity-100').getAttribute('src')
+  const first = await shown()
+  expect(first).toMatch(/\/me\/MISC-(1[4-9]|2\d)\.JPG/)
+  await expect.poll(shown, { timeout: 5_000 }).not.toBe(first)
 })

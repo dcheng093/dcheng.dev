@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef, useState, type RefObject } from 'react'
-import { useLocation, useNavigate } from 'react-router-dom'
+import { useLocation } from 'react-router-dom'
+import { useNavigate } from '../../hooks/useNavigate'
 import { useSfx } from '../../audio/audioContext'
 import { legendary, rollLegendary, sceneFor } from '../../content/objects'
 import { useStored } from '../../hooks/useLocalStorage'
@@ -250,7 +251,7 @@ function Obj({ spec, size, at, seed, mood, onOpen }: { spec: ObjSpec; size: numb
         height={res}
         data-testid="object-3d"
         data-object={spec.id}
-        className={`block [image-rendering:pixelated] ${spec.rarity === 'legendary' ? 'animate-legend' : ''}`}
+        className={`block transition-opacity duration-[180ms] ease-out [image-rendering:pixelated] ${spec.rarity === 'legendary' ? 'animate-legend' : ''}`}
         // Hidden until its brain's first frame has found it somewhere visible.
         style={{ width: size, height: size, opacity: 0 }}
       />

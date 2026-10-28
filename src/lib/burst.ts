@@ -1,6 +1,6 @@
 import { sparkles } from '../content/assets'
 
-const PARTICLES = 6
+export const PARTICLES = 6
 
 /** Sparkles flying out from a point (viewport px). Also used when a 3D object bursts. */
 export function burstAt(x: number, y: number, host: HTMLElement = document.body, count = PARTICLES, spread = 1) {

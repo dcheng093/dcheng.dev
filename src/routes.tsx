@@ -43,6 +43,7 @@ export const routes: RouteObject[] = [
       { path: 'blinkie-maker', lazy: lazyPage(() => import('./routes/BlinkieMaker'), 'BlinkieMaker') },
       { path: 'stickers', lazy: lazyPage(() => import('./routes/StickerBook'), 'StickerBook') },
       { path: 'popnuke', lazy: lazyPage(() => import('./routes/Popnuke'), 'Popnuke') },
+      { path: 'settings', lazy: lazyPage(() => import('./routes/Settings'), 'Settings') },
       // Secret: not in the webring or sitemap, so random links never spoil them.
       { path: 'legendary/:id', lazy: lazyPage(() => import('./routes/Legendary'), 'Legendary') },
       { path: '*', element: <FakeBSOD />, handle: fullscreen },

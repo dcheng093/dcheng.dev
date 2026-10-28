@@ -14,7 +14,23 @@ export type View = {
   visible: boolean
 }
 
-const FRAME_MS = 1000 / 30
+// 60fps while drawing is cheap; a governor drops to 30fps if a frame's work gets heavy (slow phones, lots of
+// objects) and comes back once it's light again. A little slack, so a rAF tick that lands a hair early still counts.
+const FAST_MS = 1000 / 60
+const SLOW_MS = 1000 / 30
+const SLACK_MS = 2
+const HEAVY_MS = 10
+const LIGHT_MS = 8
+// One slow frame (a shader compiling, textures uploading as a page opens) mustn't count as the device being slow.
+const SPIKE_MS = 20
+let frameMs = FAST_MS
+let work = 0 // a running average of each frame's work, in ms
+
+/** The governor: the next frame interval and work average, given the last frame's work (ms). */
+export function govern(state: { frameMs: number; work: number }, frameWork: number) {
+  const avg = state.work * 0.9 + Math.min(SPIKE_MS, frameWork) * 0.1
+  return { work: avg, frameMs: avg > HEAVY_MS ? SLOW_MS : avg < LIGHT_MS ? FAST_MS : state.frameMs }
+}
 
 let renderer: THREE.WebGLRenderer | null | undefined
 const views = new Set<View>()
@@ -38,7 +54,8 @@ function getRenderer() {
 
 function frame(now: number) {
   raf = requestAnimationFrame(frame)
-  if (document.hidden || now - last < FRAME_MS) return
+  if (document.hidden || now - last < frameMs - SLACK_MS) return
+  const start = performance.now()
   const dt = last ? Math.min(0.1, (now - last) / 1000) : 0
   last = now
   const r = renderer
@@ -72,6 +89,7 @@ function frame(now: number) {
     c.clearRect(0, 0, width, height)
     c.drawImage(r.domElement, 0, fullH - height, width, height, 0, 0, width, height)
   }
+  ;({ work, frameMs } = govern({ work, frameMs }, performance.now() - start))
 }
 
 /**
@@ -111,11 +129,12 @@ const loader = new THREE.TextureLoader()
 const textures = new Map<string, THREE.Texture>()
 
 /** Tiled, nearest-neighbour textures (crunchy on purpose), shared and cached by URL. */
-export function texture(url: string, repeat = 1) {
-  const key = `${url}|${repeat}`
+export function texture(url: string, repeat = 1, cover = false) {
+  const key = `${url}|${repeat}|${cover}`
   let t = textures.get(key)
   if (!t) {
-    t = loader.load(url)
+    // `cover` centre-crops a non-square photo to a square, so a portrait selfie isn't squashed onto a cube face.
+    t = loader.load(url, cover ? (tex) => cropSquare(tex) : undefined)
     t.wrapS = t.wrapT = THREE.RepeatWrapping
     t.magFilter = THREE.NearestFilter
     t.minFilter = THREE.NearestMipmapNearestFilter
@@ -124,6 +143,13 @@ export function texture(url: string, repeat = 1) {
     textures.set(key, t)
   }
   return t
+}
+
+function cropSquare(t: THREE.Texture) {
+  const { width: w, height: h } = t.image as { width: number; height: number }
+  if (!w || !h || w === h) return
+  t.repeat.set(w > h ? h / w : 1, h > w ? w / h : 1)
+  t.offset.set((1 - t.repeat.x) / 2, (1 - t.repeat.y) / 2)
 }
 
 /** Frees a scene's geometries and materials (textures are shared and cached, so they stay). */

@@ -3,6 +3,7 @@ import { clampToViewport, useDrag } from '../hooks/useDrag'
 import { useSfx } from '../audio/audioContext'
 import { useStored } from '../hooks/useLocalStorage'
 import { usePopnuke } from './popnuke/popnukeState'
+import { useClosing } from '../hooks/useClosing'
 
 export const VIRUS_ALERT_DELAY_MS = 25_000
 
@@ -39,10 +40,11 @@ export function VirusAlert() {
     return () => window.clearTimeout(t)
   }, [seen, sfx, setSeen])
 
-  const close = () => {
+  const shut = useClosing(() => {
     setOpen(false)
     setSeen(true)
-  }
+  })
+  const close = shut.close
   useEffect(() => {
     if (!open) return
     const onKey = (e: KeyboardEvent) => e.key === 'Escape' && close()
@@ -59,8 +61,9 @@ export function VirusAlert() {
       aria-labelledby="virus-alert-title"
       aria-describedby="virus-alert-text"
       data-testid="virus-alert"
+      onAnimationEnd={shut.onAnimationEnd}
       style={pos ? { left: pos.x, top: pos.y } : undefined}
-      className={`fixed z-[97] w-[min(460px,calc(100vw-16px))] ${pos ? '' : 'left-1/2 top-[28%] -translate-x-1/2'} animate-pop-in border border-[#888] bg-white font-['Segoe_UI',Tahoma,sans-serif] text-[13px] text-black shadow-[0_10px_30px_rgba(0,0,0,0.45)]`}
+      className={`fixed z-[97] w-[min(460px,calc(100vw-16px))] ${pos ? '' : 'left-1/2 top-[28%] -translate-x-1/2'} ${shut.closing ? 'pointer-events-none animate-pop-out' : 'animate-pop-in'} border border-[#888] bg-white font-['Segoe_UI',Tahoma,sans-serif] text-[13px] text-black shadow-[0_10px_30px_rgba(0,0,0,0.45)]`}
     >
       <div className="flex cursor-move touch-none select-none items-center justify-between" data-testid="virus-alert-titlebar" {...drag}>
         <span id="virus-alert-title" className="pl-3 text-[13px]">Virus Alert</span>

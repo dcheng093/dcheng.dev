@@ -28,7 +28,7 @@ export function PetWindow() {
       onMinimise={toggle}
       drag={drag}
       testId="pet-window"
-      className={`fixed z-40 ${pos ? '' : 'right-2 top-10'} ${minimised ? 'w-36' : 'w-[322px] max-w-[calc(100vw-16px)]'}`}
+      className={`fixed z-40 ${pos ? '' : 'right-2 top-14'} ${minimised ? 'w-36' : 'w-[322px] max-w-[calc(100vw-16px)]'}`}
       style={pos ? { left: pos.x, top: pos.y } : undefined}
       bodyClassName="overflow-hidden bg-white"
     >

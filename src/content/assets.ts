@@ -15,10 +15,16 @@ export const assets = {
   hero: me('hero-landscape.jpg', 960, 720, 'landscape hero photo'),
   headshot: me('headshot.jpg', 480, 640, 'normal headshot'),
   // File names are case-sensitive once deployed: match public/me/ exactly.
-  misc: [
-    'MISC-01.JPG', 'MISC-02.JPG', 'MISC-03.JPG', 'MISC-04.JPG', 'MISC-05.JPG', 'MISC-06.JPG', 'MISC-07.JPG',
-    'MISC-08.JPG', 'MISC-09.JPG', 'MISC-10.jpg', 'MISC-11.JPG', 'MISC-12.JPG', 'MISC-13.png',
-  ].map((file, i) => me(file, 400, 400, `casual photo #${i + 1}`)),
+  // New ones go on the end, so photo indices used around the site keep pointing at the same picture.
+  misc: (
+    [
+      'MISC-01.JPG', 'MISC-02.JPG', 'MISC-03.JPG', 'MISC-04.JPG', 'MISC-05.JPG', 'MISC-06.JPG', 'MISC-07.JPG',
+      'MISC-08.JPG', 'MISC-09.JPG', 'MISC-10.jpg', 'MISC-11.JPG', 'MISC-12.JPG', 'MISC-13.png',
+      // Close-up selfies: mostly square, three portrait.
+      ['MISC-14.JPG', 400, 534], ['MISC-15.JPG', 400, 512], 'MISC-16.JPG', 'MISC-17.JPG', 'MISC-18.JPG', 'MISC-19.JPG',
+      'MISC-20.JPG', 'MISC-21.JPG', 'MISC-22.JPG', ['MISC-23.JPG', 400, 545],
+    ] as (string | [string, number, number])[]
+  ).map((f, i) => (typeof f === 'string' ? me(f, 400, 400, `casual photo #${i + 1}`) : me(f[0], f[1], f[2], `casual photo #${i + 1}`))),
   hobbies: ['HOBBY-1.jpg', 'HOBBY-2.jpg', 'HOBBY-3.jpg'].map((file, i) => me(file, 400, 300, `hobby photo #${i + 1}`)),
 
   // Third-party GIFs (asset-research picks; credits in public/gifs/CREDITS.md)
@@ -45,6 +51,9 @@ export const assets = {
 } as const
 
 export type AssetKey = Exclude<keyof typeof assets, 'misc' | 'hobbies'>
+
+/** The close-up selfies (the end of `misc`): Daniel Cam, the Control Panel. */
+export const selfies = assets.misc.slice(13)
 
 // Kawaii clutter (asset-research category "kawaii"): GifConfetti strews these over every page,
 // and a few are placed by hand.
