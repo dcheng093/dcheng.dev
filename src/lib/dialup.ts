@@ -1,14 +1,17 @@
 /**
  * The early-2000s feel: the first time a page is opened in a visit it "loads" over dial-up; after that it's cached
- * and just fades in. Pure numbers and text here; components/DialUp.tsx does the drawing.
+ * and the Win95 blinds sweep off it instead. Pure numbers and text here; components/DialUp.tsx does the drawing.
  */
 
-/** How long a page takes to "load" over dial-up, and how long a cached one takes to fade in. */
-export const LOAD_MS = 1100
-export const FADE_MS = 150
+/** sessionStorage key listing the pages "cached" this visit (main.tsx empties it on a refresh). */
+export const VISITED_KEY = 'dialupVisited'
 
-/** How a page arrives: over dial-up the first time this visit, from the "cache" after that. */
-export const arrival = (visitedBefore: boolean): 'dialup' | 'fade' => (visitedBefore ? 'fade' : 'dialup')
+/** How long a page takes to "load" over dial-up, and how long the blinds take to sweep off a cached one. */
+export const LOAD_MS = 1100
+export const WIPE_MS = 450
+
+/** How a page arrives: over dial-up the first time this visit, from the "cache" (under the blinds) after that. */
+export const arrival = (visitedBefore: boolean): 'dialup' | 'wipe' => (visitedBefore ? 'wipe' : 'dialup')
 
 /** The browser status bar's line while a page loads (`progress` 0 → 1). */
 export function statusLine(path: string, progress: number) {

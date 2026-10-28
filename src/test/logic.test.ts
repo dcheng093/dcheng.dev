@@ -35,6 +35,7 @@ import { bounce, clampOffset, contains, isFree, nearestFree, place, MIN_SIZE } f
 import { shrines } from '../content/shrines'
 import { existsSync } from 'node:fs'
 import { govern } from '../three/stage'
+import { EMBLEM_CLEARANCE } from '../three/popnuke'
 import { arrival, statusLine } from '../lib/dialup'
 import { QUESTIONS, SURVEY } from '../content/survey'
 import { claimedTotal, fleeGivesUp, possess, questionNumber, resultRows } from '../lib/survey'
@@ -642,9 +643,9 @@ describe('3D frame governor', () => {
 })
 
 describe('dial-up', () => {
-  it('a page loads over dial-up the first time this visit, and fades in from the cache after that', () => {
+  it('a page loads over dial-up the first time this visit, and comes from the cache under the blinds after that', () => {
     expect(arrival(false)).toBe('dialup')
-    expect(arrival(true)).toBe('fade')
+    expect(arrival(true)).toBe('wipe')
   })
 
   it('the status bar contacts the host, opens the page counting up (never 100% early), then says Done', () => {
@@ -701,5 +702,11 @@ describe('the survey', () => {
       const choices = q.kind === 'choice' ? q.a : q.kind === 'flee' ? [q.yes] : ['10']
       expect(choices).toContain(r.everyone)
     }
+  })
+})
+
+describe('POPNUKE demo', () => {
+  it('the pop-ups shatter well in front of the spinning emblem, never inside it', () => {
+    expect(EMBLEM_CLEARANCE).toBeGreaterThan(0.75) // more than half a pop-up pane
   })
 })

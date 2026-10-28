@@ -1,22 +1,21 @@
 import { useEffect, useRef, useState } from 'react'
 import { assets } from '../content/assets'
-import { FADE_MS, LOAD_MS, arrival, statusLine } from '../lib/dialup'
+import { LOAD_MS, VISITED_KEY, WIPE_MS, arrival, statusLine } from '../lib/dialup'
 import { Img } from './media/Img'
 
 /**
  * The site on a 56k modem, on purpose: the first time a page is opened in a visit it arrives blank and paints in
  * top to bottom in fits and starts, with a status bar and an hourglass, and its pictures come down a few lines at a
- * time. After that it's "cached": going back to it is just a quick fade. Scrolling is never laggy.
+ * time. After that it's "cached": going back to it, the Win95 blinds sweep off it instead. A refresh empties the
+ * cache (main.tsx). Scrolling is never laggy.
  */
-
-const VISITED = 'dialupVisited'
 
 /** When the current page started "loading", and for how long (for pictures to wait their turn). */
 let current: { start: number; ms: number } | null = null
 
 function visited(): string[] {
   try {
-    return JSON.parse(sessionStorage.getItem(VISITED) ?? '[]')
+    return JSON.parse(sessionStorage.getItem(VISITED_KEY) ?? '[]')
   } catch {
     return []
   }
@@ -25,7 +24,7 @@ function visited(): string[] {
 function remember(path: string) {
   const seen = visited()
   try {
-    if (!seen.includes(path)) sessionStorage.setItem(VISITED, JSON.stringify([...seen, path]))
+    if (!seen.includes(path)) sessionStorage.setItem(VISITED_KEY, JSON.stringify([...seen, path]))
   } catch {
     // Private mode: every visit is a first visit.
   }
@@ -37,12 +36,23 @@ export function PageLoad({ path }: { path: string }) {
   return mode === 'dialup' ? <DialUpLoad path={path} /> : <CachedLoad />
 }
 
-/** A page already seen this visit: straight from the "cache", it just fades in. */
+/** A page already seen this visit: straight from the "cache", the Win95-blue blinds sweep off it. */
 function CachedLoad() {
+  const [done, setDone] = useState(false)
   useEffect(() => {
-    document.querySelector('main')?.animate?.([{ opacity: 0 }, { opacity: 1 }], { duration: FADE_MS, easing: 'ease-out' })
+    // The animation ending is the real signal; this catches browsers (and tests) that never run it.
+    const fallback = window.setTimeout(() => setDone(true), WIPE_MS + 400)
+    return () => window.clearTimeout(fallback)
   }, [])
-  return null
+  if (done) return null
+  return (
+    <div
+      aria-hidden
+      data-testid="page-wipe"
+      onAnimationEnd={() => setDone(true)}
+      className="pointer-events-none fixed inset-0 z-[95] animate-page-wipe bg-[repeating-linear-gradient(90deg,#000080_0_14px,#1084d0_14px_28px)]"
+    />
+  )
 }
 
 function DialUpLoad({ path }: { path: string }) {

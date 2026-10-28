@@ -13,6 +13,16 @@ const PANES = 10
 const SCRUB_S = 0.12
 const SHARDS = 6
 
+// The emblem sits well behind where the pop-ups shatter: it spins, so its ring sweeps a whole depth range, and a
+// pane flying into that range would cut straight through it. Scaled up so it looks the same size from the camera
+// (which starts 9 units away; the emblem is now 12).
+const EMBLEM_Z = -3
+const EMBLEM_SCALE = 2
+const EMBLEM_RADIUS = 1.07 // nukeLogo's outer ring (shapes.ts), unscaled
+const IMPACT = new THREE.Vector3(0, 0, 0.6)
+/** How far in front of the spinning emblem's nearest reach the pop-ups shatter (world units). */
+export const EMBLEM_CLEARANCE = IMPACT.z - (EMBLEM_Z + EMBLEM_RADIUS * EMBLEM_SCALE)
+
 const clamp01 = (x: number) => Math.max(0, Math.min(1, x))
 const smooth = (x: number) => x * x * (3 - 2 * x)
 const lerp = (a: number, b: number, t: number) => a + (b - a) * t
@@ -34,7 +44,8 @@ export function mountPopnukeHero(canvas: HTMLCanvasElement, progress: () => numb
   scene.add(new THREE.Points(starGeo, new THREE.PointsMaterial({ color: 0xffffff, size: 0.12 })))
 
   const emblem = buildShape('nukeLogo')
-  emblem.scale.setScalar(1.5)
+  emblem.position.z = EMBLEM_Z
+  emblem.scale.setScalar(EMBLEM_SCALE)
   scene.add(emblem)
 
   // The incoming pop-ups: each has a start point, an impact moment, and a set of shards for afterwards.
@@ -47,7 +58,8 @@ export function mountPopnukeHero(canvas: HTMLCanvasElement, progress: () => numb
     scene.add(pane)
     const shards = Array.from({ length: SHARDS }, () => {
       const s = new THREE.Mesh(new THREE.BoxGeometry(0.35, 0.25, 0.03), new THREE.MeshLambertMaterial({ color: rng() > 0.5 ? 0xc0c0c0 : 0x1084d0, transparent: true }))
-      const dir = new THREE.Vector3(rng() - 0.5, rng() - 0.5, rng() - 0.2).normalize()
+      // Outwards and towards the viewer, never back into the emblem.
+      const dir = new THREE.Vector3(rng() - 0.5, rng() - 0.5, 0.1 + rng() * 0.7).normalize()
       scene.add(s)
       return { s, dir, spin: new THREE.Vector3(rng() * 8, rng() * 8, rng() * 8) }
     })
@@ -103,11 +115,11 @@ export function mountPopnukeHero(canvas: HTMLCanvasElement, progress: () => numb
         const fly = clamp01(p / hit) // 0 → 1 as it approaches
         const after = clamp01((p - hit) / 0.12) // 0 → 1 as its shards fly off
         pane.visible = p < hit
-        pane.position.copy(from).lerp(new THREE.Vector3(0, 0, 0.6), smooth(fly))
+        pane.position.copy(from).lerp(IMPACT, smooth(fly))
         pane.rotation.set(Math.sin(t + hit * 9) * 0.3, (1 - fly) * 2, Math.sin(t * 1.3 + hit) * 0.2)
         for (const { s, dir, spin } of shards) {
           s.visible = p >= hit && after < 1
-          s.position.copy(dir).multiplyScalar(0.6 + after * 5).add(new THREE.Vector3(0, 0, 0.6))
+          s.position.copy(dir).multiplyScalar(0.6 + after * 5).add(IMPACT)
           s.rotation.set(spin.x * after, spin.y * after, spin.z * after)
           ;(s.material as THREE.MeshLambertMaterial).opacity = 1 - after
         }

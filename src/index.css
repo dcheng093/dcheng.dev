@@ -42,6 +42,8 @@
   --animate-float-up: float-up 0.9s ease-out forwards;
   /* A page "loading" over dial-up: jerky on purpose (components/DialUp sets the real duration). */
   --animate-dialup: dialup 1.1s step-end forwards;
+  /* A cached page: the Win95 blinds sweep off it (components/DialUp). */
+  --animate-page-wipe: page-wipe 0.45s cubic-bezier(0.7, 0, 0.3, 1) forwards;
   --animate-squash: squash 0.25s steps(3);
   /* A barely-there zoom for ads that sit in a strip: anything bigger pushes wide banners out of view. */
   --animate-breathe: breathe 2.4s ease-in-out infinite;
@@ -132,6 +134,10 @@
     to { translate: 0 -40px; opacity: 0; }
   }
   /* The unpainted page: uncovered top to bottom in stalls and jumps, like a slow connection rendering it. */
+  @keyframes page-wipe {
+    from { clip-path: inset(0 0 0 0); }
+    to { clip-path: inset(0 0 0 100%); }
+  }
   @keyframes dialup {
     0%, 16% { clip-path: inset(0 0 0 0); }
     26%, 38% { clip-path: inset(13% 0 0 0); }

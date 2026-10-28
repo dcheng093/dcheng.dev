@@ -772,7 +772,7 @@ test('the taskbar stays stuck to the top, fits the screen, and its buttons go wh
   await expect(page).toHaveURL(/\/$/)
 })
 
-test('a page loads over dial-up the first time (jerky, status bar, hourglass), then fades in from the cache', async ({ page }) => {
+test('a page loads over dial-up the first time (jerky, status bar, hourglass), then from the cache under the Win95 blinds', async ({ page }) => {
   await prepare(page)
   // Don't wait for every picture: the load is over in about a second.
   await page.goto('/casino', { waitUntil: 'commit' })
@@ -790,22 +790,40 @@ test('a page loads over dial-up the first time (jerky, status bar, hourglass), t
   await page.getByTestId('taskbar').getByRole('link', { name: 'Guestbook' }).click()
   await expect(load).toHaveCSS('animation-duration', '1.1s')
   await expect(load).toHaveCount(0)
-  // …but back somewhere already seen, it's cached: no blank page, status bar or hourglass, just a fade.
+  // …but back somewhere already seen, it's cached: no blank page, status bar or hourglass, just the blinds sweeping off.
   await page.evaluate(() => {
     const w = window as unknown as { saw: string[] }
     w.saw = []
     new MutationObserver(() => {
       if (document.querySelector('[data-testid="page-load"], [data-testid="status-bar"]')) w.saw.push('dial-up')
       if ('loading' in document.documentElement.dataset) w.saw.push('loading')
-      if (document.querySelector('main')?.getAnimations().some((a) => (a as Animation & { effect: KeyframeEffect }).effect?.getKeyframes().some((k) => k.opacity !== undefined))) w.saw.push('fade')
+      const wipe = document.querySelector('[data-testid="page-wipe"]')
+      if (wipe && getComputedStyle(wipe).animationName === 'page-wipe') w.saw.push('blinds')
     }).observe(document.body, { childList: true, subtree: true, attributes: true })
   })
   await page.goBack()
   await expect(page).toHaveURL(/\/casino$/)
-  await expect.poll(() => page.evaluate(() => (window as unknown as { saw: string[] }).saw)).toContain('fade')
+  await expect.poll(() => page.evaluate(() => (window as unknown as { saw: string[] }).saw)).toContain('blinds')
+  await expect(page.getByTestId('page-wipe')).toHaveCount(0) // and then it's gone
   const saw = await page.evaluate(() => (window as unknown as { saw: string[] }).saw)
   expect(saw).not.toContain('dial-up')
   expect(saw).not.toContain('loading')
+})
+
+test('a refresh empties the cache: pages slow-load again the first time after it', async ({ page }) => {
+  await prepare(page)
+  await page.goto('/casino')
+  await expect(page.getByTestId('page-load')).toHaveCount(0)
+  expect(await page.evaluate(() => JSON.parse(sessionStorage.getItem('dialupVisited')!))).toContain('/casino')
+  // A refresh goes back to the enter gate on Home, with nothing cached any more.
+  await page.reload()
+  const gate = page.getByRole('dialog', { name: 'Enter the site' })
+  await expect(gate).toBeVisible()
+  expect(await page.evaluate(() => JSON.parse(sessionStorage.getItem('dialupVisited') ?? '[]'))).toEqual([])
+  await gate.getByRole('button').click()
+  await page.goto('/casino', { waitUntil: 'commit' })
+  await expect(page.getByTestId('page-load')).toHaveCSS('animation-name', 'dialup') // slow again, not the blinds
+  await expect(page.getByTestId('page-wipe')).toHaveCount(0)
 })
 
 test('scrolling is smooth: no repaint lag, and pictures scrolled to after the load show whole', async ({ page }) => {
