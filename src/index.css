@@ -172,8 +172,9 @@
   .tile-static {
     background: #888 url('/gifs/bg-static.gif');
   }
-  .tile-dice {
-    background: #fff url('/gifs/bg-dice.gif');
+  /* Static on purpose: the old animated dice tile strobed at 20fps. */
+  .tile-casino-table {
+    background: #062 url('/gifs/bg-casino-table.jpg');
   }
   .tile-cherubs {
     background: #cff url('/gifs/bg-cherubs.gif');

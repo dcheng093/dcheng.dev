@@ -1,10 +1,13 @@
+import { useEffect, useRef } from 'react'
 import { Link, useLocation } from 'react-router-dom'
 import { neighbour, randomRoute } from '../lib/sitemap'
 import { useAudio } from '../audio/audioContext'
-import { MIXES } from '../audio/synth'
+import { findTrack, MIXES, type MixId } from '../audio/tracks'
+import { useStored } from '../hooks/useLocalStorage'
 import { icons } from '../content/assets'
 import { Img } from './media/Img'
 import { ButtonWall } from './chaos/ButtonWall'
+import { Marquee } from './chaos/Chaos'
 
 /** "Daniel's Webring of One": Prev/Next/Random cycle the site's own pages; List is the real sitemap. */
 export function WebringBar() {
@@ -48,23 +51,96 @@ export function MuteButton() {
   )
 }
 
+const titleBar = 'flex items-center gap-1 bg-gradient-to-r from-win-title to-[#1084d0] px-1 font-bold text-white'
+
+/** Picking a mix also unmutes: choosing a song and hearing nothing would be confusing. */
+function useMixPicker() {
+  const { setMix, muted, toggleMute } = useAudio()
+  return (id: MixId) => {
+    setMix(id)
+    if (muted) toggleMute()
+  }
+}
+
+/** Scrollable track list; ♪ is a built-in synth song, 💿 an audio file from src/music/. */
+function MixList({ className = '' }: { className?: string }) {
+  const { mix } = useAudio()
+  const pick = useMixPicker()
+  const list = useRef<HTMLUListElement>(null)
+  // Keep the playing track in view after ⏮/⏭. Sets scrollTop directly: scrollIntoView would also scroll the page.
+  useEffect(() => {
+    const ul = list.current
+    const li = ul?.querySelector<HTMLElement>('[aria-current="true"]')
+    if (ul && li) ul.scrollTop = li.offsetTop - (ul.clientHeight - li.offsetHeight) / 2
+  }, [mix])
+  return (
+    <ul ref={list} className={`win-sunken relative space-y-0.5 overflow-y-auto bg-white ${className}`}>
+      {MIXES.map((m) => (
+        <li key={m.id} aria-current={m.id === mix}>
+          <button type="button" onClick={() => pick(m.id)} className={`w-full px-1 text-left ${m.id === mix ? 'bg-win-title text-white' : 'hover:bg-gray-300'}`}>
+            {m.kind === 'file' ? '💿' : '♪'} {m.label}
+          </button>
+        </li>
+      ))}
+    </ul>
+  )
+}
+
 export function Jukebox() {
-  const { mix, setMix, muted, toggleMute } = useAudio()
+  const { mix, muted } = useAudio()
   return (
     <div className="win-raised w-[260px] max-w-full p-1 font-[Tahoma,sans-serif] text-xs text-black">
-      <div className="bg-gradient-to-r from-win-title to-[#1084d0] px-1 font-bold text-white">DANIELAMP 2.91 — choose your mix</div>
+      <div className={titleBar}>DANIELAMP 2.91 — choose your mix</div>
       <div className="win-sunken my-1 bg-black p-1 font-vt text-lg text-lime">
-        <span className="animate-blink">▶</span> {MIXES.find((m) => m.id === mix)?.label} {muted && '(muted)'}
+        <span className="animate-blink">▶</span> {findTrack(mix).label} {muted && '(muted)'}
       </div>
-      <ul className="space-y-0.5">
-        {MIXES.map((m) => (
-          <li key={m.id}>
-            <button type="button" onClick={() => { setMix(m.id); if (muted) toggleMute() }} className={`w-full px-1 text-left ${m.id === mix ? 'bg-win-title text-white' : 'hover:bg-gray-300'}`}>
-              {m.label}
-            </button>
-          </li>
-        ))}
-      </ul>
+      <MixList className="max-h-56" />
     </div>
+  )
+}
+
+/** Floating DANIELAMP for every page except Home (which has the full Jukebox inline). */
+export function MiniPlayer() {
+  const { unlocked, mix, muted, toggleMute } = useAudio()
+  const pick = useMixPicker()
+  const [minimised, setMinimised] = useStored('playerMinimised', false)
+  if (!unlocked) return null
+  const i = MIXES.indexOf(findTrack(mix))
+  const skip = (step: 1 | -1) => pick(MIXES[(i + step + MIXES.length) % MIXES.length].id)
+  const transport = 'win-raised flex-1 py-0.5 font-bold text-black'
+  return (
+    <section
+      aria-label="Music player"
+      data-testid="mini-player"
+      className={`win-raised fixed bottom-2 left-2 z-50 max-sm:bottom-12 p-0.5 font-[Tahoma,sans-serif] text-xs text-black shadow-[4px_4px_0_#000] ${minimised ? '' : 'w-[min(230px,calc(100vw-16px))]'}`}
+    >
+      <div className={titleBar}>
+        <span className="flex-1 truncate">{minimised ? `♫ ${MIXES[i].label}` : 'DANIELAMP 2.91'}</span>
+        <button
+          type="button"
+          onClick={() => setMinimised((m) => !m)}
+          aria-label={minimised ? 'Restore player' : 'Minimise player'}
+          className="win-raised grid h-4 w-4 place-items-center leading-none text-black"
+        >
+          {minimised ? '□' : '_'}
+        </button>
+      </div>
+      {!minimised && (
+        <div className="p-1">
+          <div className="win-sunken mb-1 bg-black p-1 font-vt text-lg leading-tight text-lime" data-testid="now-playing">
+            <Marquee speed={8}>
+              {i + 1}. DANIEL — {MIXES[i].label} {muted ? '(PAUSED)' : '*** NOW PLAYING ***'}
+            </Marquee>
+          </div>
+          <div className="mb-1 flex gap-1">
+            <button type="button" className={transport} onClick={() => skip(-1)} aria-label="Previous track">◀◀</button>
+            <button type="button" className={transport} onClick={toggleMute} aria-label={muted ? 'Play' : 'Pause'}>{muted ? '▶' : '❚❚'}</button>
+            <button type="button" className={transport} onClick={() => skip(1)} aria-label="Next track">▶▶</button>
+          </div>
+          {/* Phones get just the transport: the full list would cover half the page. */}
+          <MixList className="max-h-40 max-sm:hidden" />
+        </div>
+      )}
+    </section>
   )
 }

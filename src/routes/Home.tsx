@@ -14,7 +14,6 @@ import { daniel } from '../content/daniel'
 import { models } from '../content/dealership'
 import { randomRoute } from '../lib/sitemap'
 import { useState } from 'react'
-import { useUnlockOnGesture } from '../audio/audioContext'
 
 const adById = (id: string) => ads.find((a) => a.id === id)!
 const meSlot = (file: string, w: number, h: number, label: string): Slot => ({ src: `/me/${file}`, w, h, label })
@@ -33,7 +32,6 @@ const EDGES = {
 } satisfies Record<string, Slot[]>
 
 export function Home() {
-  useUnlockOnGesture()
   return (
     <div data-testid="home">
       <HeaderBand />

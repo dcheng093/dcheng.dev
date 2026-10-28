@@ -1,21 +1,27 @@
 import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
 import { useStored } from '../hooks/useLocalStorage'
 import { AudioCtx } from './audioContext'
-import { Chiptune, playSfx, type MixId, type SfxName } from './synth'
+import { MusicPlayer } from './music'
+import { playSfx, type SfxName } from './synth'
+import type { MixId } from './tracks'
 
-/** Browsers block sound until a user gesture; nothing is created until `unlock()` (the enter gate). */
-export function AudioProvider({ children }: { children: ReactNode }) {
+/**
+ * Browsers block sound until a user gesture; nothing is created until `unlock()` (the enter gate).
+ * `silent` (calm routes like /boring) pauses everything without tearing the AudioContext down,
+ * so the music picks straight back up on the way out.
+ */
+export function AudioProvider({ children, silent = false }: { children: ReactNode; silent?: boolean }) {
   const [muted, setMuted] = useStored('muted', false)
   const [mix, setMixState] = useStored<MixId>('mix', 'system-default')
   const [unlocked, setUnlocked] = useState(false)
-  const graph = useRef<{ ctx: AudioContext; master: GainNode; music: Chiptune } | null>(null)
+  const graph = useRef<{ ctx: AudioContext; master: GainNode; music: MusicPlayer } | null>(null)
 
   const unlock = useCallback(() => {
     if (graph.current || typeof window.AudioContext !== 'function') return
     const ctx = new window.AudioContext()
     const master = ctx.createGain()
     master.connect(ctx.destination)
-    graph.current = { ctx, master, music: new Chiptune(ctx, master) }
+    graph.current = { ctx, master, music: new MusicPlayer(ctx, master) }
     void ctx.resume()
     setUnlocked(true)
   }, [])
@@ -23,10 +29,10 @@ export function AudioProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     const g = graph.current
     if (!g) return
-    g.master.gain.value = muted ? 0 : 0.6
-    if (muted) g.music.stop()
+    g.master.gain.value = muted || silent ? 0 : 0.6
+    if (muted || silent) g.music.stop()
     else g.music.start(mix)
-  }, [muted, mix, unlocked])
+  }, [muted, silent, mix, unlocked])
 
   useEffect(() => () => {
     graph.current?.music.stop()
@@ -36,9 +42,9 @@ export function AudioProvider({ children }: { children: ReactNode }) {
   const sfx = useCallback(
     (name: SfxName) => {
       const g = graph.current
-      if (g && !muted) playSfx(g.ctx, g.master, name)
+      if (g && !muted && !silent) playSfx(g.ctx, g.master, name)
     },
-    [muted],
+    [muted, silent],
   )
 
   // Every link/button blips; hovering ticks (throttled).

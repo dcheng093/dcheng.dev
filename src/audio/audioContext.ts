@@ -1,5 +1,6 @@
 import { createContext, useContext, useEffect } from 'react'
-import type { MixId, SfxName } from './synth'
+import type { SfxName } from './synth'
+import type { MixId } from './tracks'
 
 export type AudioApi = {
   unlocked: boolean

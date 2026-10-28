@@ -15,6 +15,7 @@
     "gallery": "node scripts/asset-gallery/fetch.mjs && node scripts/asset-gallery/build.mjs && node scripts/asset-gallery/shoot.mjs",
     "gifs:adopt": "node scripts/asset-gallery/adopt.mjs",
     "gifs:shrink": "node scripts/photos/shrink-gifs.mjs",
+    "gifs:slow": "node scripts/photos/slow-gif.mjs",
     "photos:shrink": "node scripts/photos/shrink.mjs",
     "deploy": "npm run build && wrangler deploy"
   },

@@ -73,6 +73,43 @@ test('home unlocks audio on first click even if the gate was skipped', async ({ 
   await expect(page.getByTestId('mute')).toBeVisible()
 })
 
+test('music survives a trip through the /boring site map', async ({ page }) => {
+  await prepare(page, { skipGate: false })
+  await page.goto('/')
+  await page.getByRole('dialog', { name: 'Enter the site' }).getByRole('button').click()
+  await page.getByRole('link', { name: 'List Sites' }).click()
+  await expect(page.getByTestId('boring')).toBeVisible()
+  await expect(page.getByTestId('mute')).toHaveCount(0)
+  await expect(page.getByTestId('mini-player')).toHaveCount(0)
+  await page.getByTestId('boring').getByRole('link', { name: '/casino', exact: true }).click()
+  await expect(page.getByTestId('casino')).toBeVisible()
+  // Still unlocked: no click needed to bring the audio controls back.
+  await expect(page.getByTestId('mute')).toBeVisible()
+  await expect(page.getByTestId('mini-player')).toBeVisible()
+  expect(await page.evaluate(() => sessionStorage.getItem('entered'))).toBe('true')
+})
+
+test('the floating player changes the song on non-home pages', async ({ page }) => {
+  await prepare(page)
+  await page.goto('/')
+  await page.locator('[data-band="header"]').click({ position: { x: 5, y: 5 } })
+  await expect(page.getByTestId('mini-player')).toHaveCount(0)
+  await page.getByRole('link', { name: 'List Sites' }).click()
+  await page.getByTestId('boring').getByRole('link', { name: '/work-from-home', exact: true }).click()
+  const player = page.getByTestId('mini-player')
+  await expect(player).toBeVisible()
+  await expect(player.getByTestId('now-playing')).toContainText('System Default')
+  await player.getByRole('button', { name: 'Next track' }).click()
+  await expect(player.getByTestId('now-playing')).toContainText('Dial-Up Remix')
+  // Back past the first track wraps round to the last of the new songs.
+  await player.getByRole('button', { name: 'Previous track' }).click()
+  await player.getByRole('button', { name: 'Previous track' }).click()
+  await expect(player.getByTestId('now-playing')).toContainText('Lo-Fi Beats to Debug To')
+  await player.getByRole('button', { name: 'Minimise player' }).click()
+  await expect(player.getByTestId('now-playing')).toHaveCount(0)
+  await expect(player).toContainText('Lo-Fi Beats to Debug To')
+})
+
 test('unknown routes blue-screen', async ({ page }) => {
   await prepare(page)
   await page.goto('/this/does/not/exist')

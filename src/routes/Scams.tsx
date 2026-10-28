@@ -160,7 +160,7 @@ export function Casino() {
   }
 
   return (
-    <div data-testid="casino" className="tile-dice min-h-screen p-3 sm:p-6" style={{ cursor: gifCursor(cursors.dice) }}>
+    <div data-testid="casino" className="tile-casino-table min-h-screen p-3 sm:p-6" style={{ cursor: gifCursor(cursors.dice) }}>
       <div className="mx-auto flex max-w-2xl flex-col items-center gap-4 text-center">
         <Marquee className="w-full bg-red-700 py-1 font-vt text-xl text-yellow-300">
           ★ DANIEL’S ONLINE CASINO ★ LICENSED IN THE KETTLE KINGDOM ★ 99.9% PAYOUT RATE (for the house) ★ GAMBLE RESPONSIBLY (or at all) ★

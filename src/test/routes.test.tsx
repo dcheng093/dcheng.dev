@@ -45,6 +45,8 @@ describe('routes', () => {
     expect(screen.getByTestId('boring')).toBeInTheDocument()
     expect(screen.queryByTestId('chat-toggle')).toBeNull()
     expect(screen.queryByRole('navigation', { name: 'Webring' })).toBeNull()
+    expect(screen.queryByTestId('mute')).toBeNull()
+    expect(screen.queryByTestId('mini-player')).toBeNull()
     expect(screen.getByRole('link', { name: daniel.links.github! })).toHaveAttribute('href', daniel.links.github)
   })
 

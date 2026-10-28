@@ -14,6 +14,9 @@ import { assets, blinkies, buttons88, cursors, dividers, icons, kawaii, sparkles
 import { readFileSync } from 'node:fs'
 import { payout, spinReels } from '../lib/slots'
 import { CONFETTI_MAX, CONFETTI_MIN, confettiCount, throwConfetti } from '../lib/confetti'
+import { Chiptune, SYNTH_SONGS } from '../audio/synth'
+import { fileLabel, findTrack, MIXES } from '../audio/tracks'
+import { MusicPlayer } from '../audio/music'
 
 const spawn = (s: PopupState, variant: 'normal' | 'multiply' | 'dodge' = 'normal') =>
   popupReducer(s, { type: 'spawn', content: 'millionth', variant, fx: 0.5, fy: 0.5 })
@@ -212,5 +215,40 @@ describe('gif confetti', () => {
       expect(p.y).toBeLessThan(98)
       if (p.slot.w > 100) expect(p.scale).toBe(1)
     }
+  })
+})
+
+describe('music', () => {
+  it('has the original four mixes first, then the new songs, with unique ids', () => {
+    expect(MIXES.slice(0, 4).map((m) => m.label)).toEqual(['System Default', 'Dial-Up Remix', 'Elevator (Going Down)', 'Nightcore Daniel'])
+    expect(MIXES.length).toBeGreaterThanOrEqual(10)
+    expect(new Set(MIXES.map((m) => m.id)).size).toBe(MIXES.length)
+  })
+
+  it.each(SYNTH_SONGS.map((s) => [s.label, s] as const))('%s has lead, bass and drums of one length', (_, song) => {
+    expect(song.bass).toHaveLength(song.lead.length)
+    expect(song.drums).toHaveLength(song.lead.length)
+    expect(song.drums).toMatch(/^[ksh-]+$/)
+    expect(song.lead.some((n) => n !== null)).toBe(true)
+  })
+
+  it('labels dropped-in files from their names', () => {
+    expect(fileLabel('../music/daniel-theme_v2.mp3')).toBe('Daniel Theme V2')
+    expect(fileLabel('kettle.ogg')).toBe('Kettle')
+  })
+
+  it('falls back to the first track for unknown or stale ids', () => {
+    expect(findTrack('file:deleted-song.mp3')).toBe(MIXES[0])
+    expect(findTrack('lofi-debug').label).toBe('Lo-Fi Beats to Debug To')
+  })
+
+  it('the player starts the chosen synth song and falls back for unknown ids', () => {
+    const start = vi.spyOn(Chiptune.prototype, 'start').mockImplementation(() => {})
+    const player = new MusicPlayer({} as AudioContext, {} as AudioNode)
+    player.start('kettle-blues')
+    expect(start).toHaveBeenLastCalledWith(SYNTH_SONGS.find((s) => s.id === 'kettle-blues'))
+    player.start('nope')
+    expect(start).toHaveBeenLastCalledWith(SYNTH_SONGS[0])
+    start.mockRestore()
   })
 })
