@@ -12,6 +12,8 @@ import type { MixId } from './tracks'
  */
 export function AudioProvider({ children, silent = false }: { children: ReactNode; silent?: boolean }) {
   const [muted, setMuted] = useStored('muted', false)
+  // 0..1 of the original loudness. New visitors start at half: the full blast made people mute on arrival.
+  const [volume, setVolumeState] = useStored('volume', 0.5)
   const [mix, setMixState] = useStored<MixId>('mix', 'system-default')
   const [locked, setLocked] = useStored('songLock', false)
   const [unlocked, setUnlocked] = useState(false)
@@ -33,10 +35,15 @@ export function AudioProvider({ children, silent = false }: { children: ReactNod
   useEffect(() => {
     const g = graph.current
     if (!g) return
-    g.master.gain.value = muted || silent ? 0 : 0.6
     if (muted || silent) g.music.stop()
     else g.music.start(mix)
   }, [muted, silent, mix, unlocked])
+
+  // Volume only touches the gain, so dragging a slider never restarts the song.
+  useEffect(() => {
+    const g = graph.current
+    if (g) g.master.gain.value = muted || silent ? 0 : 0.6 * volume
+  }, [muted, silent, volume, unlocked])
 
   useEffect(() => () => {
     graph.current?.music.stop()
@@ -80,13 +87,20 @@ export function AudioProvider({ children, silent = false }: { children: ReactNod
       unlock,
       sfx,
       toggleMute: () => setMuted((m) => !m),
+      volume,
+      // Turning the volume up from muted means "I want to hear it": unmute too.
+      setVolume: (v: number) => {
+        const next = Math.max(0, Math.min(1, v))
+        setVolumeState(next)
+        if (next > 0 && muted) setMuted(false)
+      },
       setMix: setMixState,
       locked,
       toggleLock: () => setLocked((l) => !l),
       setLocked,
       getAnalyser: () => graph.current?.analyser ?? null,
     }),
-    [unlocked, muted, mix, unlock, sfx, setMuted, setMixState, locked, setLocked],
+    [unlocked, muted, volume, mix, unlock, sfx, setMuted, setVolumeState, setMixState, locked, setLocked],
   )
   return <AudioCtx.Provider value={api}>{children}</AudioCtx.Provider>
 }

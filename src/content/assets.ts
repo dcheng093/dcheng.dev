@@ -183,6 +183,20 @@ export const blinkies = {
   metalRulz: gif('bl-metal-rulz', 150, 20, 'blinkie: Metal rulz'),
 } as const
 
+/** POPNUKE, the pop-up blocker (ad pop-up, tray badge, its download page). From GifCities; see CREDITS.md. */
+export const popnukeGifs = {
+  trefoilRust: gif('pn-trefoil-rust', 150, 120, 'rusty 3D radiation symbol'),
+  trefoilSpin: gif('pn-trefoil-spin', 50, 50, 'spinning radiation symbol'),
+  trefoilDisc: gif('pn-trefoil-disc', 57, 54, 'yellow radiation disc'),
+  trefoilGlow: gif('pn-trefoil-glow', 70, 70, 'glowing radiation symbol'),
+  radioactiveAward: gif('pn-radioactive-award', 200, 150, 'award: You have a radioactive site!'),
+  downloadNow: gif('pn-download-now', 187, 62, 'DOWNLOAD NOW button'),
+  dowloadHere: gif('pn-dowload-here', 156, 117, 'DOWLOAD HERE button (sic)'),
+  cutTheCrap: gif('pn-cut-the-crap', 160, 120, 'button: cut the crap and just download it'),
+  shieldRadiation: gif('pn-shield-radiation', 50, 42, 'radiation shield'),
+  shieldBlue: gif('pn-shield-blue', 90, 100, 'blue shield'),
+} as const
+
 export const buttons88 = {
   click: gif('btn-click', 95, 38, 'CLICK button'),
   bestViewed: gif('btn-best-viewed', 88, 31, 'This page is best viewed with: button'),

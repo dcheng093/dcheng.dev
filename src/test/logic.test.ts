@@ -27,6 +27,7 @@ import { collect, progress } from '../lib/stickers'
 import { stickers } from '../content/stickers'
 import { frameStyle, timing, type BlinkieOpts } from '../lib/blinkie'
 import { PROC_TEXTURES, TEX } from '../three/pageScenes'
+import { ambush, shouldShowAd, AD_AFTER_CLOSES } from '../lib/popnuke'
 import { LEGENDARIES, PAGE_3D, rollLegendary, sceneFor } from '../content/objects'
 import { moodOffset, poke, restingBody, step, type Personality } from '../lib/personality'
 import { hasGlyph, voxelWord } from '../lib/voxelFont'
@@ -578,5 +579,22 @@ describe('free space for 3D objects', () => {
     expect(clampOffset(home, -40, 0, screen, [content])).toEqual({ dx: -40, dy: 0 })
     expect(clampOffset(home, 0, 300, screen, [content]).dy).toBe(300) // straight down the clear margin: fine
     expect(clampOffset(home, 0, 700, screen, [content]).dy).toBeLessThan(700) // off the bottom of the window: cut short
+  })
+})
+
+describe('POPNUKE', () => {
+  it('its ad shows after the visitor has closed 3 pop-ups, once, and never once installed', () => {
+    expect(AD_AFTER_CLOSES).toBe(3)
+    expect(shouldShowAd(2, false, false)).toBe(false)
+    expect(shouldShowAd(3, false, false)).toBe(true)
+    expect(shouldShowAd(9, true, false)).toBe(false) // it has had its turn (it's in the rotation now)
+    expect(shouldShowAd(9, false, true)).toBe(false)
+  })
+  it('blocks every ambush pop-up while installed', () => {
+    expect(ambush(true, 0, false)).toBe('blocked')
+    expect(ambush(true, 5, false)).toBe('blocked')
+    expect(ambush(false, 3, false)).toBe('popnuke-ad')
+    expect(ambush(false, 1, false)).toBe('normal')
+    expect(ambush(false, 5, true)).toBe('normal')
   })
 })

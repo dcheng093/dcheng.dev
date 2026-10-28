@@ -30,6 +30,10 @@ export const SPECIAL_POPUPS = {
   'friend-request': { auto: true },
   'quick-survey': { auto: true },
   'spin-to-win': { auto: true },
+  // POPNUKE's own ad: turns up after the visitor has closed a few pop-ups (then joins the rotation).
+  'popnuke-ad': { auto: false },
+  // First of the three pop-ups that greet you when you uninstall POPNUKE.
+  'welcome-back': { auto: false },
 } satisfies Record<string, { auto: boolean }>
 
 export type SpecialId = keyof typeof SPECIAL_POPUPS
@@ -75,7 +79,9 @@ const clamp01 = (n: number) => Math.min(0.95, Math.max(0, n))
 
 export type PopupApi = {
   open: (content: string, variant?: PopupVariant) => void
+  /** Several pop-ups at once (POPNUKE's uninstall revenge); the first can be a specific one. */
+  burst: (count: number, first?: string) => void
 }
 
-export const PopupContext = createContext<PopupApi>({ open: () => {} })
+export const PopupContext = createContext<PopupApi>({ open: () => {}, burst: () => {} })
 export const usePopups = () => useContext(PopupContext)

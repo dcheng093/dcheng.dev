@@ -196,3 +196,4 @@ export function mountWorld(canvas: HTMLCanvasElement, id: WorldId) {
 
 export { mountDream } from './dream'
 
+export { mountPopnukeHero } from './popnuke'

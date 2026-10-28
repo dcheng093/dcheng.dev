@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useLayoutEffect, useRef, useState } from 'react'
 import { ads } from '../../content/ads'
 import { icons } from '../../content/assets'
 import { Img } from '../media/Img'
@@ -17,6 +17,15 @@ export function PopupWindow({ popup, z, onClose, onMove }: Props) {
   const ad = ads.find((a) => a.id === popup.content)
   const title = TITLES[popup.key % TITLES.length]
 
+  // Opened too low to fit (short screens, tall pop-ups)? Nudge it up so its buttons are reachable:
+  // a fixed window can't be scrolled to. offsetHeight ignores the pop-in scale animation.
+  const box = useRef<HTMLDivElement>(null)
+  useLayoutEffect(() => {
+    const h = box.current?.offsetHeight ?? 0
+    if (popup.fy * window.innerHeight + h > window.innerHeight - 8) onMove(popup.fx, Math.max(0, (window.innerHeight - h - 8) / window.innerHeight))
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- once, when it opens
+  }, [])
+
   const drag = useDrag((x, y) =>
     onMove(Math.min(0.95, Math.max(0, x / window.innerWidth)), Math.min(0.95, Math.max(0, y / window.innerHeight))),
   )
@@ -31,11 +40,12 @@ export function PopupWindow({ popup, z, onClose, onMove }: Props) {
 
   return (
     <div
+      ref={box}
       role="dialog"
       aria-label={title}
       data-testid="popup"
       data-variant={popup.variant}
-      className="win-raised fixed w-[min(320px,calc(100vw-16px))] animate-pop-in p-0.5 font-[Tahoma,Verdana,sans-serif] text-xs shadow-[6px_6px_0_rgba(0,0,0,0.5)]"
+      className="win-raised fixed max-h-[calc(100vh-16px)] w-[min(320px,calc(100vw-16px))] animate-pop-in overflow-y-auto p-0.5 font-[Tahoma,Verdana,sans-serif] text-xs shadow-[6px_6px_0_rgba(0,0,0,0.5)]"
       style={{ left: `min(${popup.fx * 100}vw, calc(100vw - min(320px, 100vw - 16px) - 8px))`, top: `${popup.fy * 100}vh`, zIndex: z }}
     >
       <div

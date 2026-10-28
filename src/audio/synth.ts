@@ -241,6 +241,24 @@ export const SYNTH_SONGS: SynthSong[] = [
     ],
     drums: 'k-h-s-h-'.repeat(4),
   },
+  {
+    id: 'nuke-it',
+    label: 'NUKE IT (Shareware Jingle)',
+    bpm: 150,
+    leadWave: 'square',
+    bassWave: 'sawtooth',
+    transpose: 0,
+    // An installer-wizard jingle: bright, pushy, and over before you can close it.
+    lead: [
+      12, _, 16, 19, 24, _, 19, _, 21, _, 19, 16, 19, _, _, _,
+      12, _, 16, 19, 24, _, 26, _, 28, _, 26, 24, 24, _, _, _,
+    ],
+    bass: [
+      0, _, 12, _, 0, _, 12, _, 5, _, 17, _, 7, _, 19, _,
+      0, _, 12, _, 0, _, 12, _, 5, _, 7, _, 0, _, 0, _,
+    ],
+    drums: 'k-h-s-h-k-hks-h-'.repeat(2),
+  },
 ]
 
 const freq = (semi: number) => 220 * 2 ** (semi / 12)

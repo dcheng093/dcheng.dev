@@ -443,6 +443,7 @@ const SPONSORED: { to: string; text: string; className: string }[] = [
   { to: '/casino', text: '🎰 FREE SPINS!!! (SPINS NOT FREE)', className: 'animate-pulse-scale bg-[#060] text-yellow-300 border-yellow-500' },
   { to: '/survey', text: '📋 2 MINUTE SURVEY (47 MINUTES) WIN AN iPOD', className: 'animate-wobble bg-blue-700 text-white border-cyan-300' },
   { to: '/work-from-home', text: '💷 I MAKE £5,000/WEEK FROM MY BEDROOM. ASK ME HOW', className: 'animate-jank-x bg-yellow-300 text-green-800 border-green-700' },
+  { to: '/popnuke', text: '☢ POPNUKE: KILL ALL POP-UPS FOREVER (FREE*)', className: 'animate-wobble bg-black text-yellow-300 border-yellow-400' },
 ]
 
 function CyberTownBand() {
@@ -516,18 +517,41 @@ function DestinyBand() {
   )
 }
 
+/** The contents page: each chapter goes where its title says (a page, or a section further up this one). */
+const TOC: ({ label: string; to: string } | { label: string; scrollTo: string })[] = [
+  { label: 'Introduction', scrollTo: 'welcome' },
+  { label: 'Kettles', to: '/shrine/kettle' },
+  { label: 'Despair (Abridged)', to: '/shrine/norminette' },
+  { label: 'Horses', to: '/shrine/horses' },
+  { label: 'Segmentation', to: '/shrine/segfault' },
+  { label: 'The End', scrollTo: 'end' },
+  { label: 'The End (Director’s Cut)', to: '/leave' },
+]
+
 function EndBand() {
-  const toc = ['Introduction', 'Kettles', 'Despair (Abridged)', 'Horses', 'Segmentation', 'The End', 'The End (Director’s Cut)']
   return (
     <Band id="end" edges={EDGES.end} tile="tile-flames" cursor={icons.flame} flow className="!bg-[linear-gradient(0deg,#000_0%,#000_40%,#f00_80%,#f80_100%)]">
       <div className="w-[min(420px,100%)] bg-black/80 p-4 font-times text-white">
         <p className="mb-2 text-center text-2xl font-bold underline">TABLE OF CONTENTS</p>
         <ol className="list-inside list-decimal space-y-1">
-          {toc.map((t) => (
-            <li key={t}>
-              <Link to={randomRoute('/')} className="text-cyan-300 underline">
-                {t}
-              </Link>
+          {TOC.map((t) => (
+            <li key={t.label}>
+              {'to' in t ? (
+                <Link to={t.to} className="text-cyan-300 underline">
+                  {t.label}
+                </Link>
+              ) : (
+                <a
+                  href={`#${t.scrollTo}`}
+                  onClick={(e) => {
+                    e.preventDefault()
+                    document.getElementById(t.scrollTo)?.scrollIntoView({ behavior: 'smooth' })
+                  }}
+                  className="text-cyan-300 underline"
+                >
+                  {t.label}
+                </a>
+              )}
             </li>
           ))}
         </ol>

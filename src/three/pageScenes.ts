@@ -96,6 +96,8 @@ export const SHAPES = [
   'warning', 'numberStack', 'arrows', 'heart', 'cloud', 'globe',
   // legendaries
   'beef', 'goose', 'planet',
+  // POPNUKE, the pop-up blocker
+  'nukeLogo', 'softwareBox', 'popupPane',
   // chunky voxel letters (uses `text`)
   'text',
 ] as const

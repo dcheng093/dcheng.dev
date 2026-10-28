@@ -1,4 +1,4 @@
-import { assets, type AssetKey, type Slot } from './assets'
+import { assets, popnukeGifs, type AssetKey, type Slot } from './assets'
 
 export type AdKind = 'daniel' | 'surreal' | 'scam' | 'classified'
 export type AdFormat = 'leaderboard' | 'banner' | 'button' | 'button125' | 'square' | 'skyscraper' | 'classified' | 'popup'
@@ -23,6 +23,8 @@ export type Ad = {
 // No real brands. Every claim is false. Prices are in a currency we made up called "£".
 export const ads: Ad[] = [
   // --- Daniel as a product ---
+  // POPNUKE, the pop-up blocker. Never a pop-up itself (its pop-up ad is the special 'popnuke-ad').
+  { id: 'popnuke', kind: 'daniel', formats: ['leaderboard', 'banner', 'skyscraper', 'square'], headline: 'POPNUKE: KILL ALL POP-UPS FOREVER', body: 'Neutralises 99.9% of pop-ups. No Virus 2004. Free* (*your soul).', price: 'FREE*', cta: 'DOWNLOAD', to: '/popnuke', img: popnukeGifs.trefoilRust, palette: 'bg-black text-yellow-300' },
   { id: 'lease-daniel', kind: 'daniel', formats: ['leaderboard', 'banner', 'popup', 'square'], headline: 'LEASE DANIEL TODAY!!!', body: '0% APR • ONLY 3 PREVIOUS OWNERS • FULL SERVICE HISTORY (MISSING)', price: '£69/mo', cta: 'GET QUOTE', to: '/dealership', img: 'headWink', palette: 'bg-yellow-300 text-red-600' },
   { id: 'daniel-sport', kind: 'daniel', formats: ['skyscraper', 'square'], headline: 'NEW!! DANIEL SPORT', body: '0-60 in 4 business days. Heated opinions as standard.', price: '£420/mo', cta: 'TEST DRIVE', to: '/checkout', img: 'body', palette: 'bg-red-600 text-yellow-200' },
   { id: 'daniel-piscine', kind: 'daniel', formats: ['banner', 'skyscraper', 'popup'], headline: 'DANIEL — PISCINE EDITION', body: 'Survived 4 weeks of C. Smells faintly of coffee and despair.', price: '£42/mo', cta: 'ORDER NOW', to: '/shrine/segfault', img: assets.misc[1], palette: 'bg-cyan-300 text-blue-900' },

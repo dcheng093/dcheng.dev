@@ -12,6 +12,8 @@ import { HiddenSticker } from '../components/HiddenSticker'
 import { Page3D } from '../components/three/Page3D'
 import { LiveChat } from '../components/LiveChat'
 import { PetWindow } from '../components/PetWindow'
+import { PopnukeProvider } from '../components/popnuke/PopnukeProvider'
+import { TrayBadge } from '../components/popnuke/TrayBadge'
 import { VirusAlert } from '../components/VirusAlert'
 import { MiniPlayer, MuteButton, WebringBar } from '../components/WebringBar'
 import { useStored } from '../hooks/useLocalStorage'
@@ -36,6 +38,7 @@ export function RootLayout() {
           <Outlet />
         </>
       ) : (
+        <PopnukeProvider>
         <PopupProvider auto={entered}>
           <ScrollRestoration />
           <UnlockOnGesture />
@@ -54,6 +57,7 @@ export function RootLayout() {
               painting the whole animated collage behind it would just eat the frame budget of its 3D dream. */}
           <div className={entered ? 'contents' : 'invisible'}>
             <MuteButton />
+            <TrayBadge />
             <main className="relative">
               <Outlet />
               <HiddenSticker />
@@ -67,6 +71,7 @@ export function RootLayout() {
             <LiveChat />
           </div>
         </PopupProvider>
+        </PopnukeProvider>
       )}
     </AudioProvider>
   )

@@ -32,6 +32,7 @@ const testIds: Record<string, string> = {
   '/oracle': 'oracle',
   '/blinkie-maker': 'blinkie-maker',
   '/stickers': 'stickers',
+  '/popnuke': 'popnuke',
 }
 
 describe('routes', () => {
@@ -64,7 +65,7 @@ describe('routes', () => {
     const hrefs = within(town).getAllByRole('link').map((a) => a.getAttribute('href'))
     expect(hrefs).toEqual(['/arcade', '/desktop', '/radio', '/oracle', '/blinkie-maker', '/stickers'])
     const sponsored = within(screen.getByRole('list', { name: 'Sponsored links' })).getAllByRole('link').map((a) => a.getAttribute('href'))
-    expect(sponsored).toEqual(['/scan', '/casino', '/survey', '/work-from-home'])
+    expect(sponsored).toEqual(['/scan', '/casino', '/survey', '/work-from-home', '/popnuke'])
   })
 
   it('a Daniel model shows the same photo on the home page as at the dealership', () => {
@@ -79,6 +80,32 @@ describe('routes', () => {
     const dealership = photosByName(screen.getByTestId('dealership'))
     expect(Object.keys(home)).toEqual(['Daniel Stoner', 'Daniel', 'Daniel Washee Washee'])
     for (const [name, src] of Object.entries(home)) expect(src, name).toBe(dealership[name])
+  })
+
+  it('the table of contents goes where each chapter says', () => {
+    renderAt('/')
+    const toc = screen.getByText('TABLE OF CONTENTS').parentElement!
+    const where = within(toc).getAllByRole('link').map((a) => [a.textContent, a.getAttribute('href')])
+    expect(where).toEqual([
+      ['Introduction', '#welcome'],
+      ['Kettles', '/shrine/kettle'],
+      ['Despair (Abridged)', '/shrine/norminette'],
+      ['Horses', '/shrine/horses'],
+      ['Segmentation', '/shrine/segfault'],
+      ['The End', '#end'],
+      ['The End (Director’s Cut)', '/leave'],
+    ])
+  })
+
+  it('the POPNUKE tray badge only shows once it is installed', () => {
+    renderAt('/casino')
+    expect(screen.queryByTestId('popnuke-badge')).toBeNull()
+    cleanup()
+    localStorage.setItem('popnuke', 'true')
+    localStorage.setItem('popnukeBlocked', '7')
+    renderAt('/casino')
+    expect(screen.getByTestId('popnuke-badge')).toHaveTextContent('POPNUKE: 7 blocked')
+    expect(screen.getByTestId('popnuke-badge')).toHaveAttribute('href', '/popnuke')
   })
 
   it('Melly the pet sits in a minimisable window on fun pages, not on /boring or the gags', async () => {
@@ -103,13 +130,13 @@ describe('routes', () => {
     expect(screen.queryByTestId('hidden-sticker')).toBeNull()
   })
 
-  it.each(['Yes', 'No', 'Cancel', 'Close'])('the Azerbaijan virus pops up once a while in, and "%s" closes it', async (label) => {
+  it.each(['Yes', 'No', 'Cancel', 'Close'])('the Albanian virus pops up once a while in, and "%s" closes it', async (label) => {
     vi.useFakeTimers({ shouldAdvanceTime: true })
     renderAt('/dealership')
     expect(screen.queryByTestId('virus-alert')).toBeNull()
     act(() => vi.advanceTimersByTime(VIRUS_ALERT_DELAY_MS))
     const alert = screen.getByRole('alertdialog', { name: 'Virus Alert' })
-    expect(alert).toHaveTextContent('Hi, I am Azerbaijan virus')
+    expect(alert).toHaveTextContent('Hi, I am Albanian virus')
     expect(within(alert).queryByRole('button', { name: /minimi/i })).toBeNull()
     await userEvent.click(within(alert).getByRole('button', { name: label }))
     expect(screen.queryByRole('alertdialog')).toBeNull()

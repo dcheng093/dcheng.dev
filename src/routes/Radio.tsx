@@ -2,6 +2,7 @@ import { useEffect, useRef } from 'react'
 import { useAudio } from '../audio/audioContext'
 import { MIXES, findTrack } from '../audio/tracks'
 import { Marquee, WavyText } from '../components/chaos/Chaos'
+import { VolumeSlider } from '../components/WebringBar'
 import { cursors } from '../content/assets'
 import { gifCursor } from '../lib/cursor'
 import { pick } from '../lib/random'
@@ -95,6 +96,7 @@ export function Radio() {
           </div>
 
           <div className="mt-3 space-y-2">
+            <VolumeSlider className="rounded border-4 border-black bg-[#9c3] px-2 py-1 font-bold text-[#132] shadow-[inset_0_0_8px_#0006]" />
             <input
               type="range"
               min={0}

@@ -279,6 +279,10 @@
     background: transparent;
   }
   /* CSS-only tiles, kept where they suit the page better than any GIF found. */
+  /* POPNUKE's shareware page: deep purple with faint radiation-yellow dots. */
+  .tile-popnuke {
+    background: #1d0730 radial-gradient(circle, #ffd40033 1.5px, transparent 2px) 0 0 / 18px 18px;
+  }
   .tile-desktop {
     background: #008080;
   }

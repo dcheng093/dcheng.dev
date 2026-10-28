@@ -120,6 +120,7 @@ type Opts = { seed: number; onOpen: (spec: ObjSpec) => void; onSecret: () => voi
 // the floating UI (pet, player, chat, popups) moves, so it's re-read four times a second.
 let pageObs: Rect[] = []
 let floatObs: Rect[] = []
+let floating = new Set<Rect>()
 let floatReadAt = -1
 let frameAt = -1
 let screenObs: Rect[] = []
@@ -130,6 +131,9 @@ export function setPageObstacles(obstacles: Rect[]) {
   frameAt = -1
 }
 
+/** An anchor's own reserved spot is in the page's obstacle map, so it mustn't block itself; floating UI always does. */
+const besides = (obs: readonly Rect[], spot: Rect) => obs.filter((o) => floating.has(o) || !contains(o, spot))
+
 const viewport = (): Rect => ({ x: 0, y: 0, w: document.documentElement.clientWidth, h: window.innerHeight })
 
 /** Everything an object must not hide behind, in screen coordinates, computed once per frame. */
@@ -137,6 +141,7 @@ function obstaclesNow(t: number) {
   if (t !== frameAt) {
     if (t - floatReadAt > 0.25 || t < floatReadAt) {
       floatObs = floatingObstacles()
+      floating = new Set(floatObs)
       floatReadAt = t
     }
     const sx = window.scrollX
@@ -243,7 +248,7 @@ export function drive(el: HTMLElement, canvas: HTMLCanvasElement, spec: ObjSpec,
         dodge.at = t
         // Only on-screen anchors can be covered; one scrolled out of view has nothing to dodge.
         const blocked = overlaps(home, v) && floatObs.some((o) => overlaps(o, home))
-        const spot = blocked ? nearestFree(home.x + home.w / 2, home.y + home.h / 2, home.w, v, obs.filter((o) => !contains(o, home)), 400, 16) : null
+        const spot = blocked ? nearestFree(home.x + home.w / 2, home.y + home.h / 2, home.w, v, besides(obs, home), 400, 16) : null
         // Nowhere to step aside to: duck out of sight until the window moves on, rather than sit underneath it.
         dodge.cornered = blocked && !spot
         dodge.tx = spot ? spot.x - home.x : 0
@@ -262,8 +267,7 @@ export function drive(el: HTMLElement, canvas: HTMLCanvasElement, spec: ObjSpec,
     const m = moodOffset(mood, t, entry.seed, staying)
     // Anchors may extend above/below the screen with the page; only the sides are walls for them.
     const bounds = entry.drift ? v : { x: 0, y: -1e7, w: v.w, h: 2e7 }
-    // An anchor's own reserved spot is in the obstacle map; don't let it block itself.
-    const free = entry.drift ? obs : obs.filter((o) => !contains(o, { ...home, x: home.x - dodge.x, y: home.y - dodge.y }))
+    const free = entry.drift ? obs : besides(obs, { ...home, x: home.x - dodge.x, y: home.y - dodge.y })
     const clamped = clampOffset(home, entry.body.ox + m.dx, entry.body.oy + m.dy, bounds, free)
     // Last line of defence: whatever the nudges add up to, never past the window's sides.
     const dx = Math.min(Math.max(clamped.dx, -home.x), v.w - (home.x + home.w))

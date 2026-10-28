@@ -30,6 +30,7 @@ export const PAGE_SONGS: Record<string, MixId> = {
   '/oracle': 'steam-prophecy',
   '/desktop': 'startup-funk',
   '/stickers': 'sticker-pop',
+  '/popnuke': 'nuke-it',
 }
 
 export const pageSong = (pathname: string): MixId | undefined => PAGE_SONGS[pathname.toLowerCase().replace(/\/+$/, '') || '/']

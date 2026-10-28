@@ -530,10 +530,165 @@ export function buildShape(shape: ShapeId, tex?: TexRef, extra: Extra = {}): THR
       return group(mesh(ball(0.72, 24, 16), M(t('earth'))), orbit)
     }
 
+    // ——— POPNUKE ———
+    case 'nukeLogo':
+      return nukeLogo()
+    case 'softwareBox':
+      return softwareBox()
+    case 'popupPane':
+      return popupPane(photo)
+
     // ——— chunky voxel words ———
     case 'text': {
       const { pixels, width } = voxelWord(extra.text ?? 'DANIEL')
       return voxels(pixels, width, 7, M(t('goldMetal')), Math.min(2.4, 0.42 * width))
     }
   }
+}
+
+// ——— POPNUKE, the pop-up blocker ———
+
+/** The radiation sign in 3D: black blades raised on both faces of a yellow disc, with a gold rim. */
+function nukeLogo() {
+  const blade = (a: number) => {
+    const shape = new THREE.Shape()
+    const r0 = 0.2
+    const r1 = 0.82
+    const a0 = a - Math.PI / 6
+    const a1 = a + Math.PI / 6
+    shape.moveTo(Math.cos(a0) * r0, Math.sin(a0) * r0)
+    shape.absarc(0, 0, r1, a0, a1, false)
+    shape.lineTo(Math.cos(a1) * r0, Math.sin(a1) * r0)
+    shape.absarc(0, 0, r0, a1, a0, true)
+    return new THREE.ExtrudeGeometry(shape, { depth: 0.1, bevelEnabled: false, curveSegments: 10 })
+  }
+  const black = C(0x111111, { emissive: 0x111111 })
+  const g = group(mesh(cyl(1, 1, 0.16, 32), C(0xffd400, { emissive: 0x332200 }), 0, 0, 0, Math.PI / 2))
+  for (const side of [1, -1])
+    for (const a of [Math.PI / 2, Math.PI / 2 + (2 * Math.PI) / 3, Math.PI / 2 + (4 * Math.PI) / 3]) {
+      const m = mesh(blade(a), black, 0, 0, side > 0 ? 0.08 : -0.18)
+      g.add(m)
+    }
+  g.add(mesh(cyl(0.13, 0.13, 0.36, 16), black, 0, 0, 0, Math.PI / 2))
+  g.add(mesh(new THREE.TorusGeometry(1, 0.07, 8, 40), M('goldMetal')))
+  return g
+}
+
+function boxFace(draw: (c: CanvasRenderingContext2D, s: number) => void) {
+  return new THREE.MeshLambertMaterial({ map: drawn(128, draw) })
+}
+
+/** A 1999 boxed-software package: front art, spines, and a back full of promises. */
+function softwareBox() {
+  const trefoil = (c: CanvasRenderingContext2D, x: number, y: number, r: number) => {
+    c.fillStyle = '#ffd400'
+    c.beginPath()
+    c.arc(x, y, r, 0, Math.PI * 2)
+    c.fill()
+    c.fillStyle = '#111'
+    for (let i = 0; i < 3; i++) {
+      const a = -Math.PI / 2 + (i * 2 * Math.PI) / 3
+      c.beginPath()
+      c.moveTo(x, y)
+      c.arc(x, y, r * 0.85, a - Math.PI / 6, a + Math.PI / 6)
+      c.fill()
+    }
+    c.fillStyle = '#ffd400'
+    c.beginPath()
+    c.arc(x, y, r * 0.22, 0, Math.PI * 2)
+    c.fill()
+    c.fillStyle = '#111'
+    c.beginPath()
+    c.arc(x, y, r * 0.14, 0, Math.PI * 2)
+    c.fill()
+  }
+  const front = boxFace((c, s) => {
+    const g = c.createLinearGradient(0, 0, 0, s)
+    g.addColorStop(0, '#1a0033')
+    g.addColorStop(1, '#000')
+    c.fillStyle = g
+    c.fillRect(0, 0, s, s)
+    trefoil(c, s / 2, s * 0.42, s * 0.24)
+    c.fillStyle = '#ffd400'
+    c.font = 'bold 20px Impact, sans-serif'
+    c.textAlign = 'center'
+    c.fillText('POPNUKE', s / 2, s * 0.13)
+    c.font = 'bold 9px sans-serif'
+    c.fillStyle = '#fff'
+    c.fillText('3000 PROFESSIONAL EDITION', s / 2, s * 0.21)
+    c.fillStyle = '#ff3b3b'
+    c.font = 'bold 10px sans-serif'
+    c.fillText('KILLS ALL POP-UPS*', s / 2, s * 0.78)
+    c.fillStyle = '#aaa'
+    c.font = '7px sans-serif'
+    c.fillText('Daniel Cheng Software Ltd.', s / 2, s * 0.92)
+    c.fillStyle = '#e0102a' // the NEW! starburst
+    c.beginPath()
+    for (let i = 0; i < 16; i++) {
+      const r = i % 2 ? 9 : 15
+      const a = (i / 16) * Math.PI * 2
+      c.lineTo(s * 0.84 + Math.cos(a) * r, s * 0.3 + Math.sin(a) * r)
+    }
+    c.fill()
+    c.fillStyle = '#fff'
+    c.font = 'bold 8px sans-serif'
+    c.fillText('NEW!', s * 0.84, s * 0.32)
+  })
+  const back = boxFace((c, s) => {
+    c.fillStyle = '#ffd400'
+    c.fillRect(0, 0, s, s)
+    c.fillStyle = '#111'
+    c.font = 'bold 11px sans-serif'
+    c.fillText('FEATURES:', 8, 18)
+    c.font = '9px sans-serif'
+    ;['✓ Nukes pop-ups', '✓ Nukes viruses', '✓ Free (your soul)', '✓ 1.44 MB', '✗ Nukes horses'].forEach((t, i) => c.fillText(t, 10, 36 + i * 15))
+    c.font = 'bold 8px sans-serif'
+    c.fillText('REAL NO VIRUS 2004', 10, s - 12)
+  })
+  const spine = boxFace((c, s) => {
+    c.fillStyle = '#1a0033'
+    c.fillRect(0, 0, s, s)
+    c.save()
+    c.translate(s / 2, s / 2)
+    c.rotate(-Math.PI / 2)
+    c.fillStyle = '#ffd400'
+    c.font = 'bold 16px Impact, sans-serif'
+    c.textAlign = 'center'
+    c.fillText('POPNUKE 3000', 0, 6)
+    c.restore()
+  })
+  const plain = C(0x1a0033)
+  return mesh(box(1.3, 1.75, 0.45), [spine, spine, plain, plain, front, back])
+}
+
+/** A Win95 pop-up window (the enemy), drawn on a thin pane. `variant` picks the message. */
+function popupPane(variant: number) {
+  const messages = ['YOU WON!!!', 'VIRUS FOUND', 'HOT SINGLES', 'FREE iPOD', 'CLICK HERE', 'WARNING!!!']
+  const msg = messages[variant % messages.length]
+  const face = boxFace((c, s) => {
+    c.fillStyle = '#c0c0c0'
+    c.fillRect(0, 0, s, s)
+    const g = c.createLinearGradient(0, 0, s, 0)
+    g.addColorStop(0, '#000080')
+    g.addColorStop(1, '#1084d0')
+    c.fillStyle = g
+    c.fillRect(3, 3, s - 6, 18)
+    c.fillStyle = '#fff'
+    c.font = 'bold 10px sans-serif'
+    c.fillText('Pop-up.exe', 7, 16)
+    c.fillStyle = '#c0c0c0'
+    c.fillRect(s - 19, 6, 13, 12)
+    c.fillStyle = '#000'
+    c.fillText('×', s - 16, 16)
+    c.fillStyle = '#e0102a'
+    c.font = 'bold 15px Impact, sans-serif'
+    c.textAlign = 'center'
+    c.fillText(msg, s / 2, s * 0.5)
+    c.fillStyle = '#d4d0c8'
+    c.fillRect(s * 0.3, s * 0.68, s * 0.4, 18)
+    c.fillStyle = '#000'
+    c.font = '10px sans-serif'
+    c.fillText('OK', s / 2, s * 0.68 + 13)
+  })
+  return mesh(box(1.5, 1.1, 0.04), [C(0xc0c0c0), C(0xc0c0c0), C(0xc0c0c0), C(0xc0c0c0), face, face])
 }

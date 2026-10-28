@@ -2,7 +2,9 @@ import { useEffect, useState, type ReactNode } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { daniel } from '../../content/daniel'
 import { useSfx } from '../../audio/audioContext'
-import { icons } from '../../content/assets'
+import { icons, popnukeGifs } from '../../content/assets'
+import { POPNUKE_3D, PRODUCT } from '../../content/popnuke'
+import { Viewer3D } from '../three/Viewer3D'
 import { Img } from '../media/Img'
 import { usePopups, type SpecialId } from './popupState'
 
@@ -23,7 +25,51 @@ export function SpecialPopup({ id, close }: SpecialProps & { id: SpecialId }) {
       return <QuickSurvey close={close} />
     case 'spin-to-win':
       return <SpinToWin close={close} />
+    case 'popnuke-ad':
+      return <PopnukeAd close={close} />
+    case 'welcome-back':
+      return <WelcomeBack />
   }
+}
+
+/** POPNUKE's ad: a pop-up advertising a pop-up blocker. 3D emblem, 2D GIFs, and both buttons go to the page. */
+function PopnukeAd({ close }: SpecialProps) {
+  const navigate = useNavigate()
+  const go = () => {
+    close()
+    navigate('/popnuke')
+  }
+  return (
+    <div className="space-y-2 bg-black p-2 text-center font-[Tahoma,Verdana,sans-serif] text-white" data-testid="popnuke-ad">
+      <p className="animate-pulse-scale font-impact text-2xl leading-tight text-yellow-300">TIRED OF POP-UPS?!</p>
+      <div className="flex items-center justify-center gap-2">
+        <Img slot={popnukeGifs.trefoilSpin} width={40} />
+        <Viewer3D spec={POPNUKE_3D.logo} size="96px" res={64} className="bg-[radial-gradient(circle,#332200_0%,#000_70%)]" />
+        <Img slot={popnukeGifs.trefoilSpin} width={40} />
+      </div>
+      <p className="font-impact text-lg">
+        <span className="text-yellow-300">POPNUKE</span> {PRODUCT.tagline}
+      </p>
+      <p className="text-[10px] text-gray-400">{PRODUCT.footnote}</p>
+      <button type="button" onClick={go} aria-label="Download POPNUKE now" className="mx-auto block">
+        <Img slot={popnukeGifs.downloadNow} width={170} />
+      </button>
+      <button type="button" onClick={go} className="text-[9px] text-gray-500 underline">
+        no thanks, I love pop-ups
+      </button>
+    </div>
+  )
+}
+
+/** The first pop-up back after uninstalling POPNUKE. They missed you. */
+function WelcomeBack() {
+  return (
+    <div className="space-y-1 text-center font-[Tahoma,Verdana,sans-serif] text-black">
+      <p className="animate-pulse-scale font-impact text-3xl text-red-600">WELCOME BACK</p>
+      <p>We missed you. We knew you’d uninstall it.</p>
+      <p className="text-xs italic">— The Pop-ups</p>
+    </div>
+  )
 }
 
 function BusinessCard() {

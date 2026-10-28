@@ -78,7 +78,7 @@ function MixList({ className = '' }: { className?: string }) {
       {MIXES.map((m) => (
         <li key={m.id} aria-current={m.id === mix}>
           <button type="button" onClick={() => pick(m.id)} className={`w-full px-1 text-left ${m.id === mix ? 'bg-win-title text-white' : 'hover:bg-gray-300'}`}>
-            {m.kind === 'file' ? '💿' : '♪'} {m.label}
+            {m.kind === 'file' ? '♪' : '♪'} {m.label}
           </button>
         </li>
       ))}
@@ -103,6 +103,31 @@ function LockButton({ className = '' }: { className?: string }) {
   )
 }
 
+/** Win95-style volume trackbar: one level for the music and the sound effects. */
+export function VolumeSlider({ className = '' }: { className?: string }) {
+  const { volume, setVolume, muted } = useAudio()
+  const pct = Math.round(volume * 100)
+  return (
+    <label className={`flex items-center gap-1 ${className}`}>
+      <span aria-hidden className="w-4 text-center">{muted || pct === 0 ? '🔇' : pct < 50 ? '🔉' : '🔊'}</span>
+      <input
+        type="range"
+        min={0}
+        max={100}
+        step={5}
+        value={pct}
+        onChange={(e) => setVolume(Number(e.target.value) / 100)}
+        aria-label="Volume"
+        data-testid="volume"
+        className="h-4 min-w-0 flex-1 cursor-pointer accent-win-title"
+      />
+      <span className="w-8 text-right font-vt text-sm" aria-hidden>
+        {pct}%
+      </span>
+    </label>
+  )
+}
+
 export function Jukebox() {
   const { mix, muted } = useAudio()
   return (
@@ -115,6 +140,7 @@ export function Jukebox() {
         <span className="text-[10px]">Each page has its own song. Pin one to keep it.</span>
         <LockButton />
       </div>
+      <VolumeSlider className="mb-1" />
       <MixList className="max-h-56" />
     </div>
   )
@@ -159,7 +185,8 @@ export function MiniPlayer() {
             <button type="button" className={transport} onClick={() => skip(1)} aria-label="Next track">▶▶</button>
             <LockButton />
           </div>
-          {/* Phones get just the transport: the full list would cover half the page. */}
+          <VolumeSlider className="mb-1" />
+          {/* Phones get just the transport and volume: the full list would cover half the page. */}
           <MixList className="max-h-40 max-sm:hidden" />
         </div>
       )}

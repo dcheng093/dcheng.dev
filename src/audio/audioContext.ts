@@ -8,6 +8,9 @@ export type AudioApi = {
   mix: MixId
   unlock: () => void
   toggleMute: () => void
+  /** 0..1, shared by the music and the sound effects. */
+  volume: number
+  setVolume: (volume: number) => void
   setMix: (mix: MixId) => void
   /** 📌 on: the visitor's pick plays everywhere instead of each page's theme song. */
   locked: boolean
@@ -24,6 +27,8 @@ export const AudioCtx = createContext<AudioApi>({
   mix: 'system-default',
   unlock: () => {},
   toggleMute: () => {},
+  volume: 0.5,
+  setVolume: () => {},
   setMix: () => {},
   locked: false,
   toggleLock: () => {},

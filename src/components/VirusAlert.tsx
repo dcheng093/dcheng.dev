@@ -1,12 +1,13 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { clampToViewport, useDrag } from '../hooks/useDrag'
 import { useSfx } from '../audio/audioContext'
 import { useStored } from '../hooks/useLocalStorage'
+import { usePopnuke } from './popnuke/popnukeState'
 
 export const VIRUS_ALERT_DELAY_MS = 25_000
 
 /**
- * The Azerbaijan virus: a Windows 10 style message box that turns up once per visit, a little while in.
+ * The Albanian virus: a Windows 10 style message box that turns up once per visit, a little while in.
  * No minimise, just ✕, and every button closes it (the virus is very polite).
  */
 export function VirusAlert() {
@@ -17,14 +18,26 @@ export function VirusAlert() {
   const drag = useDrag((x, y) => setPos(clampToViewport(x, y, 460)))
   const sfx = useSfx()
 
+  // POPNUKE (if installed) catches it instead. Read through a ref so the timer isn't restarted by every block.
+  const nuke = usePopnuke()
+  const nukeRef = useRef(nuke)
+  useEffect(() => {
+    nukeRef.current = nuke
+  })
+
   useEffect(() => {
     if (seen) return
     const t = window.setTimeout(() => {
+      if (nukeRef.current.installed) {
+        nukeRef.current.countBlocked()
+        setSeen(true)
+        return
+      }
       setOpen(true)
       sfx('error')
     }, VIRUS_ALERT_DELAY_MS)
     return () => window.clearTimeout(t)
-  }, [seen, sfx])
+  }, [seen, sfx, setSeen])
 
   const close = () => {
     setOpen(false)
@@ -61,7 +74,7 @@ export function VirusAlert() {
           ✕
         </span>
         <p id="virus-alert-text" className="leading-snug">
-          Hi, I am Azerbaijan virus, due to poor technology in my country I not able to damage your computer, please be kind enough to smash your computer with a hammer
+          Hi, I am Albanian virus, due to poor technology in my country I not able to damage your computer, please be kind enough to smash your computer with a hammer
         </p>
       </div>
       <div className="flex justify-end gap-2 bg-[#f0f0f0] px-4 py-3">

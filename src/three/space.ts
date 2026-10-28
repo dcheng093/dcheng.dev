@@ -88,6 +88,33 @@ function paints(el: Element, cs: CSSStyleDeclaration) {
   return parseFloat(cs.borderTopWidth) + parseFloat(cs.borderLeftWidth) > 0 && cs.borderTopStyle !== 'none'
 }
 
+/** The furthest each in-place animation (index.css) turns and grows an element (spin-z goes all the way round). */
+const SWING: Record<string, { deg: number; scale: number }> = {
+  wobble: { deg: 4, scale: 1 },
+  jiggle: { deg: 5, scale: 1.06 },
+  'pulse-scale': { deg: 0, scale: 1.15 },
+  squash: { deg: 0, scale: 1.15 },
+  'spin-z': { deg: 90, scale: 1 },
+}
+
+/**
+ * A rect to keep clear of. A wobble or pulse swings its corners outside wherever they are right now, so for those
+ * this is the box of the whole swing, worked out from the layout size (not this instant's turned/scaled box).
+ */
+function envelope(el: Element, cs: CSSStyleDeclaration, r: DOMRect, sx: number, sy: number): Rect {
+  const swings = cs.animationName.split(',').map((n) => SWING[n.trim()]).filter(Boolean)
+  if (!swings.length || !(el instanceof HTMLElement)) return pad(r, sx, sy)
+  const rad = (Math.min(90, Math.max(...swings.map((s) => s.deg))) * Math.PI) / 180
+  const k = Math.max(...swings.map((s) => s.scale))
+  const [w, h] = [el.offsetWidth / 2, el.offsetHeight / 2]
+  // Half-extents of the box turned by up to `rad` (a full spin reaches the corners' circle) and scaled by `k`.
+  const hw = (rad >= Math.PI / 4 ? Math.hypot(w, h) : w * Math.cos(rad) + h * Math.sin(rad)) * k + PAD
+  const hh = (rad >= Math.PI / 4 ? Math.hypot(w, h) : w * Math.sin(rad) + h * Math.cos(rad)) * k + PAD
+  const cx = r.left + r.width / 2 + sx
+  const cy = r.top + r.height / 2 + sy
+  return { x: cx - hw, y: cy - hh, w: hw * 2, h: hh * 2 }
+}
+
 /**
  * Everything visible inside `roots` (boxes with a background or border, images and controls, and every line
  * of text), as page-coordinate rects padded a little. `skip` subtrees are ignored (the 3D layers themselves).
@@ -113,13 +140,15 @@ export function pageObstacles(roots: Element[], skip: Element[]): Rect[] {
       if (el === root && root.tagName !== 'NAV') continue // the page root itself is see-through now
       if (skipped(el)) continue
       const cs = getComputedStyle(el)
-      if (cs.display === 'none' || cs.visibility === 'hidden' || cs.opacity === '0') continue
+      const animated = cs.animationName !== 'none'
+      // A blink is only invisible half the time.
+      if (cs.display === 'none' || cs.visibility === 'hidden' || (cs.opacity === '0' && !animated)) continue
       // Moving things (marquees, wobbles) cover their whole clipping box over time, not just where they are now.
-      const moving = cs.animationName !== 'none' && el.parentElement && getComputedStyle(el.parentElement).overflow !== 'visible'
+      const moving = animated && el.parentElement && getComputedStyle(el.parentElement).overflow !== 'visible'
       if (moving) out.push(pad(el.parentElement!.getBoundingClientRect(), sx, sy))
       if (!paints(el, cs)) continue
       const r = el.getBoundingClientRect()
-      if (r.width > 0 && r.height > 0) out.push(pad(r, sx, sy))
+      if (r.width > 0 && r.height > 0) out.push(moving ? pad(r, sx, sy) : envelope(el, cs, r, sx, sy))
     }
   }
   return out
@@ -135,6 +164,7 @@ const FLOATING = [
   '[data-testid="pet-window"]',
   '[data-testid="mini-player"]',
   '[data-testid="mute"]',
+  '[data-testid="popnuke-badge"]',
   '[data-testid="chat-toggle"]',
   '[aria-label="Live chat"]',
   '[data-testid="popup"]',
@@ -143,8 +173,9 @@ const FLOATING = [
 ].join(',')
 
 export function floatingObstacles(): Rect[] {
-  return [...document.querySelectorAll(FLOATING)]
-    .map((el) => el.getBoundingClientRect())
-    .filter((r) => r.width > 0 && r.height > 0)
-    .map((r) => pad(r, 0, 0))
+  return [...document.querySelectorAll(FLOATING)].flatMap((el) => {
+    const r = el.getBoundingClientRect()
+    if (r.width <= 0 || r.height <= 0) return []
+    return [envelope(el, getComputedStyle(el), r, 0, 0)]
+  })
 }

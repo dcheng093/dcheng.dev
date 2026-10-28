@@ -1,6 +1,6 @@
 import { expect, test, type Locator, type Page } from '@playwright/test'
 
-const ROUTES = ['/', '/dealership', '/shrine/segfault', '/shrine/kettle', '/shrine/chiikawa', '/guestbook', '/under-construction', '/you-won', '/checkout', '/leave', '/scan', '/casino', '/survey', '/work-from-home', '/arcade', '/desktop', '/radio', '/oracle', '/blinkie-maker', '/stickers', '/boring']
+const ROUTES = ['/', '/dealership', '/shrine/segfault', '/shrine/kettle', '/shrine/chiikawa', '/guestbook', '/under-construction', '/you-won', '/checkout', '/leave', '/scan', '/casino', '/survey', '/work-from-home', '/arcade', '/desktop', '/radio', '/oracle', '/blinkie-maker', '/stickers', '/popnuke', '/boring']
 
 /** Skip the enter gate (sessionStorage) and collect real errors, ignoring 404s for not-yet-supplied images. */
 async function prepare(page: Page, { skipGate = true, virus = false, pet = false } = {}) {
@@ -111,12 +111,14 @@ test('the floating player changes the song on non-home pages', async ({ page }) 
   await expect(player.getByTestId('now-playing')).toContainText('Elevator (Going Down)')
   await player.getByRole('button', { name: 'Next track' }).click()
   await expect(player.getByTestId('now-playing')).toContainText('Nightcore Daniel')
-  // Back past the first track wraps round to the last song.
+  // Back past the first track wraps round to the last one (whatever that is: dropped-in MP3s join the end).
   for (let n = 0; n < 4; n++) await player.getByRole('button', { name: 'Previous track' }).click()
-  await expect(player.getByTestId('now-playing')).toContainText('Sticker Pop')
+  await expect(player.getByTestId('now-playing')).not.toContainText('Nightcore Daniel')
+  const [, number, last] = (await player.getByTestId('now-playing').textContent())!.match(/(\d+)\. DANIEL — (.+?) \*\*\*/)!
+  expect(Number(number)).toBeGreaterThan(4)
   await player.getByRole('button', { name: 'Minimise player' }).click()
   await expect(player.getByTestId('now-playing')).toHaveCount(0)
-  await expect(player).toContainText('Sticker Pop')
+  await expect(player).toContainText(last)
 })
 
 test('hovering a track in the music list never shakes it (no jiggle, no sideways overflow)', async ({ page }) => {
@@ -260,7 +262,7 @@ test("the desktop's notepad remembers what you typed, and windows drag", async (
   await expect(page.getByTestId('window-notepad').getByLabel('Notepad diary')).toHaveValue('secret e2e diary')
 })
 
-test('the Azerbaijan virus alert appears a while in and any button closes it', async ({ page }) => {
+test('the Albanian virus alert appears a while in and any button closes it', async ({ page }) => {
   await page.clock.install()
   await prepare(page, { virus: true })
   await page.goto('/casino')
@@ -320,7 +322,7 @@ test('3D: a TextureTown world on /oracle, objects on /casino, nothing on Home', 
 // Every page except Home. (Exact per-page counts are pinned by the unit tests against the content itself.)
 const OBJECT_PAGES = [
   '/dealership', '/guestbook', '/under-construction', '/you-won', '/checkout', '/scan', '/casino', '/survey', '/work-from-home',
-  '/arcade', '/desktop', '/radio', '/oracle', '/blinkie-maker', '/stickers', '/leave', '/this/does/not/exist',
+  '/arcade', '/desktop', '/radio', '/oracle', '/blinkie-maker', '/stickers', '/popnuke', '/leave', '/this/does/not/exist',
   '/shrine/chiikawa', '/shrine/battlestation', '/shrine/peripherals', '/shrine/segfault', '/shrine/norminette',
   '/shrine/push-swap', '/shrine/kettle', '/shrine/horses', '/shrine/teeth',
 ]
@@ -394,20 +396,43 @@ test('3D objects are never hidden behind content or floating UI, or outside the 
     for (const scroll of [0, 0.6, 1.2]) {
       await page.evaluate((k) => window.scrollTo(0, innerHeight * k), scroll)
       await page.waitForTimeout(700) // long enough for a drifter or dodging anchor to slip clear
-      for (const p of await hiddenObjects(page)) problems.push(`${path} @${scroll}: ${p}`)
+      // Something that only just popped up (an ambush pop-up, a window) gets a moment for objects to dodge it.
+      const first = await hiddenObjects(page)
+      if (first.length) await page.waitForTimeout(600)
+      for (const p of first.length ? await hiddenObjects(page) : []) problems.push(`${path} @${scroll}: ${p}`)
     }
   }
   expect(problems).toEqual([])
 })
 
+/**
+ * Clicks a 3D object once it's in sight. Objects duck out of sight when a window covers them with nowhere to
+ * step aside to (and hidden objects aren't clickable), so wait for it to be showing first.
+ */
+async function clickObject(page: Page, obj: Locator) {
+  await expect(obj).not.toHaveCSS('opacity', '0', { timeout: 10_000 })
+  const box = (await obj.boundingBox())!
+  await page.mouse.click(box.x + box.width / 2, box.y + box.height / 2)
+}
+
+/**
+ * These tests want the margins clear: the expanded player covers much of a short screen's margin, and a big GIF
+ * of confetti thrown on the wrong spot can leave an object nowhere to step aside to.
+ */
+const clearMargins = (page: Page) =>
+  page.addInitScript(() => {
+    localStorage.setItem('playerMinimised', 'true')
+    addEventListener('DOMContentLoaded', () => document.head.append(Object.assign(document.createElement('style'), { textContent: '[data-testid="gif-confetti"] { display: none }' })))
+  })
+
 test('clicking an object in the margin opens its properties window, not whatever is underneath', async ({ page }) => {
   test.skip((page.viewportSize()?.width ?? 1000) < 640, 'phones only get drifters')
   await prepare(page)
+  await clearMargins(page)
   await page.goto('/casino')
   const die = page.locator('[data-object="dice-a"]')
   await expect.poll(() => drawnPixels(die), { timeout: 10_000 }).toBeGreaterThan(20)
-  const box = (await die.boundingBox())!
-  await page.mouse.click(box.x + box.width / 2, box.y + box.height / 2)
+  await clickObject(page, die)
   const win = page.getByTestId('object-window')
   await expect(win).toBeVisible()
   await expect(win).toContainText('Lucky Die')
@@ -423,6 +448,7 @@ test('clicking an object in the margin opens its properties window, not whatever
 test('the crash screen keeps its objects, and clicking one does not reboot you somewhere else', async ({ page }) => {
   test.skip((page.viewportSize()?.width ?? 1000) < 640, 'phones only get drifters')
   await prepare(page)
+  await clearMargins(page)
   await page.goto('/this/does/not/exist')
   await expect(page.getByTestId('bsod')).toBeVisible()
   // The crash screen still covers the site's floating chat button.
@@ -430,10 +456,18 @@ test('the crash screen keeps its objects, and clicking one does not reboot you s
   const cb = (await chat.boundingBox())!
   expect(await page.evaluate(([x, y]) => document.elementFromPoint(x, y)?.closest('[data-testid="bsod"]') !== null, [cb.x + 5, cb.y + 5])).toBe(true)
   // Whichever crashed object has room to show at this screen size.
-  const shown = page.locator('[data-testid="object-3d"]:not([style*="opacity: 0"])').first()
+  // (One that's been showing for a moment: in its first frame an object hasn't yet found out it's cornered.)
+  const showing = () => page.locator('[data-testid="object-3d"]:not([style*="opacity: 0"])').evaluateAll((cs) => cs.map((c) => c.dataset.object!))
+  let id: string | undefined
+  await expect.poll(async () => {
+    const before = await showing()
+    await page.waitForTimeout(400)
+    id = (await showing()).find((o) => before.includes(o))
+    return id
+  }, { timeout: 15_000 }).toBeTruthy()
+  const shown = page.locator(`[data-object="${id}"]`)
   await expect.poll(() => drawnPixels(shown), { timeout: 10_000 }).toBeGreaterThan(20)
-  const box = (await shown.boundingBox())!
-  await page.mouse.click(box.x + box.width / 2, box.y + box.height / 2)
+  await clickObject(page, shown)
   await expect(page.getByTestId('object-window')).toBeVisible()
   await expect(page).toHaveURL(/does\/not\/exist$/)
 })
@@ -518,6 +552,125 @@ test('the loading wipe plays again over Home after CLICK HERE TO ENTER', async (
   await page.getByRole('dialog', { name: 'Enter the site' }).getByRole('button').click()
   await expect.poll(() => first!.evaluate((e) => e.isConnected)).toBe(false)
   await expect(page.getByTestId('page-wipe')).toHaveCSS('animation-name', 'page-wipe')
+})
+
+test('the table of contents goes where it says', async ({ page }) => {
+  await prepare(page)
+  await page.goto('/')
+  const toc = page.getByText('TABLE OF CONTENTS').locator('..')
+  await toc.getByRole('link', { name: 'Introduction' }).click()
+  await expect(page.locator('#welcome')).toBeInViewport()
+  await expect(page).toHaveURL(/\/$/) // a scroll, not a navigation
+  await toc.getByRole('link', { name: 'Horses' }).click()
+  await expect(page).toHaveURL(/\/shrine\/horses$/)
+})
+
+test('the music has a volume slider that starts at half, sticks between pages, and unmutes when raised', async ({ page }) => {
+  await prepare(page)
+  await page.goto('/')
+  await page.locator('[data-band="header"]').click({ position: { x: 5, y: 5 } }) // unlock audio
+  const jukebox = page.locator('[data-band="destiny"]').getByTestId('volume')
+  await expect(jukebox).toHaveValue('50')
+  await page.getByTestId('mute').click() // mute
+  await jukebox.fill('20')
+  await expect(page.getByTestId('mute')).toHaveAttribute('aria-label', 'Mute') // raising it unmuted
+  await page.goto('/radio')
+  await page.locator('[data-testid="radio"]').click({ position: { x: 5, y: 5 } })
+  await expect(page.getByTestId('radio').getByTestId('volume')).toHaveValue('20')
+  await expect(page.getByTestId('mini-player').getByTestId('volume')).toHaveValue('20')
+})
+
+/** Closes the topmost pop-up, if there is one. Returns whether it did. */
+async function closeTopPopup(page: Page) {
+  const popup = page.getByTestId('popup').last() // the newest is on top; older ones may be covered
+  if (!(await popup.count())) return false
+  await settled(popup)
+  await popup.getByRole('button', { name: 'Close' }).click()
+  return true
+}
+
+test('after closing 3 pop-ups, the next one advertises POPNUKE, and both its buttons lead there', async ({ page }) => {
+  test.setTimeout(120_000)
+  await page.clock.install()
+  await prepare(page)
+  await page.goto('/casino')
+  // Close three pop-ups (multiplying ones spawn more, which is fine), then the next ambush is the ad.
+  let ad = false
+  let closed = 0
+  for (let i = 0; i < 15 && !ad; i++) {
+    await page.clock.fastForward(33_000) // the ambush fires every 14–32s
+    ad = (await page.getByTestId('popnuke-ad').count()) > 0
+    while (!ad && closed < 3 && (await closeTopPopup(page))) closed++
+  }
+  expect(ad).toBe(true)
+  expect(await page.evaluate(() => Number(sessionStorage.getItem('popnukeClosed')))).toBeGreaterThanOrEqual(3)
+  await page.getByTestId('popnuke-ad').getByRole('button', { name: /no thanks, I love pop-ups/ }).click()
+  await expect(page).toHaveURL(/\/popnuke$/)
+})
+
+test('installing POPNUKE really blocks the pop-ups and the virus alert, and uninstalling brings them back at once', async ({ page }) => {
+  test.setTimeout(120_000)
+  await page.clock.install()
+  await prepare(page, { virus: true })
+  await page.goto('/popnuke')
+  await page.getByTestId('popnuke-install').scrollIntoViewIfNeeded()
+  await page.getByTestId('popnuke-install').click()
+  const setup = page.getByTestId('popnuke-setup')
+  await expect(setup.getByTestId('setup-next')).toBeDisabled()
+  await expect(setup.getByTestId('setup-agree')).toBeDisabled() // must read it all first
+  await setup.getByTestId('setup-eula').evaluate((el) => {
+    el.scrollTop = el.scrollHeight
+    el.dispatchEvent(new Event('scroll'))
+  })
+  await setup.getByTestId('setup-agree').check()
+  await setup.getByTestId('setup-next').click()
+  // Every tick of the progress bar (and its stall at 99%); stepped, since the bar's timer starts after a render.
+  await expect(setup.getByTestId('setup-progress')).toBeVisible()
+  await expect.poll(async () => {
+    await page.clock.runFor(1_000)
+    return setup.getByTestId('setup-finish').count()
+  }, { timeout: 30_000 }).toBe(1)
+  await setup.getByTestId('setup-finish').click()
+  await expect(page.getByTestId('popnuke-badge')).toBeVisible()
+
+  // Two minutes of would-be pop-ups (and the virus alert, due at 25s): nothing gets through.
+  await page.goto('/casino')
+  // fastForward fires each due timer once per jump, so step through it like the ambush would.
+  for (let i = 0; i < 4; i++) await page.clock.fastForward(33_000)
+  await expect(page.getByTestId('popup')).toHaveCount(0)
+  await expect(page.getByTestId('virus-alert')).toHaveCount(0)
+  expect(Number(await page.getByTestId('popnuke-blocked').textContent())).toBeGreaterThanOrEqual(4)
+
+  // Pop-ups you ask for still work.
+  await page.goto('/')
+  await page.getByRole('button', { name: /CALL ME/ }).click()
+  await expect(page.getByTestId('popup')).toHaveCount(1)
+  await page.getByTestId('popup').getByRole('button', { name: 'Close' }).click()
+
+  // Uninstall: instant revenge.
+  await page.goto('/popnuke')
+  await page.getByTestId('popnuke-uninstall').scrollIntoViewIfNeeded()
+  await page.getByTestId('popnuke-uninstall').click()
+  await page.getByTestId('popnuke-confirm-yes').click()
+  await page.clock.fastForward(1_000)
+  await expect(page.getByTestId('popup')).toHaveCount(3)
+  await expect(page.getByTestId('popup').first()).toContainText('WELCOME BACK')
+  await expect(page.getByTestId('popnuke-badge')).toHaveCount(0)
+})
+
+test('the POPNUKE demo plays as you scroll', async ({ page }) => {
+  await prepare(page)
+  await page.goto('/popnuke')
+  const hero = page.getByTestId('popnuke-hero-canvas')
+  await expect.poll(() => drawnPixels(hero), { timeout: 10_000 }).toBeGreaterThan(1000)
+  const look = () => hero.evaluate((c: HTMLCanvasElement) => c.toDataURL().length + ':' + c.toDataURL().slice(-200))
+  // Scroll to 10% of the demo (the sticky part runs over height - one screen).
+  await page.evaluate(() => window.scrollTo(0, ((document.querySelector('[data-testid="popnuke-hero"]') as HTMLElement).offsetHeight - innerHeight) * 0.1))
+  await expect(page.getByTestId('popnuke-frame')).toContainText('FRAME 01')
+  const early = await look()
+  await page.evaluate(() => window.scrollTo(0, (document.querySelector('[data-testid="popnuke-hero"]') as HTMLElement).offsetHeight - innerHeight))
+  await expect(page.getByTestId('popnuke-frame')).toContainText('FRAME 04')
+  await expect.poll(look).not.toBe(early)
 })
 
 test('unknown routes blue-screen', async ({ page }) => {

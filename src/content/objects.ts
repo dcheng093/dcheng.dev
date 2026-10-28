@@ -57,7 +57,7 @@ export const PAGE_3D: Record<string, PageScene> = {
       obj('hard-hat', 'Safety Hat', 'hardHat', 'nervous', 's', 'yellow plastic', 'Mandatory on site. Nobody on site wears it. It is upset about this.', { spot: R(25) }),
       obj('bricks', 'Load-Bearing Bricks', 'bricks', 'lazy', 'm', 'bricks (drawn by hand)', 'Holding the entire website up. Do not click these. (You can click these.)', { spot: R(68) }),
       obj('foreman', 'Foreman Daniel', 'head', 'dramatic', 'm', 'Daniel, cut out, no hard hat', 'In charge of building the site. Refuses to wear the hat. See above.', { photo: 1 }),
-      obj('wip-sign', 'WIP', 'text', 'shy', 'm', 'caution-stripe pixels', 'Work In Progress since 2026. Progress: 4%.', { text: 'WIP', tex: 'proc:caution' }),
+      obj('wip-sign', 'WIP', 'text', 'shy', 'm', 'caution-stripe pixels', 'Work In Progress since 1999. Progress: 4%.', { text: 'WIP', tex: 'proc:caution' }),
     ],
   },
   '/you-won': {
@@ -158,6 +158,14 @@ export const PAGE_3D: Record<string, PageScene> = {
       obj('blink-pencil', 'Pixel Pencil', 'pencil', 'nervous', 's', 'wood, one pixel of graphite', 'Draws one pixel at a time. Has drawn 1,048,576 of them.', { spot: R(72) }),
       obj('blink-text', 'BLINK', 'text', 'shy', 's', 'pink glitter pixels', 'Blinks at 2.5 times a second. Slower than you\'d think. Safe for your eyes.', { text: 'BLINK', tex: 'tieDye' }),
       obj('blinkie-model', 'The Blinkie Model', 'photoCube', 'showoff', 's', 'six photos of Daniel', 'Every blinkie on this site was modelled on him. Six angles, all his good side.', { photo: 9, spot: L(70) }),
+    ],
+  },
+  '/popnuke': {
+    objects: [
+      obj('popnuke-disk', 'POPNUKE Disk 1 of 1', 'floppy', 'nervous', 's', 'plastic, 1.44 MB of pure nuke', 'The whole product, on one floppy. Do not put it near a magnet. Or the kettle.', { spot: L(30) }),
+      obj('installer-cd', 'POPNUKE Installer CD', 'cd', 'showoff', 'm', 'a real CD photo', 'Autorun.inf launches the installer, then a second installer, then a toolbar.', { spot: R(40) }),
+      obj('nuke-shield', 'The Nuke Shield', 'shield', 'watcher', 'm', 'purple metal, radiation', 'Stands between you and the pop-ups. Has never once blinked.'),
+      obj('ceo-portrait', 'Daniel Cheng, CEO', 'portrait', 'lazy', 's', 'gold frame, photo #3', 'Founder, CEO, CFO, CTO and receptionist of Daniel Cheng Software Ltd.', { photo: 2, spot: R(75) }),
     ],
   },
   '/stickers': {

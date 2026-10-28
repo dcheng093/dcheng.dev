@@ -5,6 +5,8 @@ import { pick } from '../../lib/random'
 import { useSfx } from '../../audio/audioContext'
 import { PopupContext, SPECIAL_POPUPS, initialPopupState, popupReducer, type PopupVariant } from './popupState'
 import { PopupWindow } from './PopupWindow'
+import { usePopnuke } from '../popnuke/popnukeState'
+import { ambush } from '../../lib/popnuke'
 
 /** Everything the random ambush can throw: popup-format ads plus the interactive specials. */
 const ambushPool = [
@@ -25,13 +27,31 @@ export function PopupProvider({ auto, children }: { auto: boolean; children: Rea
     [sfx],
   )
 
+  const nuke = usePopnuke()
   useRandomInterval(
-    () => open(pick(ambushPool), pick<PopupVariant>(['normal', 'normal', 'multiply', 'dodge'])),
+    () => {
+      switch (ambush(nuke.installed, nuke.closed, nuke.adShown)) {
+        case 'blocked': // POPNUKE ate it
+          return nuke.countBlocked()
+        case 'popnuke-ad':
+          nuke.markAdShown()
+          return open('popnuke-ad')
+        case 'normal':
+          // Once it has had its turn, the POPNUKE ad is just one of the crowd.
+          return open(pick(nuke.adShown ? [...ambushPool, 'popnuke-ad'] : ambushPool), pick<PopupVariant>(['normal', 'normal', 'multiply', 'dodge']))
+      }
+    },
     auto ? 14_000 : null,
     auto ? 32_000 : null,
   )
 
-  const api = useMemo(() => ({ open }), [open])
+  const burst = useCallback(
+    (count: number, first?: string) => {
+      for (let i = 0; i < count; i++) window.setTimeout(() => open(i === 0 && first ? first : pick(ambushPool)), i * 150)
+    },
+    [open],
+  )
+  const api = useMemo(() => ({ open, burst }), [open, burst])
 
   return (
     <PopupContext.Provider value={api}>
@@ -42,6 +62,7 @@ export function PopupProvider({ auto, children }: { auto: boolean; children: Rea
           popup={p}
           z={60 + i}
           onClose={() => {
+            nuke.noteClosed()
             sfx('error')
             dispatch({ type: 'close', key: p.key })
           }}
