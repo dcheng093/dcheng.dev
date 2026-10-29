@@ -44,6 +44,16 @@ export function markScared() {
 }
 
 export const usePossessed = () => useSyncExternalStore(subscribe, isPossessed, () => false)
+
+/** For code that asks every frame (the 3D copy loop): a cached flag instead of parsing storage each time. */
+let cached: boolean | null = null
+export function possessedNow() {
+  if (cached === null) {
+    cached = isPossessed()
+    subscribe(() => (cached = isPossessed()))
+  }
+  return cached
+}
 export const useHeardAt = () => useSyncExternalStore(subscribe, heardAt, () => null)
 
 /** The one jump scare. Only answers once, only while possessed; src/components/possessed/JumpScare.tsx listens. */

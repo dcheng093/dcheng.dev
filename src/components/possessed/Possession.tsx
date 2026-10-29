@@ -47,8 +47,9 @@ export function Possession() {
           <feDisplacementMap in="SourceGraphic" in2="n" scale={16} xChannelSelector="R" yChannelSelector="G" />
         </filter>
       </svg>
-      {/* Everything goes the colour of an old wound; the corners go dark. */}
-      <div className="pointer-events-none fixed inset-0 z-[96] bg-[#d07a7a] mix-blend-multiply" />
+      {/* Everything goes the colour of an old wound; the corners go dark. A plain see-through veil, not a blend mode:
+          blending the whole screen every frame is what made the possessed site lag. */}
+      <div className="pointer-events-none fixed inset-0 z-[96] bg-[#50000a]/40" />
       <div className="pointer-events-none fixed inset-0 z-[96] bg-[radial-gradient(ellipse_at_center,#0000_45%,#1a0000cc_100%)]" />
       {whisper && (
         <p

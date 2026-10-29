@@ -1,5 +1,5 @@
 import * as THREE from 'three'
-import { isPossessed } from '../lib/possession'
+import { isPossessed, possessedNow } from '../lib/possession'
 import { isDaniel, rotted } from '../components/possessed/rot'
 
 /**
@@ -89,7 +89,16 @@ function frame(now: number) {
       ctx2d.set(v.target, c)
     }
     c.clearRect(0, 0, width, height)
+    // Possessed, the 3D goes the colour of the rest of the site. Done here, on the small canvas while it's copied,
+    // because a CSS filter on the scaled-up canvas costs a whole extra render pass every frame.
     c.drawImage(r.domElement, 0, fullH - height, width, height, 0, 0, width, height)
+    if (possessedNow()) {
+      // Bled red, keeping the picture's own transparency: a cheap fill, where a canvas filter would cost every frame.
+      c.globalCompositeOperation = 'source-atop'
+      c.fillStyle = POSSESSED_TINT
+      c.fillRect(0, 0, width, height)
+      c.globalCompositeOperation = 'source-over'
+    }
   }
   ;({ work, frameMs } = govern({ work, frameMs }, performance.now() - start))
 }
@@ -131,6 +140,8 @@ const loader = new THREE.TextureLoader()
 const textures = new Map<string, THREE.Texture>()
 
 /** Tiled, nearest-neighbour textures (crunchy on purpose), shared and cached by URL. */
+const POSSESSED_TINT = 'rgba(110, 0, 12, 0.55)'
+
 const rotTextures = new Map<string, THREE.Texture>()
 
 /**

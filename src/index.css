@@ -509,8 +509,8 @@
 .boring img { image-rendering: auto; display: inline; }
 
 /* The possessed site (src/lib/possession.ts sets html[data-possessed]; components/possessed/ draws the rest).
-   Unlayered, so it wins over the page's own classes. Filters go on pictures and canvases only, never on a box with
-   fixed-position children (a filter would trap them). Nothing here animates. */
+   Unlayered, so it wins over the page's own classes. Filters go on pictures only, never on a box with fixed-position
+   children (a filter would trap them); the 3D is tinted as it's drawn (three/stage.ts). Nothing here animates. */
 html[data-possessed] body {
   background-color: #0a0002;
 }
@@ -523,9 +523,6 @@ html[data-possessed] img:not([data-rotted]) {
 }
 html[data-possessed] img[data-rotted] {
   filter: url(#rot);
-}
-html[data-possessed] canvas {
-  filter: sepia(0.8) hue-rotate(-40deg) saturate(2.4) contrast(1.2) brightness(0.75);
 }
 html[data-possessed] main h1,
 html[data-possessed] main h2 {
