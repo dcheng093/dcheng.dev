@@ -8,7 +8,7 @@ export const VISITED_KEY = 'dialupVisited'
 
 /** How long a page takes to "load" over dial-up, and how long the blinds take to sweep off a cached one. */
 export const LOAD_MS = 1100
-export const WIPE_MS = 450
+export const WIPE_MS = 400
 
 /** How a page arrives: over dial-up the first time this visit, from the "cache" (under the blinds) after that. */
 export const arrival = (visitedBefore: boolean): 'dialup' | 'wipe' => (visitedBefore ? 'wipe' : 'dialup')

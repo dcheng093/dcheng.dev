@@ -54,7 +54,7 @@ export function RootLayout() {
               would count as cached already. */}
           {entered && (
             <>
-              <PageLoad key={pathname} path={pathname} />
+              <PageLoad key={pathname} path={pathname} belowTaskbar={!handle.noWebring} />
               <ScanIn />
             </>
           )}
