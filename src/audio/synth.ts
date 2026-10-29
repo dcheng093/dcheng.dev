@@ -20,6 +20,8 @@ export type SynthSong = {
   swing?: number
   /** Hold notes through the rests that follow them instead of plucking. */
   legato?: boolean
+  /** Not in the jukebox's list until the visitor has reached a sealed page. */
+  hidden?: boolean
 }
 
 const _ = null
@@ -259,6 +261,27 @@ export const SYNTH_SONGS: SynthSong[] = [
     ],
     drums: 'k-h-s-h-k-hks-h-'.repeat(2),
   },
+  {
+    id: 'hymn',
+    label: 'Hymn (Do Not Play)',
+    hidden: true,
+    bpm: 52,
+    legato: true,
+    leadWave: 'triangle',
+    bassWave: 'sine',
+    transpose: 0,
+    // Sung by the congregation on the sealed page: slow harmonic minor, held like an organ, no drums. It leans on the
+    // G# and never quite resolves.
+    lead: [
+      12, _, _, _, 11, _, _, _, 8, _, _, _, 7, _, _, _,
+      12, _, _, _, 15, _, _, _, 13, _, _, _, 11, _, _, _,
+    ],
+    bass: [
+      0, _, _, _, _, _, _, _, -4, _, _, _, _, _, _, _,
+      -7, _, _, _, _, _, _, _, -5, _, _, _, -1, _, _, _,
+    ],
+    drums: '-'.repeat(32),
+  },
 ]
 
 const freq = (semi: number) => 220 * 2 ** (semi / 12)
@@ -334,9 +357,13 @@ export class Chiptune {
     this.dest = dest
   }
 
-  start(song: SynthSong) {
+  /** `warped`: the possessed site's version: slower, a fourth lower, and slightly out of tune with itself. */
+  start(song: SynthSong, warped = false) {
     this.stop()
-    const stepDur = 60 / song.bpm / 4
+    const bpm = warped ? song.bpm * 0.7 : song.bpm
+    const down = warped ? -5 : 0
+    const sour = warped ? 0.987 : 1
+    const stepDur = 60 / bpm / 4
     const swing = (song.swing ?? 0) * stepDur
     this.nextAt = this.ctx.currentTime + 0.05
     // Lookahead scheduler: wake every 25ms, queue anything due in the next 120ms.
@@ -348,8 +375,8 @@ export class Chiptune {
         const bass = song.bass[i]
         const leadDur = song.legato ? stepDur * held(song.lead, i) * 0.9 : stepDur * 0.9
         const bassDur = song.legato ? stepDur * held(song.bass, i) * 0.9 : stepDur * 1.8
-        if (lead != null) blip(this.ctx, this.dest, song.leadWave, freq(lead + song.transpose), at, leadDur, 0.06)
-        if (bass != null) blip(this.ctx, this.dest, song.bassWave, freq(bass + song.transpose - 12), at, bassDur, 0.09)
+        if (lead != null) blip(this.ctx, this.dest, song.leadWave, freq(lead + song.transpose + down) * sour, at, leadDur, 0.06)
+        if (bass != null) blip(this.ctx, this.dest, song.bassWave, freq(bass + song.transpose + down - 12), at, bassDur, 0.09)
         hit(this.ctx, this.dest, song.drums[i], at)
         this.nextAt += stepDur
         this.step++
@@ -364,7 +391,82 @@ export class Chiptune {
   }
 }
 
-export type SfxName = 'click' | 'hover' | 'ding' | 'error' | 'coin' | 'honk'
+export type SfxName = 'click' | 'hover' | 'ding' | 'error' | 'coin' | 'honk' | 'startup' | 'shutdown' | 'chord' | 'tada' | 'beep' | 'disk' | 'sting' | 'splash' | 'choir'
+
+/** A note that fades in and out slowly instead of plucking: for voices. */
+function swell(ctx: AudioContext, dest: AudioNode, type: OscillatorType, f: number, at: number, dur: number, vol: number) {
+  const osc = ctx.createOscillator()
+  const gain = ctx.createGain()
+  osc.type = type
+  osc.frequency.setValueAtTime(f, at)
+  gain.gain.setValueAtTime(0.0001, at)
+  gain.gain.linearRampToValueAtTime(vol, at + dur * 0.35)
+  gain.gain.linearRampToValueAtTime(0.0001, at + dur)
+  osc.connect(gain).connect(dest)
+  osc.start(at)
+  osc.stop(at + dur + 0.02)
+}
+
+/** Filtered noise with its own envelope (sweeping the filter from `from` to `to` Hz). */
+function wash(ctx: AudioContext, dest: AudioNode, at: number, dur: number, vol: number, from: number, to: number, type: BiquadFilterType = 'lowpass') {
+  const src = ctx.createBufferSource()
+  const filter = ctx.createBiquadFilter()
+  const gain = ctx.createGain()
+  src.buffer = noise(ctx)
+  src.loop = true
+  filter.type = type
+  filter.frequency.setValueAtTime(from, at)
+  filter.frequency.exponentialRampToValueAtTime(to, at + dur)
+  gain.gain.setValueAtTime(vol, at)
+  gain.gain.exponentialRampToValueAtTime(0.0001, at + dur)
+  src.connect(filter).connect(gain).connect(dest)
+  src.start(at)
+  src.stop(at + dur + 0.02)
+}
+
+/** The possessed site's hum: two low sines a few Hz apart, beating slowly. Returns a stop function. */
+export function drone(ctx: AudioContext, dest: AudioNode) {
+  const gain = ctx.createGain()
+  gain.gain.setValueAtTime(0.0001, ctx.currentTime)
+  gain.gain.linearRampToValueAtTime(0.05, ctx.currentTime + 4)
+  gain.connect(dest)
+  const oscs = [55, 58.3, 82.4].map((f) => {
+    const o = ctx.createOscillator()
+    o.type = 'sine'
+    o.frequency.value = f
+    o.connect(gain)
+    o.start()
+    return o
+  })
+  return () => {
+    gain.gain.cancelScheduledValues(ctx.currentTime)
+    gain.gain.setValueAtTime(gain.gain.value, ctx.currentTime)
+    gain.gain.linearRampToValueAtTime(0.0001, ctx.currentTime + 1.5)
+    oscs.forEach((o) => o.stop(ctx.currentTime + 1.6))
+  }
+}
+
+/** A few notes at once (or rolled, with `roll` seconds between them). */
+const chord = (ctx: AudioContext, dest: AudioNode, type: OscillatorType, semis: number[], at: number, dur: number, vol: number, roll = 0) =>
+  semis.forEach((s, i) => blip(ctx, dest, type, freq(s), at + i * roll, dur - i * roll, vol))
+
+/** The hard disk seeking: a handful of short filtered-noise ticks at uneven gaps. */
+function crunch(ctx: AudioContext, dest: AudioNode, at: number, ticks: number) {
+  let t = at
+  for (let i = 0; i < ticks; i++) {
+    const src = ctx.createBufferSource()
+    const filter = ctx.createBiquadFilter()
+    const gain = ctx.createGain()
+    src.buffer = noise(ctx)
+    filter.type = 'bandpass'
+    filter.frequency.value = 2400 + ((i * 977) % 1800)
+    gain.gain.setValueAtTime(0.18, t)
+    gain.gain.exponentialRampToValueAtTime(0.0001, t + 0.025)
+    src.connect(filter).connect(gain).connect(dest)
+    src.start(t, (i * 0.13) % 0.8, 0.03)
+    t += 0.03 + ((i * 7) % 5) * 0.018
+  }
+}
 
 export function playSfx(ctx: AudioContext, dest: AudioNode, name: SfxName) {
   const t = ctx.currentTime
@@ -384,5 +486,33 @@ export function playSfx(ctx: AudioContext, dest: AudioNode, name: SfxName) {
     case 'honk': // the goose
       blip(ctx, dest, 'sawtooth', 330, t, 0.16, 0.12)
       return blip(ctx, dest, 'sawtooth', 277, t + 0.18, 0.28, 0.12)
+    // ——— Daniel 95 ———
+    case 'startup': // a slow, shimmering rise into a big warm chord (Daniel's own; it only rhymes with 1995)
+      chord(ctx, dest, 'triangle', [3, 10, 15, 19, 22], t, 1.2, 0.05, 0.14)
+      chord(ctx, dest, 'sine', [-9, 3, 7, 10, 15, 22, 27], t + 0.75, 3.2, 0.045, 0.05)
+      return blip(ctx, dest, 'sine', freq(34), t + 1.2, 2.4, 0.03)
+    case 'shutdown': // the same chord, falling asleep
+      chord(ctx, dest, 'triangle', [22, 19, 15, 10, 3], t, 1.6, 0.05, 0.22)
+      return chord(ctx, dest, 'sine', [-9, -2, 3], t + 1.0, 1.8, 0.05)
+    case 'chord': // the error chord
+      return chord(ctx, dest, 'triangle', [7, 11, 14], t, 0.45, 0.08)
+    case 'tada':
+      chord(ctx, dest, 'square', [3, 7, 10], t, 0.12, 0.04, 0.04)
+      return chord(ctx, dest, 'square', [15, 19, 22, 27], t + 0.16, 0.7, 0.04)
+    case 'beep': // the BIOS POST beep: one short, all is well
+      return blip(ctx, dest, 'square', 1000, t, 0.18, 0.06)
+    case 'disk':
+      return crunch(ctx, dest, t, 9)
+    // ——— Possession and baptism ———
+    case 'sting': // the jump scare: a burst of noise over a low cluster that should not be played together
+      wash(ctx, dest, t, 0.9, 0.5, 6000, 300, 'bandpass')
+      chord(ctx, dest, 'sawtooth', [-24, -23, -18, -13, -12], t, 1.6, 0.07)
+      return blip(ctx, dest, 'square', freq(-30), t, 1.2, 0.12)
+    case 'splash': // holy water, poured
+      wash(ctx, dest, t, 1.4, 0.22, 3000, 200)
+      return wash(ctx, dest, t + 0.25, 1.8, 0.12, 1200, 120)
+    case 'choir': // surfacing: a held major chord that swells in, like voices
+      ;[0, 4, 7, 12, 16, 19].forEach((s, i) => swell(ctx, dest, i % 2 ? 'triangle' : 'sine', freq(s + 3), t + i * 0.12, 3.6, 0.035))
+      return swell(ctx, dest, 'sine', freq(27), t + 0.9, 2.8, 0.02)
   }
 }

@@ -40,6 +40,15 @@ import { arrival, statusLine } from '../lib/dialup'
 import { QUESTIONS, SURVEY } from '../content/survey'
 import { claimedTotal, fleeGivesUp, possess, questionNumber, resultRows } from '../lib/survey'
 import { DEFAULT_SETTINGS, chaosScale, danielPick, danielSwap, mergeSettings } from '../lib/settings'
+import { countVisit, DEX, dexProgress, isNight, monthDay, readDex, recordFind, VISITS_KEY } from '../lib/discovery'
+import { graft, listDir, locksIn, walk, type FsContext } from '../lib/desktop'
+import { DEX_MILESTONES, FILESYSTEM, MAIL_VISITS, type FsNode } from '../content/desktop'
+import { makeSeal, normalise, openSeal } from '../lib/seal'
+import { openLock, openPage, SEALED, type SealedPage } from '../lib/hunt'
+import { baptize, heardAt, isPossessed, possess as possessVisitor, SCARE_EVENT, summonScare, markScared } from '../lib/possession'
+import { visibleMixes } from '../audio/tracks'
+import { routes } from '../routes'
+import { visitNote } from '../lib/visitNote'
 
 const spawn = (s: PopupState, variant: 'normal' | 'multiply' | 'dodge' = 'normal') =>
   popupReducer(s, { type: 'spawn', content: 'millionth', variant, fx: 0.5, fy: 0.5 })
@@ -281,9 +290,9 @@ describe('music', () => {
     const start = vi.spyOn(Chiptune.prototype, 'start').mockImplementation(() => {})
     const player = new MusicPlayer({} as AudioContext, {} as AudioNode)
     player.start('kettle-blues')
-    expect(start).toHaveBeenLastCalledWith(SYNTH_SONGS.find((s) => s.id === 'kettle-blues'))
-    player.start('nope')
-    expect(start).toHaveBeenLastCalledWith(SYNTH_SONGS[0])
+    expect(start).toHaveBeenLastCalledWith(SYNTH_SONGS.find((s) => s.id === 'kettle-blues'), false)
+    player.start('nope', true)
+    expect(start).toHaveBeenLastCalledWith(SYNTH_SONGS[0], true)
     start.mockRestore()
   })
 })
@@ -708,5 +717,213 @@ describe('the survey', () => {
 describe('POPNUKE demo', () => {
   it('the pop-ups shatter well in front of the spinning emblem, never inside it', () => {
     expect(EMBLEM_CLEARANCE).toBeGreaterThan(0.75) // more than half a pop-up pane
+  })
+})
+
+describe('the Object Dex', () => {
+  it('keeps the first sighting', () => {
+    const first = recordFind({}, 'goose', new Date('2026-01-01T00:00:00Z'))
+    expect(recordFind(first, 'goose', new Date('2026-06-01T00:00:00Z'))).toBe(first)
+    expect(first.goose).toBe('2026-01-01T00:00:00.000Z')
+  })
+
+  it('counts legendaries caught before the Dex existed', () => {
+    localStorage.clear()
+    writeStored('legendaries', { beef: 'then' })
+    writeStored('dex', { 'dice-a': 'now' })
+    expect(readDex()).toEqual({ beef: 'then', 'dice-a': 'now' })
+    localStorage.clear()
+  })
+
+  it('counts progress, rounding down', () => {
+    const half = Object.fromEntries(DEX.slice(0, Math.floor(DEX.length / 2)).map((e) => [e.spec.id, 'x']))
+    const p = dexProgress(half)
+    expect(p.total).toBe(DEX.length)
+    expect(p.pct).toBe(Math.floor((p.found / p.total) * 100))
+    expect(p.complete).toBe(false)
+    expect(dexProgress(Object.fromEntries(DEX.map((e) => [e.spec.id, 'x']))).complete).toBe(true)
+  })
+
+  it('lists only the specimens, once each: about a third of the objects, legendaries and night owls included', () => {
+    const ids = DEX.map((e) => e.spec.id)
+    expect(new Set(ids).size).toBe(ids.length)
+    expect(ids).toEqual(expect.arrayContaining(['goose', 'guest-moon']))
+    expect(DEX.filter((e) => e.spec.when === 'night')).toHaveLength(7)
+    expect(DEX.length).toBeGreaterThanOrEqual(30)
+    expect(DEX.length).toBeLessThanOrEqual(45)
+    const everything = Object.values(PAGE_3D).flatMap((s) => s.objects).length + LEGENDARIES.length
+    expect(DEX.length / everything).toBeLessThan(0.4)
+  })
+
+  it('every page of the ring with objects has exactly one day specimen, a drifter (so phones can catch it)', () => {
+    for (const page of WEBRING.filter((p) => PAGE_3D[p])) {
+      const day = PAGE_3D[page].objects.filter((o) => o.specimen && o.when !== 'night')
+      expect(day, page).toHaveLength(1)
+      expect(day[0].role, page).toBe('drifter')
+    }
+    // Specimens only live on the ring (in the Dex's order), never on the crash screen.
+    expect(PAGE_3D.bsod.objects.some((o) => o.specimen)).toBe(false)
+  })
+
+  it('day specimens carry an Elder Futhark rune, night owls a digit, legendaries nothing', () => {
+    for (const { spec } of DEX) {
+      if (spec.rarity === 'legendary') expect(spec.specimen, spec.id).toEqual({})
+      else if (spec.when === 'night') expect(spec.specimen?.digit, spec.id).toMatch(/^\d$/)
+      else expect(spec.specimen?.glyph, spec.id).toMatch(/^[\u16A0-\u16F8]$/)
+    }
+  })
+
+  it('night objects never push a page past 5 objects or 2 drifters', () => {
+    for (const [page, scene] of Object.entries(PAGE_3D)) {
+      expect(scene.objects.length, page).toBeLessThanOrEqual(5)
+      expect(scene.objects.filter((o) => o.role === 'drifter').length, page).toBeLessThanOrEqual(2)
+      for (const o of scene.objects.filter((o) => o.when === 'night')) expect([o.role, o.rarity], o.id).toEqual(['drifter', 'rare'])
+    }
+  })
+})
+
+describe('the clock and return visits', () => {
+  const at = (h: number, m: number) => new Date(2026, 9, 29, h, m)
+
+  it('night is 10pm to 5am', () => {
+    expect(isNight(at(21, 59))).toBe(false)
+    expect(isNight(at(22, 0))).toBe(true)
+    expect(isNight(at(4, 59))).toBe(true)
+    expect(isNight(at(5, 0))).toBe(false)
+  })
+
+  it('dates are MM-DD', () => {
+    expect(monthDay(new Date(2026, 9, 31))).toBe('10-31')
+    expect(monthDay(new Date(2027, 0, 1))).toBe('01-01')
+  })
+
+  it('a browser session counts as one visit', () => {
+    localStorage.clear()
+    sessionStorage.clear()
+    expect(countVisit()).toBe(1)
+    expect(countVisit()).toBe(1)
+    sessionStorage.clear() // a new session
+    expect(countVisit()).toBe(2)
+    expect(readStored(VISITS_KEY, 0)).toBe(2)
+    localStorage.clear()
+    sessionStorage.clear()
+  })
+
+  it('the note announces new mail and special days, and nothing else', () => {
+    expect(visitNote(1, '06-15')).toBeNull()
+    expect(visitNote(MAIL_VISITS[1], '06-15')?.text).toMatch(`visit #${MAIL_VISITS[1]}`)
+    expect(visitNote(4, '06-15')).toBeNull()
+    expect(visitNote(4, '10-31')?.text).toMatch(/HALLOWEEN/)
+  })
+})
+
+describe("Daniel's filesystem", () => {
+  const day: FsContext = { showHidden: false, visit: 1, night: false, today: '06-15' }
+  const all: FsContext = { showHidden: true, visit: 99, night: true, today: '10-31' }
+  const names = (path: string[], ctx: FsContext) => listDir(walk(FILESYSTEM, path, ctx)!, ctx).map((n) => n.name)
+
+  it('hides hidden, later-visit, night-only and other-day files', () => {
+    expect(names(['C:'], day)).not.toContain('.secret')
+    expect(names(['C:'], { ...day, showHidden: true })).toContain('.secret')
+    expect(names(['C:', 'MAIL'], day)).toEqual(['letter_01.txt'])
+    expect(names(['C:', 'MAIL'], { ...day, visit: 3 })).toEqual(['letter_01.txt', 'letter_02.txt', 'letter_03.txt'])
+    expect(names(['C:'], day)).not.toContain('NIGHT')
+    expect(names(['C:'], { ...day, night: true })).toContain('NIGHT')
+    expect(names(['C:', 'EVENTS'], day)).toEqual(['nothing_today.txt'])
+    expect(names(['C:', 'EVENTS'], { ...day, today: '10-31' })).toContain('halloween.txt')
+  })
+
+  it("walks paths, and a folder that's gone (night ended) can't be walked into", () => {
+    expect(walk(FILESYSTEM, ['C:', 'SCHOOL', '42'], day)?.kind).toBe('folder')
+    expect(walk(FILESYSTEM, ['C:', 'NIGHT'], day)).toBeUndefined()
+    expect(walk(FILESYSTEM, ['Z:'], day)).toBeUndefined()
+  })
+
+  it('locked folders are empty stubs: what is inside them is sealed, not in the code', () => {
+    const locks = locksIn(FILESYSTEM)
+    expect(locks.map((l) => l.seal).sort()).toEqual(Object.keys(SEALED.locks).sort())
+    for (const { path } of locks) expect(walk(FILESYSTEM, path.split('\\'), all)?.children, path).toEqual([])
+  })
+
+  it('every Dex milestone hints at a real locked folder', () => {
+    for (const m of DEX_MILESTONES) expect(walk(FILESYSTEM, m.folder.split('\\'), all)?.lock, m.folder).toBeDefined()
+  })
+
+  it('opened folders are grafted into the tree by path', () => {
+    const files: FsNode[] = [{ name: 'inside.txt', kind: 'txt', text: 'hi' }]
+    const tree = graft(FILESYSTEM, { 'C:\\GAMES\\ranked': files })
+    expect(walk(tree, ['C:', 'GAMES', 'ranked'], all)?.children).toEqual(files)
+    expect(walk(tree, ['C:', 'DANIEL'], all)?.children).toEqual([])
+  })
+
+  it('pulling the plug closes every window', () => {
+    const open = desktopReducer({ windows: [] }, { type: 'open', id: 'notepad', x: 0, y: 0 })
+    expect(desktopReducer(open, { type: 'reset' }).windows).toEqual([])
+  })
+})
+
+describe('sealing', () => {
+  it('ignores case, spacing and a trailing slash in answers', () => {
+    expect(normalise('  Open   SESAME ')).toBe('open sesame')
+    expect(normalise('/Somewhere/')).toBe('/somewhere')
+    expect(normalise('/')).toBe('/')
+  })
+
+  it('a seal opens with its answer and nothing else', async () => {
+    const seal = await makeSeal({ ok: 1 }, 'Open Sesame')
+    expect(await openSeal(seal, '  open   sesame ')).toEqual({ ok: 1 })
+    expect(await openSeal(seal, 'open sesame!')).toBeNull()
+    expect(JSON.stringify(seal)).not.toContain('"ok":1')
+  })
+
+  it('locked folders and pages open by their answer and address', async () => {
+    const files: FsNode[] = [{ name: 'a.txt', kind: 'txt', text: 'x' }]
+    const locks = { box: await makeSeal(files, 'key') }
+    expect(await openLock('box', 'KEY', locks)).toEqual(files)
+    expect(await openLock('box', 'nope', locks)).toBeNull()
+    expect(await openLock('missing', 'key', locks)).toBeNull()
+    const page: SealedPage = { title: 'HELLO', sections: [] }
+    const pages = [await makeSeal(page, '/test-shrine')]
+    expect(await openPage('/Test-Shrine/', pages)).toEqual(page)
+    expect(await openPage('/test-shrine-2', pages)).toBeNull()
+  })
+
+  it('no secret page is a route, a ring stop, a theme song or a legendary roll', () => {
+    const paths = routes[0].children!.map((r) => r.path)
+    expect(paths.filter((p) => p && !['*', 'legendary/:id', 'boring'].includes(p) && !WEBRING.includes(`/${p}`) && !p.includes(':'))).toEqual([])
+    expect(rollLegendary('/somewhere-unknown', () => 0)).toBeUndefined()
+    expect(rollLegendary('/scan', () => 0)).toBeDefined()
+    expect(DEX.every((e) => e.page === 'anywhere' || WEBRING.includes(e.page))).toBe(true)
+  })
+
+  it('the hymn exists, but only joins the jukebox once a sealed page has been reached', () => {
+    expect(SYNTH_SONGS.find((s) => s.id === 'hymn')?.hidden).toBe(true)
+    expect(visibleMixes(false).some((t) => t.id === 'hymn')).toBe(false)
+    expect(visibleMixes(true).some((t) => t.id === 'hymn')).toBe(true)
+  })
+})
+
+describe('possession', () => {
+  it('reaching a sealed page marks the visitor (the first time is kept) and the site turns, until baptized', () => {
+    expect(isPossessed()).toBe(false)
+    possessVisitor(new Date('2026-10-29T03:00:00Z'))
+    possessVisitor(new Date('2026-11-01T03:00:00Z'))
+    expect(isPossessed()).toBe(true)
+    expect(heardAt()).toBe('2026-10-29T03:00:00.000Z')
+    baptize()
+    expect(isPossessed()).toBe(false)
+    expect(heardAt()).toBe('2026-10-29T03:00:00.000Z')
+  })
+
+  it('the jump scare answers once, ever, and only while possessed', () => {
+    const scared = vi.fn()
+    window.addEventListener(SCARE_EVENT, scared)
+    expect(summonScare()).toBe(false)
+    possessVisitor()
+    expect(summonScare()).toBe(true)
+    markScared()
+    expect(summonScare()).toBe(false)
+    expect(scared).toHaveBeenCalledTimes(1)
+    window.removeEventListener(SCARE_EVENT, scared)
   })
 })

@@ -49,6 +49,19 @@
   /* A barely-there zoom for ads that sit in a strip: anything bigger pushes wide banners out of view. */
   --animate-breathe: breathe 2.4s ease-in-out infinite;
   --animate-legend: legend 1.6s ease-in-out infinite;
+  /* Daniel 95: the monitor warming up and switching off (smooth, it's the chassis), and the boot screen's
+     sliding bar (chunky, it's decoration). */
+  --animate-crt-on: crt-on 0.35s ease-out both;
+  --animate-crt-off: crt-off 0.3s ease-in forwards;
+  --animate-boot-bar: boot-bar 1.2s steps(8) infinite;
+  /* Possession and baptism. Whispers and light fade over seconds; the jump scare comes once and goes. */
+  --animate-whisper: whisper 7s ease-in-out forwards;
+  --animate-lunge: lunge 0.65s ease-out forwards;
+  --animate-pour: pour 1.3s steps(6) forwards;
+  --animate-splash: splash 0.5s steps(3) infinite alternate;
+  --animate-bubble: bubble 2.4s steps(10) infinite;
+  --animate-rays: rays 3.4s ease-in-out both;
+  --animate-rise-in: rise-in 1.4s ease-out both;
 
   @keyframes jank-x {
     from { translate: -12px 0; }
@@ -148,6 +161,20 @@
     89% { clip-path: inset(80% 0 0 0); }
     100% { clip-path: inset(100% 0 0 0); }
   }
+  @keyframes crt-on {
+    0% { scale: 1 0.01; filter: brightness(3); }
+    60% { scale: 1 1; filter: brightness(1.6); }
+    100% { scale: 1 1; filter: brightness(1); }
+  }
+  @keyframes crt-off {
+    0% { scale: 1 1; }
+    70% { scale: 1 0.01; }
+    100% { scale: 0 0.01; }
+  }
+  @keyframes boot-bar {
+    from { background-position: 0 0; }
+    to { background-position: 160px 0; }
+  }
   @keyframes legend {
     0%, 100% { filter: drop-shadow(0 0 4px #ffd84a) drop-shadow(0 0 10px #ffb300); }
     50% { filter: drop-shadow(0 0 10px #fff3a0) drop-shadow(0 0 22px #ffcc00); }
@@ -159,6 +186,36 @@
   @keyframes squash {
     0%, 100% { scale: 1 1; }
     50% { scale: 1.15 0.85; }
+  }
+  @keyframes whisper {
+    0% { opacity: 0; translate: 0 6px; }
+    30%, 70% { opacity: 0.8; translate: 0 0; }
+    100% { opacity: 0; translate: 0 -6px; }
+  }
+  @keyframes lunge {
+    from { scale: 0.92; }
+    to { scale: 1.12; }
+  }
+  @keyframes pour {
+    from { height: 0; }
+    to { height: 100vh; }
+  }
+  @keyframes splash {
+    from { scale: 1 0.6; }
+    to { scale: 1.2 1.15; }
+  }
+  @keyframes bubble {
+    from { translate: 0 0; opacity: 1; }
+    to { translate: 0 -100vh; opacity: 0; }
+  }
+  @keyframes rays {
+    0% { opacity: 0; rotate: -2deg; }
+    55% { opacity: 0.75; }
+    100% { opacity: 0.5; rotate: 2deg; }
+  }
+  @keyframes rise-in {
+    from { opacity: 0; translate: 0 24px; }
+    to { opacity: 1; translate: 0 0; }
   }
 }
 
@@ -450,3 +507,27 @@
 .boring a:visited { color: #551a8b; }
 .boring hr { border: 1px inset #ccc; margin: 0.5em 0; }
 .boring img { image-rendering: auto; display: inline; }
+
+/* The possessed site (src/lib/possession.ts sets html[data-possessed]; components/possessed/ draws the rest).
+   Unlayered, so it wins over the page's own classes. Filters go on pictures and canvases only, never on a box with
+   fixed-position children (a filter would trap them). Nothing here animates. */
+html[data-possessed] body {
+  background-color: #0a0002;
+}
+html[data-possessed] [class*='tile-'] {
+  background-color: #5a0010 !important;
+  background-blend-mode: multiply;
+}
+html[data-possessed] img:not([data-rotted]) {
+  filter: grayscale(1) sepia(1) hue-rotate(-45deg) saturate(2.6) contrast(1.25) brightness(0.72);
+}
+html[data-possessed] img[data-rotted] {
+  filter: url(#rot);
+}
+html[data-possessed] canvas {
+  filter: sepia(0.8) hue-rotate(-40deg) saturate(2.4) contrast(1.2) brightness(0.75);
+}
+html[data-possessed] main h1,
+html[data-possessed] main h2 {
+  text-shadow: 0 1px 0 #3a0000, 0 3px 0 #5a000099, 0 8px 6px #3a000066;
+}

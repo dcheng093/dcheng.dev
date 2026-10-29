@@ -127,7 +127,7 @@ const PROPS: ((rng: () => number) => THREE.BufferGeometry)[] = [
  * texture, around a giant centrepiece, with the camera slowly orbiting. Rendered at a quarter resolution.
  */
 export function mountWorld(canvas: HTMLCanvasElement, id: WorldId) {
-  if (id === 'meadow' || id === 'painted' || id === 'space') return mountCustomWorld(canvas, id)
+  if (id === 'meadow' || id === 'painted' || id === 'space' || id === 'cult') return mountCustomWorld(canvas, id)
   const w = WORLDS[id]
   const rng = mulberry32(id.length * 9973)
   const scene = new THREE.Scene()

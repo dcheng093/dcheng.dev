@@ -15,14 +15,17 @@ export class MusicPlayer {
     this.chiptune = new Chiptune(ctx, dest)
   }
 
-  start(id: MixId) {
+  /** `warped`: the possessed site plays everything slower and lower. */
+  start(id: MixId, warped = false) {
     this.stop()
     const track = findTrack(id)
-    if (track.kind === 'synth') return this.chiptune.start(track.song)
+    if (track.kind === 'synth') return this.chiptune.start(track.song, warped)
     const el = this.audio()
     // Same file as last time (e.g. back from /boring): resume where it paused instead of restarting.
     if (this.loaded !== track.id) el.src = track.url
     this.loaded = track.id
+    el.preservesPitch = !warped
+    el.playbackRate = warped ? 0.75 : 1
     void el.play().catch(() => {})
   }
 

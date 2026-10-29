@@ -1,5 +1,7 @@
+import type { FsNode } from '../content/desktop'
+
 /** Window manager for Daniel's Desktop: which programs are open, minimised, and in front. */
-export type ProgramId = 'computer' | 'bin' | 'notepad' | 'paint' | 'daniel-exe'
+export type ProgramId = 'computer' | 'bin' | 'notepad' | 'paint' | 'daniel-exe' | 'viewer'
 
 export type DeskWindow = { id: ProgramId; minimised: boolean; x: number; y: number }
 export type DesktopState = { windows: DeskWindow[] } // last = front
@@ -12,6 +14,8 @@ export type DesktopAction =
   | { type: 'move'; id: ProgramId; x: number; y: number }
   /** Taskbar button: restore a minimised window, minimise the front one, or bring another forward. */
   | { type: 'taskbar'; id: ProgramId }
+  /** The power went off: every window gone. */
+  | { type: 'reset' }
 
 const toFront = (ws: DeskWindow[], id: ProgramId, patch: Partial<DeskWindow> = {}) => {
   const w = ws.find((x) => x.id === id)
@@ -26,6 +30,8 @@ export function desktopReducer(s: DesktopState, a: DesktopAction): DesktopState 
         : { windows: [...s.windows, { id: a.id, minimised: false, x: a.x, y: a.y }] }
     case 'close':
       return { windows: s.windows.filter((w) => w.id !== a.id) }
+    case 'reset':
+      return { windows: [] }
     case 'focus':
       return { windows: toFront(s.windows, a.id) }
     case 'minimise':
@@ -40,4 +46,42 @@ export function desktopReducer(s: DesktopState, a: DesktopAction): DesktopState 
       return front?.id === a.id ? desktopReducer(s, { type: 'minimise', id: a.id }) : { windows: toFront(s.windows, a.id) }
     }
   }
+}
+
+// ——— The filesystem ———
+
+/** What the explorer can see right now: hidden files, this visit's letters, tonight's folder, today's files. */
+export type FsContext = { showHidden: boolean; visit: number; night: boolean; today: string }
+
+export const visible = (n: FsNode, ctx: FsContext) =>
+  (!n.hidden || ctx.showHidden) && (n.fromVisit ?? 0) <= ctx.visit && (!n.nightOnly || ctx.night) && (!n.onDate || n.onDate === ctx.today)
+
+export const listDir = (n: FsNode, ctx: FsContext) => (n.children ?? []).filter((c) => visible(c, ctx))
+
+/** ['C:', 'GAMES'] -> 'C:\\GAMES' */
+export const joinPath = (path: readonly string[]) => path.join('\\')
+
+/** Follows a path through what's visible; undefined if any step isn't there (any more). */
+export function walk(root: readonly FsNode[], path: readonly string[], ctx: FsContext): FsNode | undefined {
+  let here: FsNode | undefined = { name: '', kind: 'folder', children: [...root] }
+  for (const name of path) here = here && listDir(here, ctx).find((c) => c.name === name)
+  return here
+}
+
+/** Every locked folder in the tree by path, whatever's visible right now. */
+export function locksIn(root: readonly FsNode[], at: string[] = []): { path: string; seal: string }[] {
+  return root.flatMap((n) => {
+    const p = [...at, n.name]
+    return [...(n.lock ? [{ path: joinPath(p), seal: n.lock.seal }] : []), ...locksIn(n.children ?? [], p)]
+  })
+}
+
+/** Puts opened folders' (unsealed) files into the tree, by path. */
+export function graft(root: readonly FsNode[], opened: Readonly<Record<string, FsNode[]>>, at: string[] = []): FsNode[] {
+  return root.map((n) => {
+    const p = [...at, n.name]
+    const inside = opened[joinPath(p)]
+    if (n.lock && inside) return { ...n, children: inside }
+    return n.children ? { ...n, children: graft(n.children, opened, p) } : n
+  })
 }

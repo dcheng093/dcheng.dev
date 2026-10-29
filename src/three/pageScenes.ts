@@ -70,8 +70,20 @@ export const MORE_TEXTURES = {
   dollars: '/gifs/bg-dollar-bills.gif',
 } as const
 
+/** The congregation's pack: the world behind the sealed page (src/three/worlds.ts, `cult`). */
+export const CULT_TEXTURES = {
+  fractalEye: '/me/ahm60074.jpg',
+  fractalEye2: '/me/ahm60030.jpg',
+  vortex: '/me/ahm60003.jpg',
+  darkMarble: '/me/046C.jpg',
+  blackMetal: '/me/SC051.JPG',
+  crt: '/me/qcu50119.jpg',
+  lattice: '/me/pni50050.jpg',
+  nightStars: '/me/nightskystar.gif',
+} as const
+
 /** Every image texture by name. */
-export const TEX = { ...TEXTURES, ...DREAM_TEXTURES, ...MORE_TEXTURES } as const
+export const TEX = { ...TEXTURES, ...DREAM_TEXTURES, ...MORE_TEXTURES, ...CULT_TEXTURES } as const
 export type TexName = keyof typeof TEX
 
 /** Textures drawn in code (src/three/procTextures.ts). Listed here so content can name them. */
@@ -103,7 +115,7 @@ export const SHAPES = [
 ] as const
 export type ShapeId = (typeof SHAPES)[number]
 
-export type WorldId = 'mystic' | 'neon' | 'glitch' | 'meadow' | 'painted' | 'space'
+export type WorldId = 'mystic' | 'neon' | 'glitch' | 'meadow' | 'painted' | 'space' | 'cult'
 export type Rarity = 'common' | 'rare' | 'legendary'
 export type ObjSize = 's' | 'm' | 'l'
 
@@ -129,6 +141,10 @@ export type ObjSpec = {
   /** Anchors: position as % of the page. */
   spot?: { top: string; left: string }
   rarity: Rarity
+  /** 'night': only turns up between 10pm and 5am, visitor's own clock. */
+  when?: 'night'
+  /** One of the Object Dex's specimens (the only objects it catalogues), and the fragment it carries once caught. */
+  specimen?: { glyph?: string; digit?: string }
 }
 
 export type PageScene = { world?: WorldId; mood?: PageMood; objects: ObjSpec[] }

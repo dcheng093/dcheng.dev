@@ -1,3 +1,4 @@
+import { useHeardAt } from '../lib/possession'
 import { SYNTH_SONGS, type SynthSong } from './synth'
 
 /** Everything the jukebox can play: the built-in synth songs, then any audio files dropped into src/music/. */
@@ -25,3 +26,7 @@ export const MIXES: Track[] = [
 
 /** Unknown ids (e.g. a stored pick whose file was since removed) fall back to the first track. */
 export const findTrack = (id: MixId) => MIXES.find((t) => t.id === id) ?? MIXES[0]
+
+/** The tracks this visitor can see: hidden songs join the list once they've reached a sealed page. */
+export const visibleMixes = (heard: boolean) => (heard ? MIXES : MIXES.filter((t) => t.kind !== 'synth' || !t.song.hidden))
+export const useMixes = () => visibleMixes(!!useHeardAt())

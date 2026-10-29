@@ -19,6 +19,8 @@ export type AudioApi = {
   /** Null until audio is unlocked. */
   getAnalyser: () => AnalyserNode | null
   sfx: (name: SfxName) => void
+  /** Everything heard as if from underwater (the baptism), or not. */
+  muffle: (on: boolean) => void
 }
 
 export const AudioCtx = createContext<AudioApi>({
@@ -35,6 +37,7 @@ export const AudioCtx = createContext<AudioApi>({
   setLocked: () => {},
   getAnalyser: () => null,
   sfx: () => {},
+  muffle: () => {},
 })
 
 export const useAudio = () => useContext(AudioCtx)

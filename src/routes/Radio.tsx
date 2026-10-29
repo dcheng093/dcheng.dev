@@ -1,6 +1,6 @@
 import { useEffect, useRef } from 'react'
 import { useAudio } from '../audio/audioContext'
-import { MIXES, findTrack } from '../audio/tracks'
+import { findTrack, useMixes } from '../audio/tracks'
 import { Marquee, WavyText } from '../components/chaos/Chaos'
 import { VolumeSlider } from '../components/WebringBar'
 import { cursors } from '../content/assets'
@@ -21,13 +21,14 @@ const freq = (i: number) => (88.1 + i * 1.3).toFixed(1)
 /** DANIEL FM: a boombox that tunes through every track, with a live visualizer off the site's own audio graph. */
 export function Radio() {
   const { unlocked, muted, mix, setMix, toggleMute, setLocked, getAnalyser } = useAudio()
+  const mixes = useMixes()
   const canvas = useRef<HTMLCanvasElement>(null)
   const speakers = useRef<(HTMLDivElement | null)[]>([])
-  const i = MIXES.indexOf(findTrack(mix))
+  const i = Math.max(0, mixes.indexOf(findTrack(mix)))
 
   // Tuning in on the radio is an explicit choice, so it pins the song for the rest of the site.
   const tune = (index: number) => {
-    setMix(MIXES[(index + MIXES.length) % MIXES.length].id)
+    setMix(mixes[(index + mixes.length) % mixes.length].id)
     setLocked(true)
     if (muted) toggleMute()
   }
@@ -100,7 +101,7 @@ export function Radio() {
             <input
               type="range"
               min={0}
-              max={MIXES.length - 1}
+              max={mixes.length - 1}
               value={i}
               onChange={(e) => tune(Number(e.target.value))}
               aria-label="Tuning dial"
@@ -110,7 +111,7 @@ export function Radio() {
               <button type="button" className={btn} onClick={() => tune(i - 1)} aria-label="Tune down">◀◀ TUNE</button>
               <button type="button" className={`${btn} min-w-24`} onClick={toggleMute}>{muted ? '▶ PLAY' : '❚❚ PAUSE'}</button>
               <button type="button" className={btn} onClick={() => tune(i + 1)} aria-label="Tune up">TUNE ▶▶</button>
-              <button type="button" className={`${btn} animate-pulse-scale bg-yellow-300`} onClick={() => tune(MIXES.indexOf(pick(MIXES.filter((m) => m.id !== mix))))}>
+              <button type="button" className={`${btn} animate-pulse-scale bg-yellow-300`} onClick={() => tune(mixes.indexOf(pick(mixes.filter((m) => m.id !== mix))))}>
                 ☎ REQUEST LINE
               </button>
             </div>
@@ -120,7 +121,7 @@ export function Radio() {
         {!unlocked && <p className="win-raised p-2 text-center font-comic text-black">The radio is off. Click anywhere to switch it on.</p>}
 
         <ol className="win-raised grid gap-1 p-2 text-sm text-black sm:grid-cols-2" aria-label="Stations">
-          {MIXES.map((m, n) => (
+          {mixes.map((m, n) => (
             <li key={m.id}>
               <button type="button" onClick={() => tune(n)} className={`w-full px-1 text-left font-vt text-lg ${n === i ? 'bg-win-title text-white' : 'hover:bg-gray-300'}`}>
                 {freq(n)} — {m.label}

@@ -30,6 +30,7 @@ export const PAGE_SONGS: Record<string, MixId> = {
   '/oracle': 'steam-prophecy',
   '/desktop': 'startup-funk',
   '/stickers': 'sticker-pop',
+  '/dex': 'pixel-pusher',
   '/popnuke': 'nuke-it',
   // Control Panel music: the sound of fiddling with settings at 2am.
   '/settings': 'lofi-debug',

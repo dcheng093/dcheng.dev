@@ -4,6 +4,7 @@ import { nextHitCount } from '../../lib/hitCounter'
 import { useRandomInterval } from '../../hooks/useRandomInterval'
 import { icons, type Slot } from '../../content/assets'
 import { Img } from '../media/Img'
+import { usePossessed } from '../../lib/possession'
 
 export function Marquee({ children, className = '', speed = 12 }: { children: ReactNode; className?: string; speed?: number }) {
   return (
@@ -51,11 +52,13 @@ export function HitCounter({ className = '' }: { className?: string }) {
     writeStored('hits', next)
     return next
   })
+  // Possessed, every visitor is the same visitor.
+  const shown = usePossessed() ? 666 : count
   return (
     <span className={`inline-flex items-center gap-1 font-vt text-lg ${className}`} data-testid="hit-counter">
       <span>you are visitor #</span>
       <span className="inline-flex border-2 border-gray-500 bg-black px-0.5">
-        {String(count).padStart(8, '0').split('').map((d, i) => (
+        {String(shown).padStart(8, '0').split('').map((d, i) => (
           <span key={i} className="mx-px w-3 bg-gradient-to-b from-gray-800 to-black text-center text-lime">
             {d}
           </span>

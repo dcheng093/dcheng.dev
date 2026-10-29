@@ -1,9 +1,10 @@
 import * as THREE from 'three'
 import { mulberry32 } from '../lib/random'
 import { TEX, type TexName } from './pageScenes'
+import { HEADS } from './heads'
 import { keyedTexture } from './procTextures'
 import { buildShape } from './shapes'
-import { disposeScene, fitWorld, register, texture } from './stage'
+import { disposeScene, face, fitWorld, register, texture } from './stage'
 
 // The shrine worlds built from Daniel's newer texture pack: a horse meadow, a painted chiikawa dream and a
 // battlestation in space. Same rules as every world: quarter resolution, one shared renderer, slow and calm.
@@ -192,7 +193,177 @@ function space(scene: THREE.Scene, rng: () => number, drifting: Drift[]) {
   return { radius: 18, height: 4, look: 2.5 }
 }
 
-const BUILDERS = { meadow, painted, space }
+/** The void behind the congregation: black overhead, a bruise of violet at the horizon, black underfoot. */
+function voidSky() {
+  const c = document.createElement('canvas')
+  c.width = 2
+  c.height = 64
+  const g = c.getContext('2d')!
+  const grad = g.createLinearGradient(0, 0, 0, 64)
+  grad.addColorStop(0, '#000000')
+  grad.addColorStop(0.45, '#14042a')
+  grad.addColorStop(0.62, '#2a0a3a')
+  grad.addColorStop(1, '#040006')
+  g.fillStyle = grad
+  g.fillRect(0, 0, 2, 64)
+  const t = new THREE.CanvasTexture(c)
+  t.colorSpace = THREE.SRGBColorSpace
+  return t
+}
+
+/** A soft oval mask: pictures fade out at their edges instead of hanging in the dark as rectangles. */
+function softEdge() {
+  const c = document.createElement('canvas')
+  c.width = c.height = 64
+  const g = c.getContext('2d')!
+  const grad = g.createRadialGradient(32, 32, 6, 32, 32, 32)
+  grad.addColorStop(0, '#fff')
+  grad.addColorStop(0.55, '#bbb')
+  grad.addColorStop(1, '#000')
+  g.fillStyle = grad
+  g.fillRect(0, 0, 64, 64)
+  return new THREE.CanvasTexture(c)
+}
+
+/** A flat triangle outline, for the sigil. */
+function triangle(radius: number, turn: number, material: THREE.LineBasicMaterial) {
+  const pts = [0, 1, 2].map((i) => {
+    const a = turn + (i / 3) * Math.PI * 2
+    return new THREE.Vector3(Math.cos(a) * radius, Math.sin(a) * radius, 0)
+  })
+  return new THREE.LineLoop(new THREE.BufferGeometry().setFromPoints(pts), material)
+}
+
+/**
+ * THE CONGREGATION, behind the sealed page: a ring of black monoliths with candles, an eye in the sky that blinks,
+ * a slow vortex overhead, CRTs with nothing on, and Daniel's faces just out of sight in the fog. Built from the
+ * fractal pack. Nothing flashes: every glow breathes slower than once a second, and the blink is one slow squash.
+ */
+function cult(scene: THREE.Scene, rng: () => number, drifting: Drift[]) {
+  scene.background = voidSky()
+  scene.fog = new THREE.FogExp2(0x0a0014, 0.045)
+  scene.add(new THREE.AmbientLight(0x6a4a8a, 0.5))
+  const soft = softEdge()
+  const altar = new THREE.PointLight(0xff2a2a, 6, 30, 1.5)
+  altar.position.set(0, 1.2, 0)
+  scene.add(altar)
+  drifting.push((t) => (altar.intensity = 5 + Math.sin(t * 1.1) * 1.5))
+
+  const floor = new THREE.Mesh(new THREE.CircleGeometry(60, 40), lambert('darkMarble', 18))
+  floor.rotation.x = -Math.PI / 2
+  floor.position.y = -1.5
+  scene.add(floor)
+
+  // Seven monoliths facing in, a candle at the foot of each.
+  const slab = lambert('blackMetal', 1, { emissive: 0x110018 })
+  for (let i = 0; i < 7; i++) {
+    const a = (i / 7) * Math.PI * 2
+    const m = new THREE.Mesh(new THREE.BoxGeometry(1.4, 7, 0.5), slab)
+    m.position.set(Math.cos(a) * 9, 2, Math.sin(a) * 9)
+    m.lookAt(0, 2, 0)
+    scene.add(m)
+    const candle = buildShape('candle')
+    candle.scale.setScalar(0.9)
+    candle.position.set(Math.cos(a) * 7.8, -1, Math.sin(a) * 7.8)
+    scene.add(candle)
+  }
+
+  // The Eye Above. Breathes; every nine seconds it blinks, in four chunky frames.
+  const eye = new THREE.Sprite(new THREE.SpriteMaterial({ map: texture(TEX.fractalEye), alphaMap: soft, blending: THREE.AdditiveBlending, transparent: true, opacity: 0.9, fog: false, depthWrite: false }))
+  eye.position.set(0, 16, 0)
+  scene.add(eye)
+  const BLINK = [0.45, 0.06, 0.45]
+  drifting.push((t) => {
+    const p = t % 9
+    const squash = p < 0.6 ? BLINK[Math.floor((p / 0.6) * BLINK.length)] : 1 + Math.sin(t * 0.5) * 0.03
+    eye.scale.set(16, 10.7 * squash, 1)
+  })
+  // Another one, further off, half lost in the fog. Always watching.
+  const far = new THREE.Sprite(new THREE.SpriteMaterial({ map: texture(TEX.fractalEye2), alphaMap: soft, transparent: true, opacity: 0.8, depthWrite: false }))
+  far.scale.set(26, 17, 1)
+  far.position.set(-14, 9, -34)
+  scene.add(far)
+
+  // A vortex turning overhead, and the sigil beneath it.
+  const vortex = new THREE.Mesh(
+    new THREE.PlaneGeometry(80, 54),
+    new THREE.MeshBasicMaterial({ map: texture(TEX.vortex), alphaMap: soft, blending: THREE.AdditiveBlending, transparent: true, opacity: 0.5, fog: false, depthWrite: false, side: THREE.DoubleSide }),
+  )
+  vortex.rotation.x = Math.PI / 2
+  vortex.position.y = 26
+  scene.add(vortex)
+  drifting.push((t) => (vortex.rotation.z = t * 0.03))
+  const gold = new THREE.LineBasicMaterial({ color: 0xffd84a, fog: false, transparent: true, opacity: 0.85 })
+  const up = triangle(6, Math.PI / 2, gold)
+  const down = triangle(6, -Math.PI / 2, gold)
+  for (const tri of [up, down]) {
+    tri.rotation.x = Math.PI / 2
+    tri.position.y = 21
+    scene.add(tri)
+  }
+  drifting.push((t) => {
+    up.rotation.z = t * 0.1
+    down.rotation.z = -t * 0.1
+  })
+
+  // The broadcast: CRTs with nothing on. Their black screens are cut out, so you see the void through them.
+  const tv = new THREE.SpriteMaterial({ map: keyedTexture(TEX.crt, 'black'), transparent: true, alphaTest: 0.2 })
+  for (let i = 0; i < 5; i++) {
+    const s = new THREE.Sprite(tv)
+    s.scale.set(2.4, 2.3, 1)
+    scene.add(s)
+    const a = (i / 5) * Math.PI * 2
+    const r = 4.5 + rng() * 3
+    const y = 3 + rng() * 6
+    const phase = rng() * 6
+    drifting.push((t) => {
+      const aa = a - t * 0.06
+      s.position.set(Math.cos(aa) * r, y + Math.sin(t * 0.4 + phase) * 0.5, Math.sin(aa) * r)
+    })
+  }
+
+  // Faces in the fog: Daniel, out where you can only nearly see him.
+  for (let i = 0; i < 6; i++) {
+    const s = new THREE.Sprite(new THREE.SpriteMaterial({ map: face(HEADS[i % HEADS.length]), transparent: true, opacity: 0.18, depthWrite: false }))
+    const a = (i / 6) * Math.PI * 2 + rng()
+    const r = 22 + rng() * 8
+    const y = 1 + rng() * 3
+    s.scale.setScalar(4 + rng() * 2)
+    s.position.set(Math.cos(a) * r, y, Math.sin(a) * r)
+    scene.add(s)
+    const phase = rng() * 6
+    drifting.push((t) => (s.position.y = y + Math.sin(t * 0.25 + phase) * 0.6))
+  }
+
+  // The dome: a golden lattice holding all of it in.
+  const dome = new THREE.Mesh(
+    new THREE.SphereGeometry(45, 24, 16),
+    new THREE.MeshBasicMaterial({ map: texture(TEX.lattice, 6), side: THREE.BackSide, blending: THREE.AdditiveBlending, transparent: true, opacity: 0.16, fog: false, depthWrite: false }),
+  )
+  scene.add(dome)
+  drifting.push((t) => (dome.rotation.y = -t * 0.01))
+
+  // Star dust, and a few of the twinkle stars hung in the dark.
+  const DUST = 220
+  const pos = new Float32Array(DUST * 3)
+  for (let i = 0; i < DUST; i++) pos.set([(rng() - 0.5) * 60, rng() * 24 - 1, (rng() - 0.5) * 60], i * 3)
+  const geo = new THREE.BufferGeometry()
+  geo.setAttribute('position', new THREE.BufferAttribute(pos, 3))
+  const dust = new THREE.Points(geo, new THREE.PointsMaterial({ color: 0xcfb8ff, size: 0.18, transparent: true, opacity: 0.7 }))
+  scene.add(dust)
+  drifting.push((t) => (dust.rotation.y = t * 0.02))
+  const starMat = new THREE.SpriteMaterial({ map: texture(TEX.nightStars), alphaMap: soft, blending: THREE.AdditiveBlending, transparent: true, opacity: 0.6, fog: false, depthWrite: false })
+  for (let i = 0; i < 6; i++) {
+    const s = new THREE.Sprite(starMat)
+    s.scale.set(5, 9, 1)
+    const a = rng() * Math.PI * 2
+    s.position.set(Math.cos(a) * 32, 10 + rng() * 10, Math.sin(a) * 32)
+    scene.add(s)
+  }
+  return { radius: 15, height: 1.2, look: 9 }
+}
+
+const BUILDERS = { meadow, painted, space, cult }
 
 export function mountCustomWorld(canvas: HTMLCanvasElement, id: keyof typeof BUILDERS) {
   const scene = new THREE.Scene()

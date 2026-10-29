@@ -16,7 +16,7 @@ const WIDTH = 440
  * "<object>.obj - Properties": a big live 3D view you can drag to turn, plus the object's name, lore, what
  * it's made of and its rarity. Its personality is never revealed.
  */
-export function ObjectWindow({ spec, onClose }: { spec: ObjSpec; onClose: () => void }) {
+export function ObjectWindow({ spec, onClose, inDex = false }: { spec: ObjSpec; onClose: () => void; inDex?: boolean }) {
   const [pos, setPos] = useState<{ x: number; y: number } | null>(null)
   const drag = useDrag((x, y) => setPos(clampToViewport(x, y, WIDTH)))
   return (
@@ -56,7 +56,14 @@ export function ObjectWindow({ spec, onClose }: { spec: ObjSpec; onClose: () => 
           )}
         </dl>
       </div>
-      <p className="border-t border-win-dark px-2 py-1 text-[10px] text-gray-700">Drag the picture to turn it. Some objects are shy.</p>
+      <p className="flex flex-wrap justify-between gap-x-2 border-t border-win-dark px-2 py-1 text-[10px] text-gray-700">
+        <span>Drag the picture to turn it. Some objects are shy.</span>
+        {!inDex && spec.specimen && (
+          <Link to="/dex" onClick={onClose} className="font-bold text-green-800 underline" data-testid="dex-link">
+            ✓ Catalogued in the Object Dex
+          </Link>
+        )}
+      </p>
     </Win95Window>
   )
 }

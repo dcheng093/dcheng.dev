@@ -1,7 +1,9 @@
-import { useId, useState, type CSSProperties } from 'react'
+import { useEffect, useId, useState, type CSSProperties } from 'react'
 import { assets, type AssetKey, type Slot } from '../../content/assets'
 import { danielPick, danielSwap } from '../../lib/settings'
 import { useSettings } from '../settings/settingsState'
+import { usePossessed } from '../../lib/possession'
+import { isDaniel, rotted } from '../possessed/rot'
 
 type Props = {
   slot: Slot | AssetKey
@@ -17,21 +19,39 @@ const resolve = (slot: Slot | AssetKey): Slot => (typeof slot === 'string' ? ass
 /** Everything Daniel Density can turn an image into. */
 const DANIELS = [...assets.misc, assets.headGrin, assets.headShock, assets.headWink]
 
+/** While the site is possessed, Daniel's own pictures are swapped for their mutilated stills (src/components/possessed/rot.ts). */
+function useRotted(src: string) {
+  const on = usePossessed() && isDaniel(src)
+  const [done, setDone] = useState<{ src: string; url: string | null } | null>(null)
+  useEffect(() => {
+    if (!on) return
+    let live = true
+    void rotted(src).then((url) => live && setDone({ src, url }))
+    return () => {
+      live = false
+    }
+  }, [on, src])
+  return on && done?.src === src ? done.url : null
+}
+
 /** Low-res image that degrades to a "SUPPLY ME" placeholder when the file isn't in public/ yet. */
 export function Img({ slot, width, className = '', style, alt = '' }: Props) {
   const s = resolve(slot)
   const [missing, setMissing] = useState(false)
   const spot = useId()
   const { density } = useSettings().settings
+  const swapped = !s.src.startsWith('/me/') && danielSwap(s.src, spot, density)
+  const d = swapped ? DANIELS[danielPick(s.src, spot, DANIELS.length)] : null
+  const rot = useRotted(d?.src ?? s.src)
   const w = width ?? s.w
   const h = Math.round((w * s.h) / s.w)
   if (missing) return <Placeholder slot={s} width={w} height={h} className={className} style={style} />
   // Daniel Density (Control Panel): some images become Daniel, in the same box. Photos of him already are him.
-  if (!s.src.startsWith('/me/') && danielSwap(s.src, spot, density)) {
-    const d = DANIELS[danielPick(s.src, spot, DANIELS.length)]
+  if (d) {
     return (
       <img
-        src={d.src}
+        src={rot ?? d.src}
+        data-rotted={rot ? '' : undefined}
         width={w}
         height={h}
         alt={alt}
@@ -45,7 +65,8 @@ export function Img({ slot, width, className = '', style, alt = '' }: Props) {
   }
   return (
     <img
-      src={s.src}
+      src={rot ?? s.src}
+      data-rotted={rot ? '' : undefined}
       width={w}
       height={h}
       alt={alt}

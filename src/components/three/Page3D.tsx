@@ -3,6 +3,8 @@ import { useLocation, useNavigate } from 'react-router-dom'
 import { useSfx } from '../../audio/audioContext'
 import { legendary, rollLegendary, sceneFor } from '../../content/objects'
 import { useStored } from '../../hooks/useLocalStorage'
+import { useClock } from '../../hooks/useClock'
+import { DEX_KEY, recordFind, type Found } from '../../lib/discovery'
 import type { PageMood } from '../../lib/personality'
 import { randomRoute } from '../../lib/sitemap'
 import { drive, setPageMood, setPageObstacles } from '../../three/interact'
@@ -30,11 +32,13 @@ export function Page3D({ crashed = false }: { crashed?: boolean }) {
   }, [pathname, search, crashed])
   const [open, setOpen] = useState<ObjSpec | null>(null)
   const [found, setFound] = useStored<Record<string, string>>('legendaries', {})
+  const [, setDex] = useStored<Found>(DEX_KEY, {})
   const [phone] = useState(isPhone)
+  const { night } = useClock()
 
   const objects = useMemo(
-    () => [...(scene?.objects ?? []), ...(guest ? [guest] : [])].filter((o) => !phone || o.role === 'drifter'),
-    [scene, guest, phone],
+    () => [...(scene?.objects ?? []), ...(guest ? [guest] : [])].filter((o) => (!phone || o.role === 'drifter') && (o.when !== 'night' || night)),
+    [scene, guest, phone, night],
   )
   const enabled = canWebGL() && objects.length > 0
   const { backdrop, fixedZ } = useLiftedBackground(key, enabled && !!scene && !scene.world)
@@ -46,8 +50,11 @@ export function Page3D({ crashed = false }: { crashed?: boolean }) {
   const layout = useFreeSpaceLayout(key, enabled, objects, [pageLayer, screenLayer, backdrop])
 
   if (!canWebGL() || (!scene && !guest)) return null
+  // Specimens go in the Dex when clicked (secret doorways too, on their way out). Everything else just opens.
+  const catalogue = (spec: ObjSpec) => spec.specimen && setDex((d) => recordFind(d, spec.id, new Date()))
   const onOpen = (spec: ObjSpec) => {
     setOpen(spec)
+    catalogue(spec)
     if (spec.rarity === 'legendary' && !found[spec.id]) setFound((f) => ({ ...f, [spec.id]: new Date().toISOString() }))
   }
   // Drifters, plus any anchor that had no room in the margins at this window size.
@@ -61,12 +68,12 @@ export function Page3D({ crashed = false }: { crashed?: boolean }) {
         {layout &&
           objects.map((o, i) => {
             const at = layout.anchors[o.id]
-            return at ? <Obj key={`${key}-${o.id}-${at.size}`} spec={o} size={at.size} at={at} seed={i * 31 + key.length} mood={scene?.mood} onOpen={onOpen} /> : null
+            return at ? <Obj key={`${key}-${o.id}-${at.size}`} spec={o} size={at.size} at={at} seed={i * 31 + key.length} mood={scene?.mood} onOpen={onOpen} onSecret={catalogue} /> : null
           })}
       </div>
       <div ref={screenLayer} aria-hidden data-testid="objects-screen" className="pointer-events-none fixed inset-0 -z-10 overflow-hidden" style={layerZ}>
         {drifters.map((o, i) => (
-          <Obj key={`${key}-${o.id}`} spec={{ ...o, role: 'drifter' }} size={driftSize(o)} seed={i * 53 + key.length + 7} mood={scene?.mood} onOpen={onOpen} />
+          <Obj key={`${key}-${o.id}`} spec={{ ...o, role: 'drifter' }} size={driftSize(o)} seed={i * 53 + key.length + 7} mood={scene?.mood} onOpen={onOpen} onSecret={catalogue} />
         ))}
       </div>
       {open && <ObjectWindow key={open.id} spec={open} onClose={() => setOpen(null)} />}
@@ -222,7 +229,9 @@ function useMount(mount: (canvas: HTMLCanvasElement, three: typeof import('../..
   return canvas
 }
 
-function Obj({ spec, size, at, seed, mood, onOpen }: { spec: ObjSpec; size: number; at?: { x: number; y: number }; seed: number; mood?: PageMood; onOpen: (spec: ObjSpec) => void }) {
+type ObjProps = { spec: ObjSpec; size: number; at?: { x: number; y: number }; seed: number; mood?: PageMood; onOpen: (spec: ObjSpec) => void; onSecret: (spec: ObjSpec) => void }
+
+function Obj({ spec, size, at, seed, mood, onOpen, onSecret }: ObjProps) {
   const navigate = useNavigate()
   const { pathname } = useLocation()
   const sfx = useSfx()
@@ -231,7 +240,10 @@ function Obj({ spec, size, at, seed, mood, onOpen }: { spec: ObjSpec; size: numb
   const canvas = useMount((c, three) => {
     if (!wrap.current) return null
     setPageMood(mood)
-    const brain = drive(wrap.current, c, spec, size, { seed, onOpen, onSecret: () => navigate(randomRoute(pathname)), sfx })
+    const brain = drive(wrap.current, c, spec, size, { seed, onOpen, onSecret: () => {
+        onSecret(spec)
+        navigate(randomRoute(pathname))
+      }, sfx })
     const stop = three.mountObject(c, spec, brain.frame)
     if (!stop) {
       brain.cleanup()

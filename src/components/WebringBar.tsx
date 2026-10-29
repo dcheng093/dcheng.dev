@@ -2,8 +2,9 @@ import { useEffect, useRef } from 'react'
 import { Link, useLocation } from 'react-router-dom'
 import { neighbour, randomRoute } from '../lib/sitemap'
 import { useAudio } from '../audio/audioContext'
-import { findTrack, MIXES, type MixId } from '../audio/tracks'
+import { findTrack, useMixes, type MixId } from '../audio/tracks'
 import { useStored } from '../hooks/useLocalStorage'
+import { clampToViewport, useDrag } from '../hooks/useDrag'
 import { icons } from '../content/assets'
 import { Img } from './media/Img'
 import { ButtonWall } from './chaos/ButtonWall'
@@ -68,6 +69,7 @@ function useMixPicker() {
 /** Scrollable track list; ♪ is a built-in synth song, 💿 an audio file from src/music/. */
 function MixList({ className = '' }: { className?: string }) {
   const { mix } = useAudio()
+  const mixes = useMixes()
   const pick = useMixPicker()
   const list = useRef<HTMLUListElement>(null)
   // Keep the playing track in view after ⏮/⏭. Sets scrollTop directly: scrollIntoView would also scroll the page.
@@ -78,9 +80,9 @@ function MixList({ className = '' }: { className?: string }) {
   }, [mix])
   return (
     <ul ref={list} className={`win-sunken relative space-y-0.5 overflow-y-auto overflow-x-hidden bg-white ${className}`}>
-      {MIXES.map((m) => (
+      {mixes.map((m) => (
         <li key={m.id} aria-current={m.id === mix}>
-          <button type="button" onClick={() => pick(m.id)} className={`w-full px-1 text-left ${m.id === mix ? 'bg-win-title text-white' : 'hover:bg-gray-300'}`}>
+          <button type="button" onClick={() => pick(m.id)} className={`w-full px-1 text-left [overflow-wrap:anywhere] ${m.id === mix ? 'bg-win-title text-white' : 'hover:bg-gray-300'}`}>
             {m.kind === 'file' ? '♪' : '♪'} {m.label}
           </button>
         </li>
@@ -134,7 +136,7 @@ export function VolumeSlider({ className = '' }: { className?: string }) {
 export function Jukebox() {
   const { mix, muted } = useAudio()
   return (
-    <div className="win-raised w-[260px] max-w-full p-1 font-[Tahoma,sans-serif] text-xs text-black">
+    <div className="win-raised w-[300px] max-w-full p-1 font-[Tahoma,sans-serif] text-xs text-black">
       <div className={titleBar}>DANIELAMP 2.91 — choose your mix</div>
       <div className="win-sunken my-1 bg-black p-1 font-vt text-lg text-lime">
         <span className="animate-blink">▶</span> {findTrack(mix).label} {muted && '(muted)'}
@@ -149,23 +151,40 @@ export function Jukebox() {
   )
 }
 
-/** Floating DANIELAMP for every page except Home (which has the full Jukebox inline). */
+// Wide enough for a long file name on one line (a base64 one, say); long ones still wrap rather than clip.
+const PLAYER_WIDTH = 280
+
+/** Floating DANIELAMP for every page except Home (which has the full Jukebox inline). Drag it by its title bar. */
 export function MiniPlayer() {
   const { unlocked, mix, muted, toggleMute } = useAudio()
+  const mixes = useMixes()
   const pick = useMixPicker()
   const [minimised, setMinimised] = useStored('playerMinimised', false)
+  // Bottom-left until dragged; then it stays where it was left, across pages and visits.
+  const [pos, setPos] = useStored<{ x: number; y: number } | null>('playerPos', null)
+  const drag = useDrag((x, y) => setPos(clampToViewport(x, y, PLAYER_WIDTH)))
+  // A window made smaller mustn't strand it off-screen.
+  useEffect(() => {
+    if (!pos) return
+    const keep = () => setPos((p) => (p ? clampToViewport(p.x, p.y, PLAYER_WIDTH) : p))
+    keep()
+    window.addEventListener('resize', keep)
+    return () => window.removeEventListener('resize', keep)
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- re-arm only when it goes from docked to dragged
+  }, [!pos])
   if (!unlocked) return null
-  const i = MIXES.indexOf(findTrack(mix))
-  const skip = (step: 1 | -1) => pick(MIXES[(i + step + MIXES.length) % MIXES.length].id)
+  const i = Math.max(0, mixes.indexOf(findTrack(mix)))
+  const skip = (step: 1 | -1) => pick(mixes[(i + step + mixes.length) % mixes.length].id)
   const transport = 'win-raised flex-1 py-0.5 font-bold text-black'
   return (
     <section
       aria-label="Music player"
       data-testid="mini-player"
-      className={`win-raised fixed bottom-2 left-2 z-50 max-sm:bottom-12 p-0.5 font-[Tahoma,sans-serif] text-xs text-black shadow-[4px_4px_0_#000] ${minimised ? '' : 'w-[min(230px,calc(100vw-16px))]'}`}
+      className={`win-raised fixed z-50 p-0.5 font-[Tahoma,sans-serif] text-xs text-black shadow-[4px_4px_0_#000] ${pos ? '' : 'bottom-2 left-2 max-sm:bottom-12'} ${minimised ? '' : 'w-[min(280px,calc(100vw-16px))]'}`}
+      style={pos ? { left: pos.x, top: pos.y } : undefined}
     >
-      <div className={titleBar}>
-        <span className="flex-1 truncate">{minimised ? `♫ ${MIXES[i].label}` : 'DANIELAMP 2.91'}</span>
+      <div className={`${titleBar} cursor-move touch-none select-none`} data-testid="player-titlebar" {...drag}>
+        <span className="flex-1 truncate">{minimised ? `♫ ${mixes[i].label}` : 'DANIELAMP 2.91'}</span>
         <button
           type="button"
           onClick={() => setMinimised((m) => !m)}
@@ -179,7 +198,7 @@ export function MiniPlayer() {
         <div className="p-1">
           <div className="win-sunken mb-1 bg-black p-1 font-vt text-lg leading-tight text-lime" data-testid="now-playing">
             <Marquee speed={8}>
-              {i + 1}. DANIEL — {MIXES[i].label} {muted ? '(PAUSED)' : '*** NOW PLAYING ***'}
+              {i + 1}. DANIEL — {mixes[i].label} {muted ? '(PAUSED)' : '*** NOW PLAYING ***'}
             </Marquee>
           </div>
           <div className="mb-1 flex gap-1">
@@ -189,9 +208,8 @@ export function MiniPlayer() {
             <LockButton />
           </div>
           <VolumeSlider className="mb-1" />
-          {/* Phones get just the transport and volume: the full list would cover half the page. */}
-          {/* Phones (either way up) skip the list: on a short screen it covered half the page. ◀◀ ▶▶ still pick. */}
-          <MixList className="max-h-40 max-sm:hidden [@media(max-height:500px)]:hidden" />
+          {/* Shorter on phones and short windows, so it never covers half the page; it scrolls, and drags out of the way. */}
+          <MixList className="max-h-40 max-sm:max-h-24 [@media(max-height:500px)]:max-h-20" />
         </div>
       )}
     </section>

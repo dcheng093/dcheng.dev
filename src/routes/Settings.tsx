@@ -9,6 +9,8 @@ import { useAudio } from '../audio/audioContext'
 import { useClosing } from '../hooks/useClosing'
 import { usePopups } from '../components/popups/popupState'
 import { CHAOS_LEVELS, CURSORS, THEMES, danielPick, danielSwap, type Settings as SettingsT } from '../lib/settings'
+import { usePossessed } from '../lib/possession'
+import { Baptism } from '../components/possessed/Baptism'
 
 const APPLETS = [
   { id: 'display', label: 'Display', icon: icons.kidComputer },
@@ -17,7 +19,9 @@ const APPLETS = [
   { id: 'daniel', label: 'Daniel', icon: assets.headGrin },
   { id: 'chaos', label: 'Chaos', icon: icons.siren },
 ] as const
-type AppletId = (typeof APPLETS)[number]['id']
+/** Only there while the site is possessed: the way back. */
+const BAPTIZE = { id: 'baptize', label: 'Baptize', icon: kawaii.angelBaby } as const
+type AppletId = (typeof APPLETS)[number]['id'] | typeof BAPTIZE.id
 
 /**
  * The Daniel Control Panel: a Win95 Control Panel window of applets. Each opens a Properties dialog that edits a
@@ -25,6 +29,9 @@ type AppletId = (typeof APPLETS)[number]['id']
  */
 export function Settings() {
   const [open, setOpen] = useState<AppletId | null>(null)
+  const [baptizing, setBaptizing] = useState(false)
+  const possessed = usePossessed()
+  const applets = possessed ? [...APPLETS, BAPTIZE] : APPLETS
   return (
     <div data-testid="settings" className="min-h-screen bg-[#008080] p-3 sm:p-6">
       <Win95Window title="Daniel Control Panel" icon={icons.kidComputer} className="mx-auto max-w-2xl" bodyClassName="bg-white">
@@ -37,7 +44,7 @@ export function Settings() {
           ))}
         </div>
         <ul className="grid grid-cols-3 gap-2 p-4 sm:grid-cols-5">
-          {APPLETS.map((a) => (
+          {applets.map((a) => (
             <li key={a.id}>
               <button
                 type="button"
@@ -52,15 +59,65 @@ export function Settings() {
           ))}
         </ul>
         <p className="border-t border-win-dark bg-win px-2 py-0.5 text-[11px]">
-          {APPLETS.length} object(s) · Settings are saved on this computer, for this whole site.
+          {applets.length} object(s) · Settings are saved on this computer, for this whole site.
         </p>
       </Win95Window>
-      {open && <Applet key={open} id={open} onClose={() => setOpen(null)} />}
+      {open === 'baptize' ? (
+        <BaptizeApplet
+          onClose={() => setOpen(null)}
+          onBaptize={() => {
+            setOpen(null)
+            setBaptizing(true)
+          }}
+        />
+      ) : (
+        open && <Applet key={open} id={open} onClose={() => setOpen(null)} />
+      )}
+      {baptizing && <Baptism onDone={() => setBaptizing(false)} />}
     </div>
   )
 }
 
-function Applet({ id, onClose }: { id: AppletId; onClose: () => void }) {
+/** The Baptize applet: no settings, one button, and some water. */
+function BaptizeApplet({ onClose, onBaptize }: { onClose: () => void; onBaptize: () => void }) {
+  const shut = useClosing(onClose)
+  const button = 'win-raised min-w-[72px] px-3 py-1'
+  return (
+    <Win95Window
+      title="Baptize Properties"
+      icon={BAPTIZE.icon}
+      onClose={onClose}
+      shut={shut}
+      testId="applet"
+      className="fixed left-1/2 top-[12%] z-[55] w-[min(360px,calc(100vw-16px))] -translate-x-1/2"
+      bodyClassName="bg-win"
+    >
+      <div className="space-y-3 p-3">
+        <Group legend="Font">
+          <dl className="grid grid-cols-[auto_1fr] gap-x-3 gap-y-1">
+            <dt>Holy water:</dt>
+            <dd>1 L</dd>
+            <dt>Faith:</dt>
+            <dd>optional</dd>
+            <dt>Status:</dt>
+            <dd className="font-bold text-red-800">Something has followed you home.</dd>
+          </dl>
+        </Group>
+        <p className="text-[11px] text-gray-700">This returns the website to how it was. What you saw, you will still have seen.</p>
+        <div className="flex justify-end gap-2">
+          <button type="button" className={`${button} font-bold`} onClick={onBaptize}>
+            Baptize
+          </button>
+          <button type="button" className={button} onClick={shut.close}>
+            Cancel
+          </button>
+        </div>
+      </div>
+    </Win95Window>
+  )
+}
+
+function Applet({ id, onClose }: { id: Exclude<AppletId, 'baptize'>; onClose: () => void }) {
   const { settings, update } = useSettings()
   const [draft, setDraft] = useState(settings)
   const shut = useClosing(onClose)

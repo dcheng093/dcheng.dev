@@ -3,7 +3,8 @@ import { useStored } from '../hooks/useLocalStorage'
 import { useSettings } from '../components/settings/settingsState'
 import { AudioCtx } from './audioContext'
 import { MusicPlayer } from './music'
-import { playSfx, type SfxName } from './synth'
+import { usePossessed } from '../lib/possession'
+import { drone, playSfx, type SfxName } from './synth'
 import type { MixId } from './tracks'
 
 /**
@@ -20,9 +21,10 @@ export function AudioProvider({ children, silent = false }: { children: ReactNod
   const [unlocked, setUnlocked] = useState(false)
   // The Control Panel's Sounds applet balances music against sound effects, under the master volume.
   const { music: musicLevel, sfx: sfxLevel } = useSettings().settings
-  const graph = useRef<{ ctx: AudioContext; master: GainNode; musicBus: GainNode; sfxBus: GainNode; analyser: AnalyserNode; music: MusicPlayer } | null>(
+  const graph = useRef<{ ctx: AudioContext; master: GainNode; water: BiquadFilterNode; musicBus: GainNode; sfxBus: GainNode; analyser: AnalyserNode; music: MusicPlayer } | null>(
     null,
   )
+  const possessed = usePossessed()
 
   const unlock = useCallback(() => {
     if (graph.current || typeof window.AudioContext !== 'function') return
@@ -31,12 +33,16 @@ export function AudioProvider({ children, silent = false }: { children: ReactNod
     // Everything passes through the analyser so DANIEL FM's visualizer sees music and SFX alike.
     const analyser = ctx.createAnalyser()
     analyser.fftSize = 64
-    master.connect(analyser).connect(ctx.destination)
+    // Wide open, until a baptism puts the whole site underwater for a few seconds.
+    const water = ctx.createBiquadFilter()
+    water.type = 'lowpass'
+    water.frequency.value = 20000
+    master.connect(water).connect(analyser).connect(ctx.destination)
     const musicBus = ctx.createGain()
     const sfxBus = ctx.createGain()
     musicBus.connect(master)
     sfxBus.connect(master)
-    graph.current = { ctx, master, musicBus, sfxBus, analyser, music: new MusicPlayer(ctx, musicBus) }
+    graph.current = { ctx, master, water, musicBus, sfxBus, analyser, music: new MusicPlayer(ctx, musicBus) }
     void ctx.resume()
     setUnlocked(true)
   }, [])
@@ -45,8 +51,15 @@ export function AudioProvider({ children, silent = false }: { children: ReactNod
     const g = graph.current
     if (!g) return
     if (muted || silent) g.music.stop()
-    else g.music.start(mix)
-  }, [muted, silent, mix, unlocked])
+    else g.music.start(mix, possessed)
+  }, [muted, silent, mix, unlocked, possessed])
+
+  // The possessed site hums underneath everything.
+  useEffect(() => {
+    const g = graph.current
+    if (!g || !possessed || muted || silent) return
+    return drone(g.ctx, g.musicBus)
+  }, [possessed, muted, silent, unlocked])
 
   // Volume only touches the gain, so dragging a slider never restarts the song.
   useEffect(() => {
@@ -111,6 +124,10 @@ export function AudioProvider({ children, silent = false }: { children: ReactNod
       toggleLock: () => setLocked((l) => !l),
       setLocked,
       getAnalyser: () => graph.current?.analyser ?? null,
+      muffle: (on: boolean) => {
+        const g = graph.current
+        g?.water.frequency.setTargetAtTime(on ? 500 : 20000, g.ctx.currentTime, on ? 0.4 : 0.8)
+      },
     }),
     [unlocked, muted, volume, mix, unlock, sfx, setMuted, setVolumeState, setMixState, locked, setLocked],
   )

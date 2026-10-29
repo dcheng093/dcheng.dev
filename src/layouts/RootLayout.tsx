@@ -17,10 +17,20 @@ import { Taskbar } from '../components/Taskbar'
 import { PageLoad, ScanIn } from '../components/DialUp'
 import { SettingsProvider } from '../components/settings/SettingsProvider'
 import { VirusAlert } from '../components/VirusAlert'
+import { VisitNote } from '../components/VisitNote'
 import { MiniPlayer, MuteButton, WebringBar } from '../components/WebringBar'
 import { useStored } from '../hooks/useLocalStorage'
+import { useSealedPage } from '../hooks/useSealedPage'
+import { usePossessed } from '../lib/possession'
+import { Possession } from '../components/possessed/Possession'
+import { JumpScare } from '../components/possessed/JumpScare'
 
-export type RouteHandle = { calm?: boolean; noWebring?: boolean }
+/**
+ * `calm`: none of the chaos at all (/boring). `quiet`: the chaos minus pop-up ambushes and the virus alert.
+ * `sealable`: an unknown address, where a sealed page might open. That page is `solemn`: quiet, and none of the
+ * playful clutter either (confetti, stickers, Melly, the live chat), so nothing cute floats over it.
+ */
+export type RouteHandle = { calm?: boolean; noWebring?: boolean; quiet?: boolean; sealable?: boolean; solemn?: boolean }
 
 /**
  * Global chaos layer. Routes with handle `{ calm: true }` (e.g. /boring) skip all of it.
@@ -28,9 +38,21 @@ export type RouteHandle = { calm?: boolean; noWebring?: boolean }
  */
 export function RootLayout() {
   const matches = useMatches()
-  const handle = (matches[matches.length - 1]?.handle ?? {}) as RouteHandle
   const { pathname } = useLocation()
+  const routeHandle = (matches[matches.length - 1]?.handle ?? {}) as RouteHandle
+  const sealed = useSealedPage(pathname, !!routeHandle.sealable)
+  const handle: RouteHandle = sealed.status === 'open' ? { quiet: true, solemn: true } : routeHandle
   const [entered, setEntered] = useStored('entered', false, 'session')
+  // Once a sealed page has been seen, the whole site turns (until the visitor is baptized in the Control Panel).
+  const possessed = usePossessed() && !handle.calm
+  useEffect(() => {
+    const html = document.documentElement
+    if (possessed) html.dataset.possessed = ''
+    else delete html.dataset.possessed
+    return () => {
+      delete html.dataset.possessed
+    }
+  }, [possessed])
 
   return (
     <SettingsProvider active={!handle.calm}>
@@ -42,10 +64,10 @@ export function RootLayout() {
         </>
       ) : (
         <PopnukeProvider>
-        <PopupProvider auto={entered}>
+        <PopupProvider auto={entered && !handle.quiet}>
           <ScrollRestoration />
           <UnlockOnGesture />
-          <PageSong />
+          <PageSong override={sealed.status === 'open' ? sealed.page.song : undefined} />
           {!entered && <EnterGate onEnter={() => setEntered(true)} />}
           <CursorTrail />
           <ClickBurst />
@@ -63,17 +85,20 @@ export function RootLayout() {
           <div className={entered ? 'contents' : 'invisible'}>
             {handle.noWebring ? <MuteButton floating /> : <Taskbar />}
             <main className="relative">
-              <Outlet />
-              <HiddenSticker />
+              <Outlet context={sealed} />
+              {!handle.solemn && <HiddenSticker />}
               <Page3D crashed={!!handle.noWebring && pathname !== '/leave'} />
-              <GifConfetti />
+              {!handle.solemn && <GifConfetti />}
             </main>
             {!handle.noWebring && <WebringBar />}
             {pathname !== '/' && !handle.noWebring && <MiniPlayer />}
-            {!handle.noWebring && <PetWindow />}
-            {entered && !handle.noWebring && <VirusAlert />}
-            <LiveChat />
+            {!handle.noWebring && !handle.solemn && <PetWindow />}
+            {entered && !handle.noWebring && !handle.quiet && <VirusAlert />}
+            {entered && !handle.noWebring && !handle.quiet && <VisitNote />}
+            {!handle.solemn && <LiveChat />}
           </div>
+          {possessed && <Possession />}
+          <JumpScare />
         </PopupProvider>
         </PopnukeProvider>
       )}
@@ -88,15 +113,15 @@ function UnlockOnGesture() {
   return null
 }
 
-/** Switches to the page's theme song on arrival, unless the visitor 📌 locked their own pick. */
-function PageSong() {
+/** Switches to the page's theme song on arrival, unless the visitor 📌 locked their own pick. A sealed page names its own. */
+function PageSong({ override }: { override?: string }) {
   const { pathname } = useLocation()
   const { locked, setMix } = useAudio()
   useEffect(() => {
-    const song = pageSong(pathname)
+    const song = override ?? pageSong(pathname)
     if (song && !locked) setMix(song)
     // Only on arrival: unlocking mid-page shouldn't yank the song back.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [pathname])
+  }, [pathname, override])
   return null
 }

@@ -34,3 +34,6 @@ asset-originals
 
 # Wrangler local state
 .wrangler
+
+# The hunt in plain text (answers, sealed pages). Never commit it: back it up privately. `npm run seal` encrypts it.
+secrets

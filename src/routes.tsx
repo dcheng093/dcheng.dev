@@ -8,11 +8,16 @@ import { Boring } from './routes/Boring'
 import { Checkout, Leave, UnderConstruction, YouWon } from './routes/Traps'
 import { Casino, Scan, WorkFromHome } from './routes/Scams'
 import { FakeBSOD } from './routes/FakeBSOD'
+import { SealedOrBSOD } from './routes/Sealed'
 
 // Cyber Town pages load on demand: they carry their own games/encoders and most visitors never open all six.
 const lazyPage = <K extends string>(load: () => Promise<Record<K, () => React.JSX.Element>>, name: K) => async () => ({ Component: (await load())[name] })
 
 const fullscreen: RouteHandle = { noWebring: true }
+// Unknown addresses: the crash screen, unless a sealed page opens there (RootLayout, useSealedPage).
+const unknown: RouteHandle = { noWebring: true, sealable: true }
+// Pages for digging around in: no pop-up ambushes or virus alert while you're there.
+const quiet: RouteHandle = { quiet: true }
 
 /** Shared by main.tsx (createBrowserRouter) and tests (createMemoryRouter). */
 export const routes: RouteObject[] = [
@@ -37,16 +42,17 @@ export const routes: RouteObject[] = [
       { path: 'survey', lazy: lazyPage(() => import('./routes/Survey'), 'Survey') },
       { path: 'work-from-home', element: <WorkFromHome /> },
       { path: 'arcade', lazy: lazyPage(() => import('./routes/Arcade'), 'Arcade') },
-      { path: 'desktop', lazy: lazyPage(() => import('./routes/Desktop'), 'Desktop') },
+      { path: 'desktop', lazy: lazyPage(() => import('./routes/Desktop'), 'Desktop'), handle: quiet },
       { path: 'radio', lazy: lazyPage(() => import('./routes/Radio'), 'Radio') },
       { path: 'oracle', lazy: lazyPage(() => import('./routes/Oracle'), 'Oracle') },
       { path: 'blinkie-maker', lazy: lazyPage(() => import('./routes/BlinkieMaker'), 'BlinkieMaker') },
       { path: 'stickers', lazy: lazyPage(() => import('./routes/StickerBook'), 'StickerBook') },
+      { path: 'dex', lazy: lazyPage(() => import('./routes/Dex'), 'Dex'), handle: quiet },
       { path: 'popnuke', lazy: lazyPage(() => import('./routes/Popnuke'), 'Popnuke') },
       { path: 'settings', lazy: lazyPage(() => import('./routes/Settings'), 'Settings') },
       // Secret: not in the webring or sitemap, so random links never spoil them.
-      { path: 'legendary/:id', lazy: lazyPage(() => import('./routes/Legendary'), 'Legendary') },
-      { path: '*', element: <FakeBSOD />, handle: fullscreen },
+      { path: 'legendary/:id', lazy: lazyPage(() => import('./routes/Legendary'), 'Legendary'), handle: quiet },
+      { path: '*', element: <SealedOrBSOD />, handle: unknown },
     ],
   },
 ]

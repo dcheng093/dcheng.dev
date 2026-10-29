@@ -1,11 +1,29 @@
 import type { ObjSize, ObjSpec, PageScene, ShapeId, TexRef } from '../three/pageScenes'
 import type { Personality, Reaction } from '../lib/personality'
+import { WEBRING } from '../lib/sitemap'
 
 // Every 3D object on the site. Names and lore show in the info window when clicked; personalities never
 // show anywhere, you only feel them. Daniel's voice; edit freely. Anchors sit in the page margins,
 // drifters roam the screen behind the content (phones only get the drifters).
 
-type Opts = { tex?: TexRef; text?: string; photo?: number; reaction?: Reaction; spot?: [string, string]; rarity?: ObjSpec['rarity'] }
+type Opts = { tex?: TexRef; text?: string; photo?: number; reaction?: Reaction; spot?: [string, string]; rarity?: ObjSpec['rarity']; when?: ObjSpec['when'] }
+
+/**
+ * The Object Dex's specimens: one drifter per page in the ring (drifters, so phones can catch them too), the night
+ * owls and the legendaries. Only these get catalogued. Each carries a fragment the Dex shows to the possessed.
+ */
+const SPECIMENS: Record<string, { glyph?: string; digit?: string }> = {
+  'ace': { glyph: 'ᛖ' }, 'binary-knot': { glyph: 'ᛏ' }, 'blink-text': { glyph: 'ᚾ' }, 'candle': { glyph: 'ᛁ' },
+  'checkout-portrait': { glyph: 'ᛖ' }, 'chii-cloud': { glyph: 'ᛚ' }, 'crt': { glyph: 'ᛗ' }, 'deal-gem': { glyph: 'ᚨ' },
+  'dex-collector': { glyph: 'ᚺ' }, 'foreman': { glyph: 'ᛖ' }, 'guest-cube': { glyph: 'ᛞ' }, 'horse-whisperer': { glyph: 'ᚨ' },
+  'logged-in': { glyph: 'ᛚ' }, 'mouthwash': { glyph: 'ᛊ' }, 'music-note': { glyph: 'ᚨ' }, 'norm-cube': { glyph: 'ᚨ' },
+  'nuke-shield': { glyph: 'ᛖ' }, 'one-up': { glyph: 'ᛖ' }, 'pb-text': { glyph: 'ᛏ' }, 'per-mousepad': { glyph: 'ᛏ' },
+  'runaway-mouse': { glyph: 'ᚱ' }, 'sad-face': { glyph: 'ᛖ' }, 'seg-virus': { glyph: 'ᚺ' }, 'sticker-cloud': { glyph: 'ᛊ' },
+  'sugar-cube': { glyph: 'ᚹ' }, 'survey-head': { glyph: 'ᛞ' }, 'wfh-cube': { glyph: 'ᚱ' }, 'winner-head': { glyph: 'ᛚ' },
+  'checkout-candle': { digit: '2' }, 'dream-cloud': { digit: '4' }, 'glow-star': { digit: '9' }, 'guest-moon': { digit: '8' },
+  'nuke-eye': { digit: '0' }, 'sleep-mode': { digit: '5' }, 'three-am': { digit: '1' },
+  'beef': {}, 'planet-daniel': {}, 'goose': {},
+}
 
 function obj(id: string, name: string, shape: ShapeId, personality: Personality, size: ObjSize, madeOf: string, lore: string, o: Opts = {}): ObjSpec {
   return {
@@ -23,10 +41,15 @@ function obj(id: string, name: string, shape: ShapeId, personality: Personality,
     role: o.spot ? 'anchor' : 'drifter',
     spot: o.spot ? { top: o.spot[0], left: o.spot[1] } : undefined,
     rarity: o.rarity ?? 'common',
+    ...(o.when ? { when: o.when } : {}),
+    ...(SPECIMENS[id] ? { specimen: SPECIMENS[id] } : {}),
   }
 }
 
 // Margin spots, as [top, left] percentages of the page.
+// Night owls: drifters that only turn up after dark (10pm-5am), one each on the pages with room for a fifth object.
+const N: Opts = { rarity: 'rare', when: 'night' }
+
 const L = (top: number): [string, string] => [`${top}%`, '6%']
 const R = (top: number): [string, string] => [`${top}%`, '94%']
 // For full-width layouts (the dealership, the desktop) with only a thin strip of margin.
@@ -45,6 +68,7 @@ export const PAGE_3D: Record<string, PageScene> = {
   },
   '/guestbook': {
     objects: [
+      obj('guest-moon', 'The Night Shift Moon', 'moon', 'lazy', 'm', 'moon rock, one lamp', 'Signs the guestbook every night at 3am as "Anonymous". Everyone knows it is the moon.', N),
       obj('open-book', 'The Big Book of Visitors', 'book', 'lazy', 'm', 'lined paper, red leather', 'Every name ever signed is in here. It is mostly Grandma.', { spot: L(22) }),
       obj('quill', 'Quill of Signing', 'quill', 'nervous', 's', 'one (1) feather', 'Signs things by itself when nobody is looking. Has forged several guestbook entries.', { spot: R(35) }),
       obj('envelope', 'Unopened Letter', 'envelope', 'curious', 's', 'paper, a heart-shaped seal', 'It says "do not open". It has been opened 1,337 times.', { spot: R(70) }),
@@ -71,6 +95,7 @@ export const PAGE_3D: Record<string, PageScene> = {
   },
   '/checkout': {
     objects: [
+      obj('checkout-candle', 'Late-Night Shopping Candle', 'candle', 'nervous', 's', 'wax, impulse purchases', 'Lit for every 2am "add to basket". It has never once gone out.', N),
       obj('credit-card', "Daniel's Credit Card", 'creditCard', 'shy', 's', 'plastic, debt', 'Card number 4242 4242 4242 4242. Expired in 1999. Still tries.', { spot: L(30) }),
       obj('receipt', 'The Receipt', 'receipt', 'lazy', 'm', 'thermal paper', 'TOTAL £123. Includes a £42 fee for having a receipt.', { spot: R(28) }),
       obj('barcode', 'Mystery Barcode', 'barcode', 'watcher', 's', 'stripes', 'Scans as "DANIEL". Every product here scans as "DANIEL".', { spot: R(66) }),
@@ -162,6 +187,7 @@ export const PAGE_3D: Record<string, PageScene> = {
   },
   '/popnuke': {
     objects: [
+      obj('nuke-eye', 'The Night Watchman', 'eye', 'watcher', 's', 'an eye, no eyelid', 'Pop-ups come out at night. So does this. It does not blink. It cannot blink.', N),
       obj('popnuke-disk', 'POPNUKE Disk 1 of 1', 'floppy', 'nervous', 's', 'plastic, 1.44 MB of pure nuke', 'The whole product, on one floppy. Do not put it near a magnet. Or the kettle.', { spot: L(30) }),
       obj('installer-cd', 'POPNUKE Installer CD', 'cd', 'showoff', 'm', 'a real CD photo', 'Autorun.inf launches the installer, then a second installer, then a toolbar.', { spot: R(40) }),
       obj('nuke-shield', 'The Nuke Shield', 'shield', 'watcher', 'm', 'purple metal, radiation', 'Stands between you and the pop-ups. Has never once blinked.'),
@@ -170,6 +196,7 @@ export const PAGE_3D: Record<string, PageScene> = {
   },
   '/settings': {
     objects: [
+      obj('sleep-mode', 'Sleep Mode', 'text', 'lazy', 'm', 'snoozing pixels', 'The site has a sleep mode. It turns on at 10pm. It does not turn the site off.', { ...N, text: 'ZZZ', tex: 'swirls' }),
       obj('settings-ini', 'SETTINGS.INI', 'floppy', 'nervous', 's', 'plastic, 2KB of opinions', 'Every setting you have ever changed, saved on a floppy that nobody will ever open again.', { spot: L(30) }),
       obj('control-keyboard', 'The Control Keyboard', 'keyboard', 'showoff', 'm', 'beige plastic, one sticky key', 'Ctrl, Alt and Delete all at once is not a setting. Daniel checked.', { spot: R(35) }),
       obj('selfie-cube', 'Selfie Cube', 'photoCube', 'curious', 's', 'six close-ups of Daniel', 'Six angles, all of them too close. This is what 100% Daniel Density looks like.', { photo: 13, spot: R(75) }),
@@ -178,10 +205,19 @@ export const PAGE_3D: Record<string, PageScene> = {
   },
   '/stickers': {
     objects: [
+      obj('glow-star', 'Glow-in-the-Dark Star', 'star', 'shy', 's', 'phosphorescent plastic', 'Peeled off a ceiling in 2012. Only glows when you are not looking.', { ...N, tex: 'blobs' }),
       obj('sticker-star', 'Gold Star', 'star', 'showoff', 'm', 'purple blobs', 'You get one of these for finding all the stickers. You do not get this one.', { tex: 'blobs', spot: R(4) }),
       obj('sticker-heart', 'Puffy Heart', 'heart', 'curious', 'm', 'tie-dye', 'A puffy sticker. Do not peel. It will not come off cleanly.', { tex: 'tieDyeCircle', spot: L(40) }),
       obj('sticker-cloud', 'Scratch-and-Sniff Cloud', 'cloud', 'lazy', 'm', 'sky', 'Smells like rain. Actually smells like kettle.'),
       obj('sticker-cube', 'Sticker Photo Cube', 'photoCube', 'shy', 's', 'six photos of Daniel', 'Collect all six sides!', { photo: 7, spot: R(75) }),
+    ],
+  },
+  '/dex': {
+    objects: [
+      obj('dex-lens', 'The Cataloguing Lens', 'magnifier', 'curious', 'm', 'glass, brass, curiosity', 'Has looked closely at every object on this site. Thinks you are next.', { spot: L(20) }),
+      obj('dex-book', 'The Big Book of Things', 'book', 'lazy', 'm', 'index cards, one rubber band', 'Every object, alphabetised. Then un-alphabetised. Then dropped down the stairs.', { spot: R(30) }),
+      obj('dex-tick', 'Caught It', 'checkbox', 'excitable', 's', 'one green tick', 'Ticks itself every time you find something. It is very proud of you.', { spot: R(70) }),
+      obj('dex-collector', 'Daniel, Collector', 'photoCube', 'showoff', 's', 'six photos of a man with a full shelf', 'He has caught them all. He will not tell you where the goose is.', { photo: 5 }),
     ],
   },
   '/leave': {
@@ -207,6 +243,7 @@ export const PAGE_3D: Record<string, PageScene> = {
   '/shrine/chiikawa': {
     world: 'painted',
     objects: [
+      obj('dream-cloud', 'Dream Cloud', 'cloud', 'lazy', 'm', 'a dream', 'Every plushie on the shelf is having this dream. It is about a bigger shelf.', N),
       obj('chii-heart', 'Big Soft Heart', 'heart', 'curious', 'l', 'tie-dye', 'Chiikawa is trying its best. So is this heart.', { tex: 'tieDyeSpiral', spot: L(14) }),
       obj('chii-cloud', 'Nap Cloud', 'cloud', 'lazy', 'm', 'a sky', 'For napping on between episodes. Every episode is one minute.'),
       obj('chii-cube', 'Merch Cube', 'photoCube', 'shy', 's', 'six photos of Daniel', 'Daniel, surrounded by plushies, every side.', { photo: 2, spot: R(40) }),
@@ -253,6 +290,7 @@ export const PAGE_3D: Record<string, PageScene> = {
   },
   '/shrine/push-swap': {
     objects: [
+      obj('three-am', 'Daniel, 3AM', 'head', 'nervous', 'm', 'Daniel, cut out, unslept', 'Still sorting. It is 3am. It is always 3am in push_swap.', { ...N, photo: 1 }),
       obj('number-stack', 'Stack A', 'numberStack', 'nervous', 'm', 'numbered blocks', '5, 2, 8, 1. Sort it in under 700 moves. He used 701.', { spot: L(26) }),
       obj('arrows', 'pa / pb', 'arrows', 'excitable', 's', 'green and red plastic', 'Push to A. Push to B. Push to A. Push to B. Forever.', { spot: R(32) }),
       obj('ps-cube', 'Debugging Cube', 'photoCube', 'shy', 's', 'six photos of a debugging man', 'Six hours of debugging, one face per side.', { photo: 4, spot: R(70) }),
@@ -301,9 +339,9 @@ export const legendary = (id: string | undefined) => LEGENDARIES.find((l) => l.i
 /** Chance a legendary turns up on any given page view. */
 export const LEGENDARY_CHANCE = 0.05
 
-/** Rolls for a legendary on a page view (never on Home, /boring or the gag pages). */
+/** Rolls for a legendary on a page view: only on the ring's pages, and never on Home or /leave. */
 export function rollLegendary(pathname: string, rng: () => number = Math.random): ObjSpec | undefined {
-  if (pathname === '/' || pathname === '/boring' || pathname === '/leave' || pathname.startsWith('/legendary')) return undefined
+  if (pathname === '/' || pathname === '/leave' || !WEBRING.includes(pathname)) return undefined
   if (rng() >= LEGENDARY_CHANCE) return undefined
   return LEGENDARIES[Math.floor(rng() * LEGENDARIES.length)]
 }

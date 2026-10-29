@@ -1,6 +1,9 @@
 import { expect, test, type Locator, type Page } from '@playwright/test'
+import { existsSync } from 'node:fs'
+import { resolve } from 'node:path'
+import { pathToFileURL } from 'node:url'
 
-const ROUTES = ['/', '/dealership', '/shrine/segfault', '/shrine/kettle', '/shrine/chiikawa', '/guestbook', '/under-construction', '/you-won', '/checkout', '/leave', '/scan', '/casino', '/survey', '/work-from-home', '/arcade', '/desktop', '/radio', '/oracle', '/blinkie-maker', '/stickers', '/popnuke', '/settings', '/boring']
+const ROUTES = ['/', '/dealership', '/shrine/segfault', '/shrine/kettle', '/shrine/chiikawa', '/guestbook', '/under-construction', '/you-won', '/checkout', '/leave', '/scan', '/casino', '/survey', '/work-from-home', '/arcade', '/desktop', '/radio', '/oracle', '/blinkie-maker', '/stickers', '/dex', '/popnuke', '/settings', '/boring']
 
 /** Skip the enter gate (sessionStorage) and collect real errors, ignoring 404s for not-yet-supplied images. */
 async function prepare(page: Page, { skipGate = true, virus = false, pet = false } = {}) {
@@ -8,6 +11,8 @@ async function prepare(page: Page, { skipGate = true, virus = false, pet = false
   if (!pet) await page.addInitScript(() => localStorage.getItem('petMinimised') ?? localStorage.setItem('petMinimised', 'true'))
   // The virus alert turns up 25s in; keep it out of every test but its own.
   if (!virus) await page.addInitScript(() => sessionStorage.setItem('virusAlertSeen', 'true'))
+  // So does the welcome-back / special-day note (on Halloween it would turn up in every test).
+  await page.addInitScript(() => sessionStorage.setItem('visitNoteSeen', 'true'))
   // Melly lives on gify.pet; keep the tests off the real third-party site.
   await page.route('https://gify.pet/**', (r) => r.fulfill({ contentType: 'text/html', body: '<p>Melly</p>' }))
   if (skipGate) await page.addInitScript(() => sessionStorage.setItem('entered', 'true'))
@@ -122,13 +127,13 @@ test('the floating player changes the song on non-home pages', async ({ page }) 
 })
 
 test('hovering a track in the music list never shakes it (no jiggle, no sideways overflow)', async ({ page }) => {
-  const { width = 1000, height = 1000 } = page.viewportSize() ?? {}
-  test.skip(width < 640 || height <= 500, 'the floating track list is hidden on phones')
   await prepare(page)
   await page.goto('/casino')
   await page.locator('[data-testid="casino"]').click({ position: { x: 5, y: 5 } }) // unlock audio so the player shows
   const list = page.getByTestId('mini-player').locator('ul')
+  await expect(list).toBeVisible() // on phones too, just shorter
   const track = list.getByRole('button').nth(3)
+  await track.scrollIntoViewIfNeeded()
   const box = (await track.boundingBox())!
   await page.mouse.move(box.x + box.width - 3, box.y + box.height - 2) // the edge, where the loop used to start
   await expect(track).not.toHaveCSS('animation-name', 'jiggle')
@@ -244,8 +249,9 @@ test('the aim trainer counts a hit', async ({ page }) => {
 
 test("the desktop's notepad remembers what you typed, and windows drag", async ({ page }) => {
   await prepare(page)
+  await page.addInitScript(() => sessionStorage.setItem('desktopOn', 'true')) // already booted this visit
   await page.goto('/desktop')
-  await page.getByRole('list', { name: 'Desktop icons' }).getByRole('button', { name: 'diary.txt' }).click()
+  await page.getByRole('list', { name: 'Desktop icons' }).getByRole('button', { name: 'diary.txt' }).dblclick()
   const notepad = page.getByTestId('window-notepad')
   await notepad.getByLabel('Notepad diary').fill('secret e2e diary')
   await settled(notepad)
@@ -261,7 +267,7 @@ test("the desktop's notepad remembers what you typed, and windows drag", async (
   const after = (await notepad.boundingBox())!
   expect(after.x - before.x).toBeGreaterThan(30)
   await page.goto('/desktop')
-  await page.getByRole('list', { name: 'Desktop icons' }).getByRole('button', { name: 'diary.txt' }).click()
+  await page.getByRole('list', { name: 'Desktop icons' }).getByRole('button', { name: 'diary.txt' }).dblclick()
   await expect(page.getByTestId('window-notepad').getByLabel('Notepad diary')).toHaveValue('secret e2e diary')
 })
 
@@ -325,7 +331,7 @@ test('3D: a TextureTown world on /oracle, objects on /casino, nothing on Home', 
 // Every page except Home. (Exact per-page counts are pinned by the unit tests against the content itself.)
 const OBJECT_PAGES = [
   '/dealership', '/guestbook', '/under-construction', '/you-won', '/checkout', '/scan', '/casino', '/survey', '/work-from-home',
-  '/arcade', '/desktop', '/radio', '/oracle', '/blinkie-maker', '/stickers', '/popnuke', '/settings', '/leave', '/this/does/not/exist',
+  '/arcade', '/desktop', '/radio', '/oracle', '/blinkie-maker', '/stickers', '/dex', '/popnuke', '/settings', '/leave', '/this/does/not/exist',
   '/shrine/chiikawa', '/shrine/battlestation', '/shrine/peripherals', '/shrine/segfault', '/shrine/norminette',
   '/shrine/push-swap', '/shrine/kettle', '/shrine/horses', '/shrine/teeth',
 ]
@@ -1006,4 +1012,204 @@ test('home’s ad wall has POPNUKE: a skyscraper down the right on desktop, a ba
   expect(await horizontalOverflow(page)).toBeLessThanOrEqual(0)
   await shown.click()
   await expect(page).toHaveURL(/\/popnuke$/)
+})
+
+test('Daniel 95: the power button boots it (POST, splash), Shut Down ends safe to turn off, and pulling the plug means ScanDisk', async ({ page }) => {
+  const errors = await prepare(page)
+  await page.goto('/desktop')
+  const desktop = page.getByTestId('desktop')
+  await expect(desktop).toHaveAttribute('data-power', 'off')
+  await page.getByRole('button', { name: 'Power' }).click()
+  await expect(page.getByTestId('screen-post')).toContainText('Daniel BIOS')
+  await expect(page.getByTestId('screen-splash')).toBeVisible({ timeout: 8_000 })
+  await expect(desktop).toHaveAttribute('data-power', 'on', { timeout: 8_000 })
+  await desktop.getByRole('button', { name: 'Start', exact: true }).click()
+  await page.getByRole('button', { name: /Shut Down/ }).click()
+  await page.getByTestId('shutdown-dialog').getByRole('button', { name: 'Yes' }).click()
+  await expect(page.getByTestId('screen-safe')).toBeVisible({ timeout: 8_000 })
+  // Boot again and pull the plug instead.
+  await page.getByRole('button', { name: 'Power' }).click()
+  await page.getByRole('button', { name: 'Skip the start-up checks' }).click()
+  await expect(desktop).toHaveAttribute('data-power', 'on', { timeout: 8_000 })
+  await page.getByRole('button', { name: 'Power' }).click()
+  await page.getByRole('button', { name: 'Power' }).click()
+  await page.getByRole('button', { name: 'Skip the start-up checks' }).click()
+  await expect(page.getByTestId('screen-scandisk')).toContainText('not shut down properly')
+  expect(await horizontalOverflow(page)).toBeLessThanOrEqual(0)
+  expect(errors).toEqual([])
+})
+
+test("My Computer: into C:, a locked folder takes its password, and it fits the screen", async ({ page }) => {
+  await prepare(page)
+  await page.addInitScript(() => sessionStorage.setItem('desktopOn', 'true'))
+  await page.goto('/desktop')
+  await page.getByRole('list', { name: 'Desktop icons' }).getByRole('button', { name: 'My Computer' }).dblclick()
+  const win = page.getByTestId('window-computer')
+  const files = win.getByRole('list', { name: 'Files' })
+  await files.getByRole('button', { name: 'C:', exact: true }).dblclick()
+  await files.getByRole('button', { name: 'GAMES', exact: true }).dblclick()
+  await files.getByRole('button', { name: 'ranked', exact: true }).dblclick()
+  const prompt = page.getByRole('dialog', { name: 'Password for ranked' })
+  await prompt.getByRole('button', { name: 'Hint' }).click()
+  await expect(prompt.getByTestId('password-hint')).toContainText('binary')
+  await prompt.getByLabel(/Password/).fill('TOP 1 MGE')
+  await prompt.getByLabel(/Password/).press('Enter')
+  await expect(win.getByTestId('address')).toHaveText('C:\\GAMES\\ranked\\')
+  expect(await horizontalOverflow(page)).toBeLessThanOrEqual(0)
+})
+
+test('clicking a specimen catalogues it in the Object Dex (other objects just open)', async ({ page }) => {
+  // Objects only show where there's free space, and a phone's casino has almost none to drift into.
+  test.skip((page.viewportSize()?.width ?? 1000) < 640 || (page.viewportSize()?.height ?? 1000) < 400, 'no free space on a phone')
+  await prepare(page)
+  await clearMargins(page)
+  await page.goto('/casino')
+  // The Lucky Die is just an object...
+  {
+    const die = page.locator('[data-object="dice-a"]')
+    await expect.poll(() => drawnPixels(die), { timeout: 10_000 }).toBeGreaterThan(20)
+    await clickObject(page, die)
+    await expect(page.getByTestId('object-window')).toContainText('Lucky Die')
+    await expect(page.getByTestId('object-window').getByTestId('dex-link')).toHaveCount(0)
+    await page.getByTestId('object-window').getByRole('button', { name: /close/i }).first().click()
+  }
+  // ...the Ace of Hearts is the casino's specimen. It drifts; catch it where it is right now.
+  const ace = page.locator('[data-object="ace"]')
+  await expect.poll(() => drawnPixels(ace), { timeout: 10_000 }).toBeGreaterThan(20)
+  await clickObject(page, ace)
+  await page.getByTestId('object-window').getByTestId('dex-link').click()
+  await expect(page).toHaveURL(/\/dex$/)
+  const card = page.getByRole('region', { name: 'The Casino' }).locator('[data-found="yes"]')
+  await expect(card).toHaveCount(1)
+  await expect(card).toContainText('Ace of Hearts')
+  await expect(page.getByTestId('milestone-25')).toContainText('???')
+})
+
+test('an unknown address is still the blue screen, after a blink of black', async ({ page }) => {
+  await prepare(page)
+  await page.goto('/boring')
+  await expect(page.getByTestId('boring')).not.toContainText('secret')
+  await page.goto('/nowhere-at-all')
+  await expect(page.getByTestId('bsod')).toBeVisible()
+  await expect(page.locator('html')).not.toHaveAttribute('data-possessed')
+})
+
+// The real hunt, played from the plaintext in secrets/ (gitignored): skipped wherever that folder isn't.
+const SECRETS = resolve(process.cwd(), 'secrets/hunt.mjs')
+type Hunt = Record<string, string> & { LOCKS: Record<string, { answer: string }> }
+const hunt = async () => (await import(pathToFileURL(SECRETS).href)) as Hunt
+
+test('the descent: the shrine turns the site, and its answers open the folders all the way to the bottom', async ({ page }) => {
+  test.skip(!existsSync(SECRETS), 'needs secrets/hunt.mjs')
+  test.setTimeout(90_000)
+  const h = await hunt()
+  const errors = await prepare(page)
+  await page.addInitScript(() => sessionStorage.setItem('desktopOn', 'true'))
+  await page.goto(h.SHRINE_PATH)
+  await expect(page.getByTestId('sealed-page')).toBeVisible()
+  await expect(page.getByTestId('armour')).toContainText('BEGIN TRANSMISSION')
+  await expect.poll(() => drawnPixels(page.getByTestId('world-3d')), { timeout: 10_000 }).toBeGreaterThan(1000)
+  await expect(page.locator('html')).toHaveAttribute('data-world', 'cult')
+  await expect(page.locator('html')).toHaveAttribute('data-possessed', '')
+  expect(await horizontalOverflow(page)).toBeLessThanOrEqual(0)
+
+  await page.goto('/desktop')
+  await page.getByRole('list', { name: 'Desktop icons' }).getByRole('button', { name: 'My Computer' }).dblclick()
+  const win = page.getByTestId('window-computer')
+  const files = win.getByRole('list', { name: 'Files' })
+  const open = (name: string) => files.getByRole('button', { name, exact: true }).dblclick()
+  const unlock = async (name: string, answer: string) => {
+    await open(name)
+    const prompt = page.getByRole('dialog', { name: `Password for ${name}` })
+    await prompt.getByLabel(/Password/).fill(answer)
+    await prompt.getByLabel(/Password/).press('Enter')
+    await expect(prompt).toHaveCount(0, { timeout: 10_000 })
+  }
+  // Straight after closing Notepad: every click on the explorer has to land, first time.
+  const home = async () => {
+    const address = win.getByTestId('address')
+    while ((await address.textContent()) !== 'My Computer') {
+      const before = await address.textContent()
+      await win.getByRole('button', { name: '↑ Up' }).click()
+      await expect(address).not.toHaveText(before!, { timeout: 2_000 })
+    }
+  }
+  // Read a file, then close Notepad so it isn't sitting over the explorer.
+  const read = async (name: string, text: string) => {
+    await open(name)
+    await expect(page.getByTestId('viewer-text')).toContainText(text)
+    await page.getByRole('button', { name: `Close ${name} - Notepad` }).click()
+  }
+  await open('D:')
+  await unlock('HIDDEN TRACK', h.HIDDEN_TRACK_ANSWER)
+  await read('TRANSMISSION_1.TXT', 'TRANSMISSION 1 OF 3')
+  await home()
+  await win.getByRole('button', { name: 'View' }).click()
+  await win.getByLabel('Show hidden files').click()
+  await open('E:')
+  await unlock('RECYCLED', h.RECYCLED_ANSWER)
+  await read('INFO2', 'TRANSMISSION 2 OF 3')
+  await home()
+  await open('C:')
+  await unlock('DANIEL', h.DANIEL_ANSWER)
+  await open('TRANSMISSION_3.TXT')
+  await expect(page.getByTestId('viewer-text')).toContainText(h.FINAL_PHRASE)
+  await expect(page.getByTestId('viewer-text')).not.toContainText('{{heard}}')
+  // Opened folders stay open on the next visit.
+  await page.reload()
+  await page.goto('/desktop')
+  await page.getByRole('list', { name: 'Desktop icons' }).getByRole('button', { name: 'My Computer' }).dblclick()
+  await open('C:')
+  await open('DANIEL')
+  await expect(win.getByTestId('address')).toHaveText('C:\\DANIEL\\')
+  expect(errors).toEqual([])
+})
+
+test('possessed: the whole site turns, the hymn joins the list, and a baptism in the Control Panel washes it off', async ({ page }) => {
+  test.setTimeout(60_000)
+  const errors = await prepare(page)
+  await page.addInitScript(() => {
+    if (sessionStorage.getItem('seeded')) return
+    sessionStorage.setItem('seeded', 'true')
+    localStorage.setItem('possessed', 'true')
+    localStorage.setItem('secrets', JSON.stringify({ morse: '2026-10-29T03:00:00Z' }))
+  })
+  await page.goto('/')
+  await expect(page.locator('html')).toHaveAttribute('data-possessed', '')
+  await expect(page.getByTestId('possession')).toBeAttached()
+  await expect(page.getByTestId('hit-counter')).toContainText('00000666')
+  expect(await horizontalOverflow(page)).toBeLessThanOrEqual(0)
+  await page.goto('/radio')
+  await expect(page.getByText('Hymn (Do Not Play)').first()).toBeAttached()
+
+  await page.goto('/settings')
+  await page.getByRole('button', { name: 'Baptize Properties' }).click()
+  await page.getByTestId('applet').getByRole('button', { name: 'Baptize', exact: true }).click()
+  await expect(page.getByTestId('baptism')).toHaveAttribute('data-stage', 'under', { timeout: 5_000 })
+  await expect(page.getByTestId('baptism')).toHaveAttribute('data-stage', 'clean', { timeout: 8_000 })
+  await expect(page.locator('html')).not.toHaveAttribute('data-possessed')
+  await expect(page.getByTestId('baptism')).toHaveCount(0, { timeout: 5_000 })
+  await expect(page.getByRole('button', { name: 'Baptize Properties' })).toHaveCount(0)
+  expect(errors).toEqual([])
+})
+
+test('DANIELAMP drags by its title bar and stays where it was left', async ({ page }) => {
+  await prepare(page)
+  await page.goto('/casino')
+  await page.locator('[data-testid="casino"]').click({ position: { x: 5, y: 5 } }) // unlock audio so the player shows
+  const player = page.getByTestId('mini-player')
+  await expect(player).toBeVisible()
+  const before = (await player.boundingBox())!
+  const bar = (await page.getByTestId('player-titlebar').boundingBox())!
+  await page.mouse.move(bar.x + 30, bar.y + 5)
+  await page.mouse.down()
+  await page.mouse.move(bar.x + 90, bar.y - 80, { steps: 6 })
+  await page.mouse.up()
+  const after = (await player.boundingBox())!
+  expect(after.x - before.x).toBeGreaterThan(40)
+  expect(before.y - after.y).toBeGreaterThan(50)
+  // Through the taskbar: on a phone the webring's links at the bottom can be under the player itself.
+  await page.getByRole('navigation', { name: 'Main' }).getByRole('link', { name: 'Guestbook' }).click()
+  await expect(page).toHaveURL(/\/guestbook$/)
+  await expect.poll(async () => Math.round((await player.boundingBox())!.x)).toBe(Math.round(after.x))
 })

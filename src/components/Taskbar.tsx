@@ -5,6 +5,7 @@ import { cursors, icons, type Slot } from '../content/assets'
 import { DanielLogo } from './DanielLogo'
 import { MuteButton } from './WebringBar'
 import { TrayBadge } from './popnuke/TrayBadge'
+import { usePossessed } from '../lib/possession'
 
 // Icons are the site's own GIFs or plain glyphs: colour emoji show as empty boxes on systems without an emoji font.
 const LINKS: { to: string; icon: string | Slot; label: string; className?: string }[] = [
@@ -59,13 +60,15 @@ export function Taskbar() {
 /** The tray clock, like the real thing: hours and minutes, ticking over on the minute. */
 function Clock() {
   const [now, setNow] = useState(() => new Date())
+  const possessed = usePossessed()
   useEffect(() => {
     const id = window.setInterval(() => setNow(new Date()), 10_000)
     return () => window.clearInterval(id)
   }, [])
   return (
     <time dateTime={now.toISOString()} className="px-1 tabular-nums max-[360px]:hidden">
-      {now.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })}
+      {/* Possessed, it's always the same time, and it isn't a time. */}
+      {possessed ? '6:66' : now.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })}
     </time>
   )
 }

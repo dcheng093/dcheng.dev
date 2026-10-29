@@ -1,4 +1,6 @@
 import * as THREE from 'three'
+import { isPossessed } from '../lib/possession'
+import { isDaniel, rotted } from '../components/possessed/rot'
 
 /**
  * Every 3D thing on a page shares ONE WebGL renderer (browsers allow only a handful of contexts, and each costs
@@ -129,6 +131,34 @@ const loader = new THREE.TextureLoader()
 const textures = new Map<string, THREE.Texture>()
 
 /** Tiled, nearest-neighbour textures (crunchy on purpose), shared and cached by URL. */
+const rotTextures = new Map<string, THREE.Texture>()
+
+/**
+ * One of Daniel's faces as a texture: his own photo, or, once the site is possessed, its mutilated still
+ * (src/components/possessed/rot.ts). The mutilated one has no image until it's drawn (WebGL2 fixes a texture's
+ * size at first upload, so no placeholder).
+ */
+export function face(url: string, cover = false) {
+  if (!isPossessed() || !isDaniel(url)) return texture(url, 1, cover)
+  let t = rotTextures.get(url)
+  if (!t) {
+    const tex = new THREE.Texture()
+    tex.magFilter = THREE.NearestFilter
+    tex.colorSpace = THREE.SRGBColorSpace
+    t = tex
+    void rotted(url).then((src) => {
+      const img = new Image()
+      img.onload = () => {
+        tex.image = img
+        tex.needsUpdate = true
+      }
+      img.src = src ?? url
+    })
+    rotTextures.set(url, t)
+  }
+  return t
+}
+
 export function texture(url: string, repeat = 1, cover = false) {
   const key = `${url}|${repeat}|${cover}`
   let t = textures.get(key)

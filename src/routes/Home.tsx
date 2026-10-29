@@ -438,13 +438,15 @@ function RootsBand() {
 }
 
 /** The playground pages, plus a row of deeply suspicious "sponsored" buttons into the scam pages. */
-const TOWN: { to: string; label: string; blurb: string; slot: Slot; anim: string }[] = [
+const TOWN: { to: string; label: string; blurb: string; slot: Slot; anim: string; wide?: boolean }[] = [
   { to: '/arcade', label: "Daniel's Arcade", blurb: 'Aim Trainer 98 + Kettle Clicker', slot: cursors.joystick, anim: 'group-hover:animate-boing' },
   { to: '/desktop', label: "Daniel's Desktop", blurb: 'Snoop around my PC', slot: icons.kidComputer, anim: 'group-hover:animate-shake' },
   { to: '/radio', label: 'DANIEL FM', blurb: 'All Daniel, all the time', slot: icons.speaker, anim: 'group-hover:animate-pulse-scale' },
   { to: '/oracle', label: 'The Magic Kettle', blurb: 'Ask it anything', slot: assets.kettle, anim: 'group-hover:animate-wobble' },
   { to: '/blinkie-maker', label: 'Blinkie Maker', blurb: 'Make your own blinkie', slot: blinkies.iBite, anim: 'group-hover:animate-jank-x' },
   { to: '/stickers', label: 'Sticker Book', blurb: '12 hidden stickers. Find them.', slot: kawaii.cheerBlob, anim: 'group-hover:animate-spin-z' },
+  // The seventh door spans the row: every 3D object on the site, catalogued.
+  { to: '/dex', label: 'THE OBJECT DEX', blurb: 'Click the floating things. Catch them all. Some only come out at night.', slot: icons.question, anim: 'group-hover:animate-spin-y', wide: true },
 ]
 
 // No strobe on these: they're loud enough already, and flashing is a seizure risk.
@@ -472,7 +474,7 @@ function CyberTownBand() {
     >
       <ul className="grid w-[min(640px,100%)] grid-cols-2 gap-3 sm:grid-cols-3" aria-label="Cyber Town">
         {TOWN.map((t) => (
-          <li key={t.to}>
+          <li key={t.to} className={t.wide ? 'col-span-2 sm:col-span-3' : ''}>
             <Link to={t.to} className="win-raised group relative flex h-full flex-col items-center gap-1 p-2 text-center text-black">
               <Img slot={assets.newBadge} width={34} className="absolute -right-2 -top-3 rotate-12" />
               <span className="grid h-14 place-items-center">

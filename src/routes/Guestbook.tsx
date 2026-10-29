@@ -6,8 +6,10 @@ import { Blink, BlinkieRow, GifDivider, RainbowText } from '../components/chaos/
 import { FOUND_VIA, type GuestEntry } from '../content/guestbookSeed'
 import { PER_PAGE, mergeEntries, pageIndex, pageNumbers } from '../lib/guestbook'
 import { useStored } from '../hooks/useLocalStorage'
+import { usePossessed } from '../lib/possession'
 
 export function Guestbook() {
+  const possessed = usePossessed()
   const [mine, setMine] = useStored<GuestEntry[]>('guestbook', [])
   const [page, setPage] = useState(1)
   const [form, setForm] = useState({ name: '', from: '', message: '', foundVia: FOUND_VIA[0] as string })
@@ -83,7 +85,7 @@ export function Guestbook() {
           {shown.map((g) => (
             <li key={g.id} className="border-4 border-double border-hotpink bg-white p-3 font-times text-black">
               <p className="flex flex-wrap justify-between gap-2 border-b border-dotted border-black text-sm">
-                <b className="text-blue-800">{g.name}</b>
+                <b className="text-blue-800">{possessed ? 'user666' : g.name}</b>
                 <span>from <i>{g.from}</i></span>
                 <span>{g.date}</span>
               </p>

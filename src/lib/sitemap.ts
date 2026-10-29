@@ -20,6 +20,7 @@ export const WEBRING: readonly string[] = [
   '/oracle',
   '/blinkie-maker',
   '/stickers',
+  '/dex',
   '/popnuke',
   '/settings',
   '/leave',

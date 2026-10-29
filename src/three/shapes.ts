@@ -5,7 +5,7 @@ import { voxelWord } from '../lib/voxelFont'
 import { HEADS, PHOTOS } from './heads'
 import { TEX, type ShapeId, type TexRef } from './pageScenes'
 import { keyedTexture, procTexture, type ProcId } from './procTextures'
-import { texture } from './stage'
+import { face, texture } from './stage'
 
 // Low-poly builders for every 3D object on the site. Each fits roughly inside a unit sphere (radius ~1) so any
 // of them can be shown at any size. Textures come from Daniel's packs (TEX) or are drawn in code ('proc:…').
@@ -157,14 +157,14 @@ export function buildShape(shape: ShapeId, tex?: TexRef, extra: Extra = {}): THR
     case 'photoCube':
       return new THREE.Mesh(
         box(1.15, 1.15, 1.15),
-        Array.from({ length: 6 }, (_, i) => new THREE.MeshLambertMaterial({ map: texture(PHOTOS[(photo + i) % PHOTOS.length], 1, true) })),
+        Array.from({ length: 6 }, (_, i) => new THREE.MeshLambertMaterial({ map: face(PHOTOS[(photo + i) % PHOTOS.length], true) })),
       )
     case 'head':
-      return card(texture(HEADS[photo % HEADS.length]), 1.9, 1.9)
+      return card(face(HEADS[photo % HEADS.length]), 1.9, 1.9)
     case 'portrait': {
       const gold = M(t('goldMetal'))
       return group(
-        mesh(new THREE.PlaneGeometry(1.1, 1.4), new THREE.MeshLambertMaterial({ map: texture(PHOTOS[photo % PHOTOS.length]) }), 0, 0, 0.06),
+        mesh(new THREE.PlaneGeometry(1.1, 1.4), new THREE.MeshLambertMaterial({ map: face(PHOTOS[photo % PHOTOS.length]) }), 0, 0, 0.06),
         mesh(box(1.5, 0.2, 0.18), gold, 0, 0.8),
         mesh(box(1.5, 0.2, 0.18), gold, 0, -0.8),
         mesh(box(0.2, 1.8, 0.18), gold, 0.65),
@@ -523,7 +523,7 @@ export function buildShape(shape: ShapeId, tex?: TexRef, extra: Extra = {}): THR
     case 'goose':
       return card(keyedTexture(TEX.goose, 'white'), 2, 1.5)
     case 'planet': {
-      const moon = card(texture(HEADS[0]), 0.6, 0.6)
+      const moon = card(face(HEADS[0]), 0.6, 0.6)
       moon.position.set(1.05, 0.15, 0)
       const orbit = group(moon)
       orbit.userData.orbit = true // spun by the object driver
