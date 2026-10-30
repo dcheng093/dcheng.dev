@@ -108,6 +108,7 @@ function DialUpLoad({ path }: { path: string }) {
       <div
         aria-hidden
         data-testid="status-bar"
+        data-no-rot=""
         className="pointer-events-none fixed inset-x-0 bottom-0 z-[51] flex h-5 items-center gap-1 border-t border-white bg-win px-1 font-[Tahoma,sans-serif] text-[11px] text-black shadow-[0_-1px_0_#808080]"
       >
         <Img slot={assets.globe} width={14} />

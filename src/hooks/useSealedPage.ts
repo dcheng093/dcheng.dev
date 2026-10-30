@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { openPage, type SealedPage } from '../lib/hunt'
+import type { SealedPage } from '../lib/hunt'
 
 /** What's at an unknown address: still deriving the key, a sealed page, or nothing (so: the crash screen). */
 export type SealedLookup = { status: 'opening' } | { status: 'open'; page: SealedPage } | { status: 'none' }
@@ -13,7 +13,10 @@ export function useSealedPage(pathname: string, active: boolean): SealedLookup {
   useEffect(() => {
     if (!active) return
     let live = true
-    void openPage(pathname).then((page) => live && setFound({ path: pathname, page }))
+    // Loaded only now: the sealed pages (and the code that opens them) stay out of every page that doesn't need them.
+    void import('../lib/hunt')
+      .then(({ openPage }) => openPage(pathname))
+      .then((page) => live && setFound({ path: pathname, page }))
     return () => {
       live = false
     }

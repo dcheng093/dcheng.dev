@@ -27,11 +27,11 @@ export const daniel = {
   },
 
   games: [
-    { name: 'Team Fortress 2', pitch: 'TOP 1 IN MGE WORLDWIDE', slot: 'game-tf2.gif' },
-    { name: 'Valorant', pitch: 'TOP 3200 IN APAC', slot: 'game-valorant.gif' },
-    { name: 'Counter-Strike 2', pitch: 'GLOBAL ELITE.', slot: 'game-cs.gif' },
-    { name: 'Apex Legends', pitch: 'DIAMOND IN 50 HOURS', slot: 'game-apex.gif' },
-    { name: 'Aimlabs', pitch: 'GRANDMASTER 1 IN 100 HOURS AND TOP 700 OUT OF 6 MILLION PLAYERS', slot: 'game-aimlabs.gif' }
+    { name: 'Team Fortress 2', pitch: 'TOP 1 IN MGE WORLDWIDE', slot: 'game-tf2.webp' },
+    { name: 'Valorant', pitch: 'TOP 3200 IN APAC', slot: 'game-valorant.webp' },
+    { name: 'Counter-Strike 2', pitch: 'GLOBAL ELITE.', slot: 'game-cs.webp' },
+    { name: 'Apex Legends', pitch: 'DIAMOND IN 50 HOURS', slot: 'game-apex.webp' },
+    { name: 'Aimlabs', pitch: 'GRANDMASTER 1 IN 100 HOURS AND TOP 700 OUT OF 6 MILLION PLAYERS', slot: 'game-aimlabs.webp' }
   ],
 
   // Order matches assets.hobbies (HOBBY-1..3.jpg).

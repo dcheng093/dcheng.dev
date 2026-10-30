@@ -1,7 +1,11 @@
 import type { FsNode } from '../content/desktop'
 
 /** Window manager for Daniel's Desktop: which programs are open, minimised, and in front. */
-export type ProgramId = 'computer' | 'bin' | 'notepad' | 'paint' | 'daniel-exe' | 'viewer'
+/** The fixed programs, plus one viewer window per open file (`viewer:` and the file's path). */
+export type AppId = 'computer' | 'bin' | 'notepad' | 'paint' | 'daniel-exe'
+export type ViewerId = `viewer:${string}`
+export type ProgramId = AppId | ViewerId
+export const isViewer = (id: ProgramId): id is ViewerId => id.startsWith('viewer:')
 
 export type DeskWindow = { id: ProgramId; minimised: boolean; x: number; y: number }
 export type DesktopState = { windows: DeskWindow[] } // last = front

@@ -1,7 +1,7 @@
 import { describe, expect, it, vi } from 'vitest'
 import { act, cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
-import { createMemoryRouter, RouterProvider } from 'react-router-dom'
+import { createMemoryRouter, RouterProvider, type RouteObject } from 'react-router-dom'
 import { routes } from '../routes'
 import { WEBRING } from '../lib/sitemap'
 import { daniel } from '../content/daniel'
@@ -9,6 +9,8 @@ import { VIRUS_ALERT_DELAY_MS } from '../components/VirusAlert'
 import { SURVEY } from '../content/survey'
 import { DEX } from '../lib/discovery'
 import { DEX_MILESTONES } from '../content/desktop'
+import { ASCENSION_AT, CALM_MS, CREDITS_MS } from '../components/ending/timing'
+import { possessedText } from '../lib/rot'
 
 // The real hunt is sealed with answers that live only in the gitignored secrets/ folder; these tests never see them.
 // They get their own sealed page and locked folder instead, sealed fresh with answers that are fine to commit.
@@ -18,14 +20,41 @@ vi.mock('../sealed/hunt.json', async () => {
   return {
     default: {
       pages: [await makeSeal(page, '/test-shrine')],
-      locks: { exam: await makeSeal([{ name: 'exam_answers.txt', kind: 'txt', text: 'the file was a decoy' }], 'fixture answer') },
+      locks: {
+        exam: await makeSeal([{ name: 'exam_answers.txt', kind: 'txt', text: 'the file was a decoy' }], 'fixture answer'),
+        daniel: await makeSeal(
+          [
+            { name: 'README.txt', kind: 'txt', text: 'the fixture monologue' },
+            { name: 'DESCEND.EXE', kind: 'exe', text: 'again?', ending: { phrase: 'fixture phrase' } },
+          ],
+          'fixture daniel',
+        ),
+      },
     },
   }
 })
 
+// Pages load on demand on the real site (routes.tsx `lazy`). Here they're all resolved up front, so a test sees its
+// page on the first render, as a returning visitor would.
+const eagerRoutes: RouteObject[] = await Promise.all(
+  routes.map(
+    async (r) =>
+      ({
+        ...r,
+        children: await Promise.all(
+          (r.children ?? []).map(async (c) => {
+            if (typeof c.lazy !== 'function') return c
+            const { lazy, ...rest } = c
+            return { ...rest, ...(await lazy()) } as RouteObject
+          }),
+        ),
+      }) as RouteObject,
+  ),
+)
+
 const renderAt = (path: string, { entered = true } = {}) => {
   if (entered) sessionStorage.setItem('entered', 'true')
-  const router = createMemoryRouter(routes, { initialEntries: [path] })
+  const router = createMemoryRouter(eagerRoutes, { initialEntries: [path] })
   render(<RouterProvider router={router} />)
   return router
 }
@@ -129,7 +158,7 @@ describe('routes', () => {
     ])
     expect(within(bar).getByRole('link', { name: 'Guestbook' })).toHaveAttribute('aria-current', 'page')
     expect(within(bar).getByRole('link', { name: 'Home' })).not.toHaveAttribute('aria-current')
-    expect(within(bar).getByAltText('Daniel')).toHaveAttribute('src', '/me/head-grind.png')
+    expect(within(bar).getByAltText('Daniel')).toHaveAttribute('src', '/me/head-grind.webp')
   })
 
   it.each(['/boring', '/leave', '/this/does/not/exist'])('%s has no taskbar', (path) => {
@@ -139,7 +168,7 @@ describe('routes', () => {
 
   it('the dealership logo is Daniel grinning again', () => {
     renderAt('/dealership')
-    expect(within(screen.getByTestId('dealership').querySelector('header')!).getByAltText('Daniel')).toHaveAttribute('src', '/me/head-grind.png')
+    expect(within(screen.getByTestId('dealership').querySelector('header')!).getByAltText('Daniel')).toHaveAttribute('src', '/me/head-grind.webp')
   })
 
   it('Control Panel: a change is only saved on Apply or OK, Cancel forgets it, and the theme lands on <html>', async () => {
@@ -283,7 +312,7 @@ describe('interactions', () => {
     renderAt('/boring')
     const img = screen.getByAltText(daniel.name)
     await act(async () => img.dispatchEvent(new Event('error')))
-    expect(screen.getByLabelText('placeholder: normal headshot')).toHaveTextContent('SUPPLY ME: headshot.jpg')
+    expect(screen.getByLabelText('placeholder: normal headshot')).toHaveTextContent('SUPPLY ME: headshot.webp')
   })
 })
 
@@ -448,6 +477,29 @@ describe('the rabbit hole', () => {
     expect(localStorage.getItem('possessed')).toBe('true')
     expect(await screen.findByTestId('possession')).toBeInTheDocument()
     expect(document.documentElement).toHaveAttribute('data-possessed')
+    // The pieces that make it look possessed: the veil over everything, and the warp the rotted faces go through.
+    expect(screen.getByTestId('veil')).toBeInTheDocument()
+    expect(document.querySelector('filter#rot')).not.toBeNull()
+  })
+
+  it('possessed, the words rot everywhere except on the secret page itself, which always reads plainly', async () => {
+    localStorage.setItem('possessed', 'true')
+    const settle = () => act(() => new Promise((r) => setTimeout(r, 50))) // the rot works a frame behind
+    renderAt('/dealership')
+    await screen.findByTestId('possession', {}, { timeout: 5000 })
+    await settle()
+    expect(possessedText('Guestbook')).not.toBe('Guestbook')
+    expect(screen.getByTestId('taskbar')).toHaveTextContent(possessedText('Guestbook'))
+    cleanup()
+
+    renderAt('/test-shrine')
+    const page = await screen.findByTestId('sealed-page', {}, { timeout: 5000 })
+    await screen.findByTestId('possession')
+    await settle()
+    expect(possessedText('sealed for the tests')).not.toBe('sealed for the tests')
+    expect(page).toHaveTextContent('sealed for the tests')
+    expect(page).toHaveTextContent('a test')
+    expect(screen.getByTestId('taskbar')).toHaveTextContent('Guestbook')
   })
 
   it('the hymn only shows on the radio once a sealed page has been reached', async () => {
@@ -550,6 +602,59 @@ describe('the rabbit hole', () => {
     expect(screen.getByTestId('screen-scandisk')).toHaveTextContent('not shut down properly')
   })
 
+  it('the bottom of the hunt: C:\\DANIEL plays the ending once, marks them, and hands them a keepsake', async () => {
+    vi.useFakeTimers({ shouldAdvanceTime: true })
+    localStorage.setItem('possessed', 'true')
+    sessionStorage.setItem('desktopOn', 'true')
+    const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime })
+    renderAt('/desktop')
+    await screen.findByTestId('desktop')
+    await user.dblClick(within(screen.getByRole('list', { name: 'Desktop icons' })).getByRole('button', { name: 'My Computer' }))
+    const win = screen.getByTestId('window-computer')
+    const open = (name: string) => user.dblClick(within(within(win).getByRole('list', { name: 'Files' })).getByRole('button', { name }))
+    await open('C:')
+    await open('DANIEL')
+    await user.type(within(screen.getByRole('dialog', { name: 'Password for DANIEL' })).getByLabelText(/Password/), 'fixture daniel{Enter}')
+
+    const ending = await screen.findByTestId('ascension', {}, { timeout: 5000 })
+    expect(ending).toHaveAttribute('data-stage', 'still')
+    await act(async () => {}) // its timers start in an effect
+    expect(within(ending).queryByRole('button', { name: /Skip/ })).toBeNull() // the first time, it plays out
+    act(() => vi.advanceTimersByTime(ASCENSION_AT.peel))
+    expect(ending).toHaveAttribute('data-stage', 'peel')
+    act(() => vi.advanceTimersByTime(ASCENSION_AT.name - ASCENSION_AT.peel))
+    const name = within(ending).getByLabelText('Your name')
+    await user.clear(name)
+    await user.type(name, 'Tester{Enter}')
+    expect(ending).toHaveAttribute('data-stage', 'credits')
+    expect(ending).toHaveTextContent('descended by')
+    expect(ending).toHaveTextContent('Tester')
+    act(() => vi.advanceTimersByTime(CREDITS_MS))
+    expect(ending).toHaveAttribute('data-stage', 'calm')
+    act(() => vi.advanceTimersByTime(CALM_MS))
+
+    expect(screen.queryByTestId('ascension')).toBeNull()
+    expect(JSON.parse(localStorage.getItem('descended')!)).toMatchObject({ name: 'Tester' })
+    expect(localStorage.getItem('possessed')).toBe('false')
+    expect(document.documentElement).toHaveAttribute('data-descended')
+    expect(JSON.parse(localStorage.getItem('mix')!)).toBe('daybreak') // its song plays on after the possession lifts
+    expect(within(screen.getByRole('region', { name: 'README.txt - Notepad' })).getByTestId('viewer-text')).toHaveTextContent('fixture monologue')
+    const keepsake = screen.getByRole('dialog', { name: 'Take something with you' })
+    const mail = within(keepsake).getByRole('link', { name: 'Send it to Daniel' }).getAttribute('href')!
+    expect(mail.startsWith(`mailto:${daniel.links.email}?`)).toBe(true)
+    expect(decodeURIComponent(mail)).toContain('fixture phrase')
+    expect(decodeURIComponent(mail)).toContain('name: Tester')
+    await user.click(within(keepsake).getByRole('button', { name: 'Close' }))
+
+    // DESCEND.EXE replays it, skippably, and never renames them.
+    await open('DESCEND.EXE')
+    const again = await screen.findByTestId('ascension')
+    await user.click(within(again).getByRole('button', { name: /Skip/ }))
+    expect(screen.queryByTestId('ascension')).toBeNull()
+    expect(JSON.parse(localStorage.getItem('descended')!)).toMatchObject({ name: 'Tester' })
+    vi.useRealTimers()
+  })
+
   it('My Computer: double-click into folders, read a file, unlock a folder, show hidden files', async () => {
     sessionStorage.setItem('desktopOn', 'true')
     const user = userEvent.setup()
@@ -563,7 +668,7 @@ describe('the rabbit hole', () => {
     await open('SCHOOL')
     await open('42')
     await open('norminette.log')
-    expect(screen.getByTestId('viewer-text')).toHaveTextContent('Norme: KO')
+    expect(within(screen.getByRole('region', { name: 'norminette.log - Notepad' })).getByTestId('viewer-text')).toHaveTextContent('Norme: KO')
 
     await open('exam_answers')
     const prompt = () => screen.getByRole('dialog', { name: 'Password for exam_answers' })
@@ -575,14 +680,16 @@ describe('the rabbit hole', () => {
     expect(within(win).getByTestId('address')).toHaveTextContent('C:\\SCHOOL\\42\\exam_answers')
     expect(JSON.parse(localStorage.getItem('desktopKeys')!)).toEqual({ 'C:\\SCHOOL\\42\\exam_answers': '  FIXTURE answer ' })
     await open('exam_answers.txt')
-    expect(screen.getByTestId('viewer-text')).toHaveTextContent('decoy')
+    expect(within(screen.getByRole('region', { name: 'exam_answers.txt - Notepad' })).getByTestId('viewer-text')).toHaveTextContent('decoy')
+    // Each file has its own window: the first is still open.
+    expect(screen.getByRole('region', { name: 'norminette.log - Notepad' })).toBeInTheDocument()
 
     for (let i = 0; i < 3; i++) await user.click(within(win).getByRole('button', { name: '↑ Up' }))
     expect(within(win).queryByRole('button', { name: '.secret' })).toBeNull()
     await user.click(within(win).getByRole('button', { name: 'View' }))
     await user.click(within(win).getByLabelText('Show hidden files'))
     await open('.secret')
-    expect(screen.getByTestId('viewer-text')).toHaveTextContent('hidden files')
+    expect(within(screen.getByRole('region', { name: '.secret - Notepad' })).getByTestId('viewer-text')).toHaveTextContent('hidden files')
   })
 
   it('an empty floppy drive is not ready', async () => {

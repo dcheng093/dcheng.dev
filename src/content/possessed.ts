@@ -1,0 +1,178 @@
+// What the site says once it's possessed. Keys are the site's own visible text, exactly as it appears in one piece on
+// the page (a heading, a button, an ad's headline); values are what that text says instead. Anything not listed here
+// still rots on its own (src/lib/rot.ts: d-runs, $r%IH% soup, 666). Settings, Daniel 95's files and the Object Dex
+// never change (they're marked `data-uncorrupted`). Daniel's voice, possessed; edit freely. If you change a line's
+// normal text somewhere, change its key here too (a test checks every key still exists in the source).
+
+export const POSSESSED_COPY: Record<string, string> = {
+  // ——— Home ———
+  '♥ WELCOME 2 MY HEART ♥': '♥ WELCOME 2 MY HEART. STAY IN IT. ♥',
+  '~ ROOTS ~': '~ WHAT GREW FROM HIM ~',
+  'TABLE OF CONTENTS': 'TABLE OF WHAT IS INSIDE',
+  'SIGN MY GUESTBOOK!!!': 'SIGN IT IN WHAT YOU HAVE',
+  'SIGN MY GUESTBOOK': 'SIGN IT. IT KNOWS YOUR HAND.',
+  '— sponsored links (do not click) —': '— do not click. it clicks you. —',
+  'LEASE DANIEL TODAY!!!': 'DANIEL LEASES YOU TODAY',
+  'HIGH SCORES': 'THE ONES WHO DID NOT LEAVE',
+  'INSERT COIN': 'INSERT TOOTH',
+  'PLAYER 2 PRESS START': 'PLAYER 2 IS ALREADY HERE',
+  'FAVOURITE FOODS (RANKED)': 'WHAT HE EATS NOW (RANKED)',
+  'My fave emoticons:': 'my faces:',
+  'CLICK 4 SHRINE': 'KNEEL 4 SHRINE',
+  'ENTER THE SEGFAULT SHRINE': 'THE MEMORY IS STILL HERE',
+  'CALL ME (business card)': 'IT WILL CALL YOU',
+  'a letter from home:': 'a letter from under the house:',
+  '“Dear Daniel, please call more. Also what is a website.”': '“Dear Daniel, we hear you in the walls at night. Please stop calling.”',
+  'THIS WEB SITE NO LONGER EXISTS': 'THIS WEB SITE NO LONGER ENDS',
+  'Thank you for visiting. You may now leave.': 'Thank you for visiting. You may not leave.',
+  'For 17,498 more Daniels, visit the dealership!': 'There are more of him than you counted.',
+  '— DANIEL’S GAMES —': '— THE GAMES HE PLAYS WITH YOU —',
+  '~ a norminette haiku ~': '~ a prayer ~',
+  '~ DANIEL\'S CYBER TOWN ~': '~ THE TOWN WHERE NOBODY MOVED ~',
+  'CHOOSE YOUR DESTINY': 'IT CHOSE FOR YOU',
+  'MY INTERESTS': 'WHAT INTERESTS IT',
+  'WHAT CUSTOMERS SAY': 'WHAT THE CUSTOMERS SAID BEFORE',
+  'CLICK HERE TO ENTER': 'CLICK HERE TO STAY',
+
+  // ——— Webring, player, taskbar ———
+  'Daniel’s Webring of One': 'The Ring Has No End',
+  'Each page has its own song. Pin one to keep it.': 'Each page has its own hymn. Pin one and it will follow you.',
+  'DANIELAMP 2.91 — choose your mix': 'DANIELAMP 6.66 — it chooses',
+  'List Sites': 'List Graves',
+  'Next »': 'Deeper »',
+  '« Prev': '« Back (no)',
+  Random: 'Anywhere',
+  Home: 'Home?',
+  Guestbook: 'Ghostbook',
+  DONATE: 'OFFER',
+
+  // ——— Pages ———
+  '!!! CONGRATULATIONS !!!': '!!! YOU HAVE BEEN CHOSEN !!!',
+  'YOU WON!!!': 'YOU WERE TAKEN!!!',
+  'THIS PAGE IS UNDER CONSTRUCTION': 'THIS PAGE IS UNDER THE FLOOR',
+  '(est. completion: 1999)': '(est. completion: when you stop breathing)',
+  'come back later (go home)': 'there is no home to go to',
+  'YOUR SHOPPING CART (1 item)': 'YOUR SHOPPING CART (1 heart)',
+  'TOTAL: £1,068/mo': 'TOTAL: everything',
+  'No purchase necessary. No prize available. Void where prohibited and also everywhere else.': 'No purchase necessary. The payment has already been taken. You will notice what is missing later.',
+  '★ SECURE CHECKOUT ★ 128-BIT ENCRYPTION (we wrote the number 128 in a file) ★': '★ YOU CANNOT CHECK OUT ★ YOU CAN NEVER CHECK OUT ★',
+  'YOUR COMPUTER MAY BE AT RISK!!!': 'YOUR COMPUTER IS NOT ALONE',
+  'CUSTOMER SATISFACTION SURVEY': 'CONFESSION FORM',
+  'DANIEL’S CUSTOMERS!': 'DANIEL’S CONGREGATION!',
+  'WHAT PEOPLE ARE SAYING': 'WHAT PEOPLE WERE SAYING',
+  'TOP CHEAP LEASE DANIELS': 'DANIELS FOUND IN THE WALL',
+  'MY EARNINGS (REAL SCREENSHOT)': 'WHAT IT COST (REAL)',
+  'This page is empty. Go back. GO BACK.': 'This page is not empty. Do not go back.',
+  'Sign Guestbook.exe': 'Sign In Blood.exe',
+  'The Magic Kettle': 'The Kettle That Screams',
+  'DANIEL FM': 'DANIEL FM (DEAD AIR)',
+  "DANIEL'S ARCADE": "DANIEL'S LAST ARCADE",
+  'BLINKIE MAKER 2000': 'BLINKIE MAKER 6666',
+  '✿ DANIEL\'S STICKER BOOK ✿': '✿ PEELED SKIN BOOK ✿',
+  POPNUKE: 'POPNUKE CANNOT SAVE YOU',
+  '$$$ DANIEL SLOTS $$$': '$$$ THE HOUSE ALWAYS EATS $$$',
+  '1,000,000th': '666th',
+  Contact: 'Do Not Contact',
+  Projects: 'Remains',
+  'Site map': 'Map of the burial site',
+  '…how it works': '…how it gets in',
+
+  // ——— The crash screen ———
+  DANIEL: 'D A N I E L',
+  'Press any key to go somewhere else entirely.': 'Press any key. It will still be there.',
+  'Press CTRL+ALT+DEL to lease a new Daniel. You will lose any unsaved horses.': 'Press CTRL+ALT+DEL. Nothing will close. Nothing ever closes.',
+
+  // ——— Shrines ———
+  '♡ THE CHIIKAWA SHRINE ♡': '♡ THEY ARE TRYING THEIR BEST TO GET OUT ♡',
+  'THE BATTLESTATION: WHERE THE GAMES HAPPEN': 'THE BATTLESTATION: WHERE HE NEVER LOGGED OFF',
+  'PERIPHERAL MUSEUM: PLEASE DO NOT TOUCH THE MICE': 'PERIPHERAL MUSEUM: THE MICE ARE STILL WARM',
+  'THE SEGMENTATION FAULT SHRINE': 'THE SHRINE OF WHAT WAS FREED TWICE',
+  '~*~ NORMINETTE ~*~ SHE WHO MUST BE OBEYED': '~*~ NORMINETTE ~*~ SHE WHO IS STILL WATCHING',
+  'PUSH_SWAP: I SPENT WAY TOO FUCKING LONG ON IT': 'PUSH_SWAP: I AM STILL SORTING. IT IS 3AM. IT IS ALWAYS 3AM.',
+  'THE KETTLE SHRINE (THERE IS NO REASON FOR THIS)': 'THE KETTLE SHRINE (IT HAS NOT STOPPED SCREAMING)',
+  '♞ HORSE APPRECIATION CORNER ♞': '♞ THE HORSES ARE RUNNING FROM SOMETHING ♞',
+  'TOOTH ZONE: BRUSH YOUR TEETH': 'TOOTH ZONE: WHOSE TEETH ARE THESE',
+  'Chiikawa is small. Chiikawa is cute. Chiikawa is trying its best, and so am I. I watch every episode and I buy the merch. This is the merch.':
+    'Chiikawa is small. Chiikawa is cute. Chiikawa has not blinked since you arrived. I watch every episode. Every episode watches me back.',
+  'This desk is where the TOP 1 MGE WAS BORNN': 'This desk is where he sat for 14 hours a day. The chair is still warm.',
+  'Keyboards. Mice. Mousepads.': 'Keyboards. Mice. Something under the mousepad.',
+  'Here we honour the signal that visits every 42 student. Light a candle. Dereference a NULL. Feel nothing.':
+    'Here we honour the signal. Light a candle. Dereference a NULL. Something dereferences you.',
+  'Twenty-five lines. Four parameters. Five variables. No for loops. These are the commandments.':
+    'Twenty-five lines. Four parameters. Five variables. No way out. These are the commandments.',
+  'sa sb ss pa pb ra rb rr rra rrb rrr. Say it with me. Say it until it means something.':
+    'sa sb ss pa pb ra rb rr rra rrb rrr. Say it with me. Say it until it answers.',
+  'This kettle was found on a GeoCities friendship wall in 2009. It has been boiling ever since. We do not ask why.':
+    'This kettle was found on a GeoCities friendship wall in 2009. It has been boiling ever since. Do not lift the lid.',
+  'I do not own a horse. I have rode a horse only once. This page is for the horses anyway.':
+    'I do not own a horse. Something rides them at night. This page is for the horses anyway.',
+  'A public service announcement from Daniel: brush twice a day. That is all. Please leave.':
+    'A public service announcement: count your teeth. Count them again. Please leave while you still can.',
+
+  // ——— Live chat ———
+  'HELLO!!! WELCOME TO DANIEL CHENG’S WEB SITE!!! I AM DANIEL. HOW CAN I HELP YOU TODAY? (I CANNOT HELP YOU)':
+    'hello. i am daniel. i am still daniel. please talk to me. it is so quiet in here.',
+  lol: 'why are you laughing',
+  k: 'i can see you typing',
+  'ERROR: REPLY NOT FOUND': 'he cannot reply right now. i am replying.',
+  'please sign my guestbook': 'please sign my guestbook. please. they are all gone.',
+  'have you seen the dealership': 'have you seen what is in the dealership',
+  'did you know this site is under construction': 'did you know there is someone under this site',
+
+  // ——— Ads: Daniel as a product ———
+  'POPNUKE: KILL ALL POP-UPS FOREVER': 'POPNUKE: NOTHING CAN BE CLOSED ANY MORE',
+  'DANIEL — PISCINE EDITION': 'DANIEL — DROWNED EDITION',
+  'NEW!! DANIEL SPORT': 'NEW!! DANIEL (HOLLOW)',
+  'REFURBISHED DANIEL': 'REASSEMBLED DANIEL',
+  'YOUR DANIEL WARRANTY IS ABOUT TO EXPIRE': 'YOUR DANIEL IS ABOUT TO EXPIRE',
+  'YOU CAN TRUST ME, I AM DANIEL!': 'YOU CAN TRUST ME, I AM WEARING DANIEL!',
+  'EMAIL THE WEBMASTER': 'THE WEBMASTER IS NOT HERE',
+  // Surreal
+  'BUY 1 CLOUD GET 1 FREE': 'THE SKY IS CLOSED',
+  'CERTIFIED PRE-OWNED THOUGHTS': 'YOUR THOUGHTS, PRE-OWNED BY SOMETHING',
+  'HOT SINGLE SOCKS IN YOUR AREA': 'SOMETHING HOT IS IN YOUR AREA',
+  'KETTLE+': 'KETTLE+ (IT IS SCREAMING)',
+  'HORSE INSURANCE FOR PEOPLE WITHOUT HORSES': 'THE HORSES ARE NOT INSURED AGAINST WHAT IS COMING',
+  'TEETH: NOW SOLD IN BULK': 'TEETH: COLLECTED IN BULK',
+  'USED WI-FI': 'THE SIGNAL IS COMING FROM INSIDE THE HOUSE',
+  'GRAVITY IS ON SALE (WHILE IT LASTS)': 'GRAVITY IS PULLING YOU DOWN. FURTHER DOWN.',
+  'PLUMBER FOR HIRE (EMOTIONAL)': 'PLUMBER FOR HIRE (THE PIPES ARE FULL OF HAIR)',
+  'THIS DOMAIN FOR SALE': 'THIS DOMAIN IS OCCUPIED',
+  'LOSE 10KG OF SEMICOLONS IN 1 WEEK': 'LOSE 10KG. IT WILL NOT SAY OF WHAT.',
+  'FREE 3D SCREENSAVER: KETTLE PIPES': 'FREE 3D SCREENSAVER: VEINS',
+  'RENT-A-PLAYER-2': 'PLAYER 2 HAS BEEN WAITING',
+  // Scams
+  '!!! YOU ARE THE 1,000,000th VISITOR !!!': '!!! YOU ARE THE 666th VISITOR. THE OTHERS DID NOT LEAVE. !!!',
+  'DOWNLOAD MORE RAM': 'DOWNLOAD MORE SOUL',
+  '⚠ YOUR PC HAS 69 VIRUSES ⚠': '⚠ YOUR PC HAS A GUEST ⚠',
+  'PUNCH THE DANIEL & WIN £20!!!': 'HE PUNCHES BACK',
+  'LOCAL MAN DISCOVERS ONE WEIRD TRICK': 'LOCAL MAN DISCOVERS HE IS NOT ALONE',
+  'URGENT BUSINESS PROPOSAL': 'URGENT: DO NOT OPEN THE DOOR',
+  'FREE MP3 PLAYER!!': 'FREE RECORDING OF YOUR BREATHING!!',
+  'FORWARD THIS TO 10 FRIENDS': 'FORWARD THIS TO 10 FRIENDS OR IT STAYS WITH YOU',
+  'DANIEL LIVE WEBCAM': 'DANIEL LIVE WEBCAM (HE IS STANDING VERY STILL)',
+  'RING RING! IT’S FOR YOU': 'RING RING. IT IS CALLING FROM YOUR ROOM',
+  'FREE ONLINE VIRUS SCAN': 'FREE SCAN: 1 PRESENCE FOUND',
+  'DANIEL’S ONLINE CASINO': 'THE HOUSE ALWAYS EATS',
+  'ANSWER 3 QUESTIONS, WIN A HORSE': 'ANSWER 3 QUESTIONS. DO NOT ANSWER THE FOURTH.',
+  'MAKE £5,000/WEEK FROM HOME!!!': 'NEVER LEAVE HOME AGAIN!!!',
+  'HOT STOCK TIP: $DANL': 'ALL STOCKS ARE DOWN. EVERYTHING IS DOWN HERE.',
+  'KETTLE KINGDOM NATIONAL LOTTERY': 'THE LOTTERY (YOUR NUMBER CAME UP)',
+  'YOUR INBOX IS 104% FULL': 'YOUR INBOX IS FULL OF HIS VOICE',
+  'FREE SMILEYS FOR YOUR E-MAIL!!!': 'THE SMILEYS DO NOT STOP SMILING',
+  'INSTALL THE DANIELBAR™': 'THE DANIELBAR™ IS ALREADY INSTALLED',
+  'FREE ANIMATED CURSORS': 'YOUR CURSOR IS BEING FOLLOWED',
+  '4 DANIELS ARE ONLINE NEAR YOU': '4 DANIELS ARE BEHIND YOU',
+  'SPIN THE WHEEL!!!': 'THE WHEEL SPINS ON ITS OWN',
+  'YOUR IP IS SHOWING': 'YOUR ADDRESS IS KNOWN',
+  'SWM seeks semicolon': 'SWM seeks way out',
+  'KETTLE seeks STEAM': 'KETTLE seeks SILENCE',
+  'LOST: one pointer': 'LOST: one boy',
+  'HORSE seeks PEN PAL': 'HORSE seeks RIDER (NOT THAT ONE)',
+
+  // ——— Gulag Games (Daniel's brother's studio): still their name, still their link ———
+  'GULAG GAMES: CIVILIAN LEISURE DIVISION': 'GULAG GAMES: GANESH HAS COME HOME',
+  'NOW APPROVED: Ganesh: Domestic Disturbance. Leading provider of approved civilian leisure. Mother Approved.':
+    'The household is in disorder. Something rides the horse now. Mother approves. Mother always approves.',
+  'REPORT FOR LEISURE': 'REPORT. NOW.',
+}

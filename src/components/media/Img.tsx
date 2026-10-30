@@ -1,9 +1,11 @@
 import { useEffect, useId, useState, type CSSProperties } from 'react'
-import { assets, type AssetKey, type Slot } from '../../content/assets'
+import { assets, possessedGifs, type AssetKey, type Slot } from '../../content/assets'
 import { danielPick, danielSwap } from '../../lib/settings'
 import { useSettings } from '../settings/settingsState'
 import { usePossessed } from '../../lib/possession'
 import { isDaniel, rotted } from '../possessed/rot'
+import { BrokenImage } from '../possessed/BrokenImage'
+import { hash, useUncorrupted } from '../../lib/uncorrupted'
 
 type Props = {
   slot: Slot | AssetKey
@@ -15,6 +17,18 @@ type Props = {
 }
 
 const resolve = (slot: Slot | AssetKey): Slot => (typeof slot === 'string' ? assets[slot] : slot)
+
+/** What a decoration turns into on the possessed site, by shape: strips, tall things, and the rest. */
+const ratio = (g: Slot) => g.w / g.h
+const ROT_BY_SHAPE = {
+  wide: possessedGifs.filter((g) => ratio(g) > 2.5),
+  tall: possessedGifs.filter((g) => ratio(g) < 0.75),
+  square: possessedGifs.filter((g) => ratio(g) >= 0.75 && ratio(g) <= 2.5),
+}
+const rotFor = (s: Slot, seed: number) => {
+  const pool = ratio(s) > 2.5 ? ROT_BY_SHAPE.wide : ratio(s) < 0.75 ? ROT_BY_SHAPE.tall : ROT_BY_SHAPE.square
+  return pool[seed % pool.length]
+}
 
 /** Everything Daniel Density can turn an image into. */
 const DANIELS = [...assets.misc, assets.headGrin, assets.headShock, assets.headWink]
@@ -43,9 +57,32 @@ export function Img({ slot, width, className = '', style, alt = '' }: Props) {
   const swapped = !s.src.startsWith('/me/') && danielSwap(s.src, spot, density)
   const d = swapped ? DANIELS[danielPick(s.src, spot, DANIELS.length)] : null
   const rot = useRotted(d?.src ?? s.src)
+  const possessed = usePossessed()
+  const uncorrupted = useUncorrupted()
   const w = width ?? s.w
   const h = Math.round((w * s.h) / s.w)
   if (missing) return <Placeholder slot={s} width={w} height={h} className={className} style={style} />
+  const seed = hash(s.src + spot)
+  const corruptible = possessed && !uncorrupted && !isDaniel(s.src) && !s.src.startsWith('/ads/')
+  // Possessed, about one picture in six fails to load, 666-style. Never Daniel (he rots instead), never an ad's art.
+  if (corruptible && seed % 6 === 0) return <BrokenImage width={w} height={h} className={className} />
+  // And about half the decorations are something else now: an eye, a skull, a candle, a strip of blood or static.
+  if (corruptible && s.src.startsWith('/gifs/') && !s.src.startsWith('/gifs/px-') && (seed >>> 8) % 2 === 0) {
+    const g = rotFor(s, seed >>> 12)
+    return (
+      <img
+        src={g.src}
+        width={w}
+        height={h}
+        alt={alt}
+        loading="lazy"
+        draggable={false}
+        data-possessed-gif=""
+        className={`max-w-full h-auto object-contain ${className}`}
+        style={{ ...style, aspectRatio: `${w} / ${h}` }}
+      />
+    )
+  }
   // Daniel Density (Control Panel): some images become Daniel, in the same box. Photos of him already are him.
   if (d) {
     return (

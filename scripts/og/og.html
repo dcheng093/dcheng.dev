@@ -1,0 +1,67 @@
+<!doctype html>
+<!-- The link preview card (scripts/og/og.mjs screenshots #card into public/og.jpg). Served by Vite's dev server
+     only; it isn't part of the site's build. -->
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <style>
+      html,
+      body {
+        margin: 0;
+        background: #000;
+      }
+      #card {
+        position: relative;
+        width: 1200px;
+        height: 630px;
+        overflow: hidden;
+      }
+      #scene {
+        position: absolute;
+        inset: 0;
+        width: 1200px;
+        height: 630px;
+      }
+      /* The site's WordArt (src/index.css .wordart), bigger. */
+      #title {
+        position: absolute;
+        top: 44px;
+        left: 0;
+        right: 0;
+        margin: 0;
+        text-align: center;
+        font: 64px/1 OgImpact, Impact, sans-serif;
+        letter-spacing: 1px;
+        background: linear-gradient(180deg, #ff0 0%, #f60 50%, #f0f 100%);
+        -webkit-background-clip: text;
+        background-clip: text;
+        color: transparent;
+        -webkit-text-stroke: 2px #000;
+        filter: drop-shadow(4px 4px 0 #000);
+      }
+      /* The glow sits on a wrapper: on the picture itself, its mask would clip the glow to a hard-edged box. */
+      #glow {
+        position: absolute;
+        left: 50%;
+        top: 352px;
+        transform: translate(-50%, -50%);
+        filter: drop-shadow(0 0 18px #ffd6f0) drop-shadow(0 0 40px #f0a0c0);
+      }
+      #face {
+        display: block;
+        height: 330px;
+        /* The cut-out ends flat at the neck: let it dissolve into the sea instead. */
+        -webkit-mask-image: linear-gradient(to bottom, #000 74%, transparent 98%);
+        mask-image: linear-gradient(to bottom, #000 74%, transparent 98%);
+      }
+    </style>
+  </head>
+  <body>
+    <div id="card">
+      <canvas id="scene"></canvas>
+      <h1 id="title">DANIEL CHENG'S WORLD WIDE WEB SITE</h1>
+      <div id="glow"><img id="face" src="/me/head-grind.webp" alt="" /></div>
+    </div>
+    <script type="module" src="./og.ts"></script>
+  </body>
+</html>

@@ -1,5 +1,6 @@
 import { useEffect, useRef, type PointerEvent as ReactPointerEvent } from 'react'
 import type { ObjSpec } from '../../three/pageScenes'
+import { loadThree } from '../../lib/loadThree'
 
 /** A live 3D view of one object that you can drag to turn (it slowly turns by itself otherwise). */
 export function Viewer3D({ spec, size, res = 150, className = '', onClick }: { spec: ObjSpec; size: string; res?: number; className?: string; onClick?: () => void }) {
@@ -9,7 +10,7 @@ export function Viewer3D({ spec, size, res = 150, className = '', onClick }: { s
   useEffect(() => {
     let cleanup: (() => void) | null = null
     let cancelled = false
-    void import('../../three/mount').then((three) => {
+    void loadThree().then((three) => {
       if (cancelled || !view.current) return
       cleanup = three.mountViewer(view.current, spec, () => turn.current)
     })

@@ -56,6 +56,8 @@ export type FsNode = {
    * answer opens it, so the folder's files and its password are nowhere in the bundle.
    */
   lock?: { seal: string; hint: string }
+  /** The end of the hunt (only ever inside a sealed folder): running it plays the ending. Carries the phrase to send. */
+  ending?: { phrase: string }
   /** Turns up on this visit (browser session) and every one after. */
   fromVisit?: number
   /** Only there 10pm–5am. */

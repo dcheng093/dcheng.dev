@@ -8,6 +8,7 @@ import { Win95Window } from '../components/Win95Window'
 import { cursors, icons, popnukeGifs } from '../content/assets'
 import { EULA, FIGURES, INSTALL_LOG, POPNUKE_3D, PRODUCT, REVIEWS, SEALS, SPECS } from '../content/popnuke'
 import { gifCursor } from '../lib/cursor'
+import { loadThree } from '../lib/loadThree'
 
 const canWebGL = () => typeof window !== 'undefined' && 'WebGL2RenderingContext' in window
 
@@ -99,7 +100,7 @@ function Hero() {
     if (!canWebGL()) return
     let cleanup: (() => void) | null = null
     let cancelled = false
-    void import('../three/mount').then((three) => {
+    void loadThree().then((three) => {
       if (!cancelled && canvas.current) cleanup = three.mountPopnukeHero(canvas.current, () => progress.current)
     })
     return () => {

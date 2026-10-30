@@ -1,0 +1,20 @@
+# Cloudflare static-asset headers (https://developers.cloudflare.com/workers/static-assets/headers/).
+# Built files have a content hash in their name, so a new deploy gets new names: keep them for a year.
+/assets/*
+  Cache-Control: public, max-age=31536000, immutable
+
+# Pictures, GIFs and sounds change rarely and keep their names: a week, then the browser checks again.
+/me/*
+  Cache-Control: public, max-age=604800
+/gifs/*
+  Cache-Control: public, max-age=604800
+/possessed/*
+  Cache-Control: public, max-age=604800
+/ads/*
+  Cache-Control: public, max-age=604800
+/sfx/*
+  Cache-Control: public, max-age=604800
+
+# The link preview (npm run og): a day, so a regenerated card turns up quickly (chat apps cache it on their side too).
+/og.jpg
+  Cache-Control: public, max-age=86400

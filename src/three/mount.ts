@@ -2,7 +2,9 @@ import * as THREE from 'three'
 import { mulberry32 } from '../lib/random'
 import type { Pose } from './interact'
 import { TEXTURES, type ObjSpec, type TextureId, type WorldId } from './pageScenes'
-import { buildShape } from './shapes'
+import { buildShape, fleshSkin } from './shapes'
+import { possessedNow } from '../lib/possession'
+import { hash } from '../lib/uncorrupted'
 import { disposeScene, fitWorld, register, texture } from './stage'
 import { mountCustomWorld } from './worlds'
 
@@ -39,6 +41,7 @@ function objectScene(spec: ObjSpec) {
   const camera = new THREE.PerspectiveCamera(35, 1, 0.1, 20)
   camera.position.z = 3.6
   const obj = buildShape(spec.shape, spec.tex, { text: spec.text, photo: spec.photo })
+  if (possessedNow()) fleshSkin(obj, hash(spec.id))
   const pivot = new THREE.Group().add(obj)
   scene.add(pivot)
   if (spec.rarity === 'legendary') scene.add(halo())
@@ -127,7 +130,7 @@ const PROPS: ((rng: () => number) => THREE.BufferGeometry)[] = [
  * texture, around a giant centrepiece, with the camera slowly orbiting. Rendered at a quarter resolution.
  */
 export function mountWorld(canvas: HTMLCanvasElement, id: WorldId) {
-  if (id === 'meadow' || id === 'painted' || id === 'space' || id === 'cult') return mountCustomWorld(canvas, id)
+  if (id === 'meadow' || id === 'painted' || id === 'space' || id === 'cult' || id === 'flesh') return mountCustomWorld(canvas, id)
   const w = WORLDS[id]
   const rng = mulberry32(id.length * 9973)
   const scene = new THREE.Scene()

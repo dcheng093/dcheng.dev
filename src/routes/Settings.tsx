@@ -11,6 +11,7 @@ import { usePopups } from '../components/popups/popupState'
 import { CHAOS_LEVELS, CURSORS, THEMES, danielPick, danielSwap, type Settings as SettingsT } from '../lib/settings'
 import { usePossessed } from '../lib/possession'
 import { Baptism } from '../components/possessed/Baptism'
+import { UncorruptedCtx } from '../lib/uncorrupted'
 
 const APPLETS = [
   { id: 'display', label: 'Display', icon: icons.kidComputer },
@@ -32,49 +33,52 @@ export function Settings() {
   const [baptizing, setBaptizing] = useState(false)
   const possessed = usePossessed()
   const applets = possessed ? [...APPLETS, BAPTIZE] : APPLETS
+  // Always readable, possessed or not: this is where you get baptized.
   return (
-    <div data-testid="settings" className="min-h-screen bg-[#008080] p-3 sm:p-6">
-      <Win95Window title="Daniel Control Panel" icon={icons.kidComputer} className="mx-auto max-w-2xl" bodyClassName="bg-white">
-        <div className="flex gap-3 border-b border-win-dark bg-win px-2 py-0.5" aria-hidden>
-          {['File', 'Edit', 'View', 'Help'].map((m) => (
-            <span key={m}>
-              <u>{m[0]}</u>
-              {m.slice(1)}
-            </span>
-          ))}
-        </div>
-        <ul className="grid grid-cols-3 gap-2 p-4 sm:grid-cols-5">
-          {applets.map((a) => (
-            <li key={a.id}>
-              <button
-                type="button"
-                onClick={() => setOpen(a.id)}
-                aria-label={`${a.label} Properties`}
-                className="flex w-full flex-col items-center gap-1 p-2 hover:bg-[#000080]/10 focus-visible:bg-win-title focus-visible:text-white"
-              >
-                <Img slot={a.icon} width={40} />
-                <span>{a.label}</span>
-              </button>
-            </li>
-          ))}
-        </ul>
-        <p className="border-t border-win-dark bg-win px-2 py-0.5 text-[11px]">
-          {applets.length} object(s) · Settings are saved on this computer, for this whole site.
-        </p>
-      </Win95Window>
-      {open === 'baptize' ? (
-        <BaptizeApplet
-          onClose={() => setOpen(null)}
-          onBaptize={() => {
-            setOpen(null)
-            setBaptizing(true)
-          }}
-        />
-      ) : (
-        open && <Applet key={open} id={open} onClose={() => setOpen(null)} />
-      )}
-      {baptizing && <Baptism onDone={() => setBaptizing(false)} />}
-    </div>
+    <UncorruptedCtx.Provider value>
+      <div data-testid="settings" data-uncorrupted="" className="min-h-screen bg-[#008080] p-3 sm:p-6">
+        <Win95Window title="Daniel Control Panel" icon={icons.kidComputer} className="mx-auto max-w-2xl" bodyClassName="bg-white">
+          <div className="flex gap-3 border-b border-win-dark bg-win px-2 py-0.5" aria-hidden>
+            {['File', 'Edit', 'View', 'Help'].map((m) => (
+              <span key={m}>
+                <u>{m[0]}</u>
+                {m.slice(1)}
+              </span>
+            ))}
+          </div>
+          <ul className="grid grid-cols-3 gap-2 p-4 sm:grid-cols-5">
+            {applets.map((a) => (
+              <li key={a.id}>
+                <button
+                  type="button"
+                  onClick={() => setOpen(a.id)}
+                  aria-label={`${a.label} Properties`}
+                  className="flex w-full flex-col items-center gap-1 p-2 hover:bg-[#000080]/10 focus-visible:bg-win-title focus-visible:text-white"
+                >
+                  <Img slot={a.icon} width={40} />
+                  <span>{a.label}</span>
+                </button>
+              </li>
+            ))}
+          </ul>
+          <p className="border-t border-win-dark bg-win px-2 py-0.5 text-[11px]">
+            {applets.length} object(s) · Settings are saved on this computer, for this whole site.
+          </p>
+        </Win95Window>
+        {open === 'baptize' ? (
+          <BaptizeApplet
+            onClose={() => setOpen(null)}
+            onBaptize={() => {
+              setOpen(null)
+              setBaptizing(true)
+            }}
+          />
+        ) : (
+          open && <Applet key={open} id={open} onClose={() => setOpen(null)} />
+        )}
+        {baptizing && <Baptism onDone={() => setBaptizing(false)} />}
+      </div>
+    </UncorruptedCtx.Provider>
   )
 }
 

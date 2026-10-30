@@ -15,11 +15,11 @@ export class MusicPlayer {
     this.chiptune = new Chiptune(ctx, dest)
   }
 
-  /** `warped`: the possessed site plays everything slower and lower. */
+  /** `warped`: the possessed site plays Daniel's own recordings slower and lower (its synth songs are its own). */
   start(id: MixId, warped = false) {
     this.stop()
     const track = findTrack(id)
-    if (track.kind === 'synth') return this.chiptune.start(track.song, warped)
+    if (track.kind === 'synth') return this.chiptune.start(track.song)
     const el = this.audio()
     // Same file as last time (e.g. back from /boring): resume where it paused instead of restarting.
     if (this.loaded !== track.id) el.src = track.url

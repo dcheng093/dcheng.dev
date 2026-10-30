@@ -13,6 +13,7 @@
     "e2e": "playwright test",
     "e2e:setup": "sh scripts/e2e-setup.sh",
     "seal": "node scripts/seal.mjs",
+    "og": "node scripts/og/og.mjs",
     "gallery": "node scripts/asset-gallery/fetch.mjs && node scripts/asset-gallery/build.mjs && node scripts/asset-gallery/shoot.mjs",
     "gifs:adopt": "node scripts/asset-gallery/adopt.mjs",
     "gifs:shrink": "node scripts/photos/shrink-gifs.mjs",

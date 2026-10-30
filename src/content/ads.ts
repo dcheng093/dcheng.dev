@@ -1,10 +1,10 @@
 import { assets, popnukeGifs, type AssetKey, type Slot } from './assets'
 
-export type AdKind = 'daniel' | 'surreal' | 'scam' | 'classified'
+export type AdKind = 'daniel' | 'surreal' | 'scam' | 'classified' | 'sponsor'
 export type AdFormat = 'leaderboard' | 'banner' | 'button' | 'button125' | 'square' | 'skyscraper' | 'classified' | 'popup'
 
-/** Where an ad goes when clicked: a route, a popup id, or anywhere at all. */
-export type AdTarget = `/${string}` | `popup:${string}` | 'random'
+/** Where an ad goes when clicked: a route, a popup id, anywhere at all, or (sponsors only) another website. */
+export type AdTarget = `/${string}` | `popup:${string}` | 'random' | `https://${string}`
 
 export type Ad = {
   id: string
@@ -17,11 +17,36 @@ export type Ad = {
   to: AdTarget
   /** A named asset, 'head'/'body' shorthands, or any slot (e.g. one of the casual photos). */
   img?: AssetKey | 'head' | 'body' | Slot
+  /** Different art for particular formats (a sponsor's box art for tall slots, say). */
+  art?: Partial<Record<AdFormat, Slot>>
   palette: string
 }
 
-// No real brands. Every claim is false. Prices are in a currency we made up called "£".
+/** Gulag Games (gulaggames.com): Daniel's brother's studio. The one real advertiser on the site. */
+export const SPONSOR_ID = 'gulag-games'
+const GULAG = {
+  box: { src: '/ads/gulag-box.webp', w: 480, h: 638, label: 'Ganesh: Domestic Disturbance box art' },
+  wide: { src: '/ads/gulag-wide.webp', w: 728, h: 410, label: 'Ganesh and his horse' },
+  wings: { src: '/ads/gulag-wings.webp', w: 640, h: 360, label: 'Ganesh, wings of fire' },
+} satisfies Record<string, Slot>
+
+// No real brands (except the sponsor, Daniel's brother's studio, which is real and links out). Every other claim is
+// false. Prices are in a currency we made up called "£".
 export const ads: Ad[] = [
+  // --- The sponsor: real, and it really goes there (in a new tab) ---
+  {
+    id: SPONSOR_ID,
+    kind: 'sponsor',
+    formats: ['leaderboard', 'banner', 'skyscraper', 'square', 'popup'],
+    headline: 'GULAG GAMES: CIVILIAN LEISURE DIVISION',
+    body: 'NOW APPROVED: Ganesh: Domestic Disturbance. Leading provider of approved civilian leisure. Mother Approved.',
+    cta: 'REPORT FOR LEISURE',
+    to: 'https://gulaggames.com/',
+    img: GULAG.wide,
+    art: { skyscraper: GULAG.box, square: GULAG.box, popup: GULAG.wings },
+    palette: 'bg-[#0b0b0b] text-[#f5f5f0]',
+  },
+
   // --- Daniel as a product ---
   // POPNUKE, the pop-up blocker. Never a pop-up itself (its pop-up ad is the special 'popnuke-ad').
   { id: 'popnuke', kind: 'daniel', formats: ['leaderboard', 'banner', 'skyscraper', 'square'], headline: 'POPNUKE: KILL ALL POP-UPS FOREVER', body: 'Neutralises 99.9% of pop-ups. No Virus 2004. Free* (*your soul).', price: 'FREE*', cta: 'DOWNLOAD', to: '/popnuke', img: popnukeGifs.trefoilRust, palette: 'bg-black text-yellow-300' },

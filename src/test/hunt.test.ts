@@ -4,7 +4,7 @@ import { join, resolve } from 'node:path'
 import { DEX } from '../lib/discovery'
 import { openLock, openPage, SEALED } from '../lib/hunt'
 import { walk, type FsContext } from '../lib/desktop'
-import { FILESYSTEM } from '../content/desktop'
+import { FILESYSTEM, type FsNode } from '../content/desktop'
 import { sceneFor } from '../content/objects'
 
 // The real hunt, checked end to end against the plaintext in secrets/ (gitignored). Wherever that folder isn't
@@ -67,12 +67,13 @@ describe.skipIf(!here)('the hunt (from secrets/)', () => {
     expect(Object.keys(h.LOCKS).sort()).toEqual(Object.keys(SEALED.locks).sort())
   })
 
-  it("3. the book cipher's references are the live desktop files' words, and spell RECYCLED's answer", async () => {
+  it("3. the book cipher's references are the live desktop files' words (counted between spaces), and spell RECYCLED's answer", async () => {
     const h = await load()
     const words = h.BOOK.map(([path, n]) => {
       const file = walk(FILESYSTEM, path.split('\\'), everything)
       expect(file?.text, path).toBeDefined()
-      return file!.text!.match(/[A-Za-z]+/g)![n - 1].toLowerCase()
+      // A word is whatever sits between spaces (numbers and symbols count); compare its letters.
+      return file!.text!.split(/\s+/).filter(Boolean)[n - 1].toLowerCase().replace(/[^a-z]/g, '')
     })
     expect(words.join(' ')).toBe(h.RECYCLED_ANSWER)
     expect(walk(FILESYSTEM, ['E:', 'RECYCLED'], everything)?.hidden).toBe(true)
@@ -96,6 +97,9 @@ describe.skipIf(!here)('the hunt (from secrets/)', () => {
     const bottom = JSON.stringify(await openLock('daniel', h.DANIEL_ANSWER))
     expect(bottom).toContain(h.FINAL_PHRASE)
     expect(bottom).toContain('README.txt')
+    // DESCEND.EXE carries the phrase to the ending (and the mail they can send).
+    const descendExe = (JSON.parse(bottom) as FsNode[]).find((f) => f.name === 'DESCEND.EXE')
+    expect(descendExe?.ending?.phrase).toBe(h.FINAL_PHRASE)
   })
 
   it('side branches: the binary on /scan, the Atbash hint, the bytes after the replay, the spectrogram file', async () => {

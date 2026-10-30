@@ -4,7 +4,7 @@ import { useSettings } from '../components/settings/settingsState'
 import { AudioCtx } from './audioContext'
 import { MusicPlayer } from './music'
 import { usePossessed } from '../lib/possession'
-import { drone, playSfx, type SfxName } from './synth'
+import { drone, playSfx, type SfxName, type SfxOptions } from './synth'
 import type { MixId } from './tracks'
 
 /**
@@ -76,9 +76,9 @@ export function AudioProvider({ children, silent = false }: { children: ReactNod
   }, [])
 
   const sfx = useCallback(
-    (name: SfxName) => {
+    (name: SfxName, opts?: SfxOptions) => {
       const g = graph.current
-      if (g && !muted && !silent) playSfx(g.ctx, g.sfxBus, name)
+      if (g && !muted && !silent) playSfx(g.ctx, g.sfxBus, name, opts)
     },
     [muted, silent],
   )

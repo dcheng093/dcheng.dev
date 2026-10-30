@@ -692,3 +692,25 @@ function popupPane(variant: number) {
   })
   return mesh(box(1.5, 1.1, 0.04), [C(0xc0c0c0), C(0xc0c0c0), C(0xc0c0c0), C(0xc0c0c0), face, face])
 }
+
+const SKINS = ['fleshSkin', 'veinSkin', 'cellSkin', 'holeSkin', 'rotSkin', 'nerveSkin'] as const
+
+/**
+ * The possessed site's objects: the same shape, a different skin. Every surface takes one of the flesh textures
+ * (picked by `seed`, so an object always wears the same one), except Daniel's face, which already rots on its own.
+ */
+export function fleshSkin(obj: THREE.Object3D, seed: number) {
+  const map = texture(TEX[SKINS[seed % SKINS.length]])
+  const swap = (m: THREE.Material) => {
+    const mat = m as THREE.MeshLambertMaterial
+    if (mat.map?.userData.face) return m
+    const skinned = mat.clone()
+    skinned.map = map
+    skinned.color?.set(0xffffff)
+    return skinned
+  }
+  obj.traverse((o) => {
+    if (!(o instanceof THREE.Mesh)) return
+    o.material = Array.isArray(o.material) ? o.material.map(swap) : swap(o.material)
+  })
+}

@@ -11,6 +11,8 @@ import { drive, setPageMood, setPageObstacles } from '../../three/interact'
 import { SIZE_PX, type ObjSpec, type WorldId } from '../../three/pageScenes'
 import { pageObstacles, place } from '../../three/space'
 import { ObjectWindow } from './ObjectWindow'
+import { usePossessed } from '../../lib/possession'
+import { loadThree } from '../../lib/loadThree'
 
 // Real browsers have this; jsdom (unit tests) doesn't, so the 3D code is never even downloaded there.
 const canWebGL = () => typeof window !== 'undefined' && 'WebGL2RenderingContext' in window
@@ -35,6 +37,7 @@ export function Page3D({ crashed = false }: { crashed?: boolean }) {
   const [, setDex] = useStored<Found>(DEX_KEY, {})
   const [phone] = useState(isPhone)
   const { night } = useClock()
+  const possessed = usePossessed()
 
   const objects = useMemo(
     () => [...(scene?.objects ?? []), ...(guest ? [guest] : [])].filter((o) => (!phone || o.role === 'drifter') && (o.when !== 'night' || night)),
@@ -62,8 +65,9 @@ export function Page3D({ crashed = false }: { crashed?: boolean }) {
   const driftSize = (o: ObjSpec) => Math.round(Math.min(SIZE_PX[o.size], window.innerWidth * 0.3))
   return (
     <>
-      <div ref={backdrop} aria-hidden className="pointer-events-none absolute inset-0 -z-30" />
-      {scene?.world && <World3D key={`${key}-world`} id={scene.world} markPage />}
+      <div ref={backdrop} aria-hidden data-backdrop className="pointer-events-none absolute inset-0 -z-30" />
+      {/* Possessed, every page's world is the inside of something (except the shrine's own congregation). */}
+      {scene?.world && <World3D key={`${key}-world-${possessed}`} id={possessed && scene.world !== 'cult' ? 'flesh' : scene.world} markPage />}
       <div ref={pageLayer} aria-hidden data-testid="objects-page" className="pointer-events-none absolute inset-0 -z-10 min-h-screen overflow-hidden" style={layerZ}>
         {layout &&
           objects.map((o, i) => {
@@ -214,7 +218,7 @@ function useMount(mount: (canvas: HTMLCanvasElement, three: typeof import('../..
   useEffect(() => {
     let cleanup: (() => void) | null = null
     let cancelled = false
-    void import('../../three/mount').then((three) => {
+    void loadThree().then((three) => {
       if (cancelled || !canvas.current) return
       cleanup = mount(canvas.current, three)
       onMounted?.(!!cleanup)

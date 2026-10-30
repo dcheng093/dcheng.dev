@@ -8,7 +8,7 @@ import { usePopups } from '../components/popups/popupState'
 import { Jukebox } from '../components/WebringBar'
 import { ButtonWall } from '../components/chaos/ButtonWall'
 import { BigArrow, Blink, BlinkieRow, GifDivider, HitCounter, Marquee, RainbowText, ResettingCountdown, Sticker, UnderConstruction, ViewersNow, WavyText } from '../components/chaos/Chaos'
-import { ads } from '../content/ads'
+import { ads, SPONSOR_ID } from '../content/ads'
 import { assets, blinkies, cursors, dividers, icons, kawaii, type Slot } from '../content/assets'
 import { daniel } from '../content/daniel'
 import { models } from '../content/dealership'
@@ -262,6 +262,8 @@ function AdWall() {
         {squares.map((ad, i) => (
           <AdSlot key={i} ad={ad} format="button125" className={i % 2 ? 'rotate-3' : '-rotate-2'} />
         ))}
+        {/* Pinned: Daniel's brother's studio, Gulag Games (links out to gulaggames.com). */}
+        <AdSlot ad={adById(SPONSOR_ID)} format="banner" className="w-full max-w-[468px]" />
         <AdSlot ad={adById('more-ram')} format="square" />
         <AdSlot format="banner" kind="surreal" className="w-full max-w-[468px]" />
         <BlinkieRow items={[blinkies.niceToNerds, blinkies.gamer, blinkies.caffeine, blinkies.peopleStrange]} className="w-full" />
@@ -418,7 +420,7 @@ function RootsBand() {
         <p className="font-comic font-bold">{roots.hometown}</p>
       </div>
       <div className="w-[260px] rotate-2 bg-white p-2 text-center text-black shadow-[6px_6px_0_#000]">
-        <Img slot={meSlot('roots-2.jpg', 400, 300, 'family photo')} width={240} />
+        <Img slot={meSlot('roots-2.webp', 400, 300, 'family photo')} width={240} />
         <p className="font-comic text-sm">{roots.family}</p>
       </div>
       <div className="flex w-[220px] flex-col items-center gap-2 bg-amber-100 p-3 text-center font-times text-black">

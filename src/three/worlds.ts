@@ -1,5 +1,6 @@
 import * as THREE from 'three'
 import { mulberry32 } from '../lib/random'
+import { hash } from '../lib/uncorrupted'
 import { TEX, type TexName } from './pageScenes'
 import { HEADS } from './heads'
 import { keyedTexture } from './procTextures'
@@ -363,12 +364,93 @@ function cult(scene: THREE.Scene, rng: () => number, drifting: Drift[]) {
   return { radius: 15, height: 1.2, look: 9 }
 }
 
-const BUILDERS = { meadow, painted, space, cult }
+/**
+ * INSIDE, the world every page's 3D turns into once the site is possessed: you are in a chamber of living flesh
+ * (Daniel's PBR flesh set: colour, normal, roughness, ambient occlusion, height), veins running over it, eyes set into
+ * the walls, something at the centre that beats, and a dead sky (a corridor of meat, or a red graveyard) where the
+ * ceiling should be. Everything moves slowly: the breathing is under one beat a second, the eyes close in steps.
+ */
+function flesh(scene: THREE.Scene, rng: () => number, drifting: Drift[]) {
+  scene.userData.untinted = true // already the colour of the inside of something; no extra red over it
+  const skies = [TEX.skyCorridor, TEX.skyGraveyard, TEX.skyChurch]
+  scene.background = texture(skies[Math.floor(rng() * skies.length)])
+  scene.fog = new THREE.FogExp2(0x1a0000, 0.018)
+  scene.add(new THREE.AmbientLight(0xa05050, 1.1))
+  scene.add(new THREE.HemisphereLight(0xffb0a0, 0x2a0000, 1.2))
+  const pulse = new THREE.PointLight(0xff4a3a, 60, 50, 1.4)
+  pulse.position.set(0, 2, 0)
+  scene.add(pulse)
+
+  const skin = (repeat: number, extra: THREE.MeshStandardMaterialParameters = {}) => {
+    const maps = [TEX.fleshSkin, TEX.fleshNormal, TEX.fleshRough, TEX.fleshAo, TEX.fleshHeight].map((url) => texture(url, repeat))
+    // Data maps aren't colours.
+    for (const m of maps.slice(1)) m.colorSpace = THREE.NoColorSpace
+    const [map, normalMap, roughnessMap, aoMap, displacementMap] = maps
+    return new THREE.MeshStandardMaterial({ map, normalMap, roughnessMap, aoMap, displacementMap, displacementScale: 0.9, metalness: 0, ...extra })
+  }
+
+  // The chamber: a sphere you're inside, its walls pushed in and out by the height map. Open at the top to the sky.
+  const walls = new THREE.Mesh(new THREE.SphereGeometry(24, 48, 32, 0, Math.PI * 2, Math.PI * 0.22, Math.PI * 0.78), skin(6, { side: THREE.BackSide }))
+  scene.add(walls)
+  drifting.push((t) => walls.scale.setScalar(1 + Math.sin(t * 0.7) * 0.012))
+
+  // The thing at the centre. It beats (a heartbeat's double thump, slowed right down).
+  const heart = new THREE.Mesh(new THREE.IcosahedronGeometry(2.4, 5), skin(2, { emissive: 0x2a0000 }))
+  heart.position.y = 1.2
+  scene.add(heart)
+  drifting.push((t) => {
+    const p = (t * 0.8) % 1
+    const beat = p < 0.12 ? Math.sin((p / 0.12) * Math.PI) * 0.06 : p > 0.2 && p < 0.3 ? Math.sin(((p - 0.2) / 0.1) * Math.PI) * 0.035 : 0
+    heart.scale.setScalar(1 + beat)
+    pulse.intensity = 55 + beat * 240
+  })
+
+  // Veins: thick dark tubes from the heart out to the walls.
+  const vein = skin(1, { color: 0x7a1010, emissive: 0x180000 })
+  for (let i = 0; i < 9; i++) {
+    const a = (i / 9) * Math.PI * 2 + rng() * 0.4
+    const out = new THREE.Vector3(Math.cos(a) * 21, -2 + rng() * 14, Math.sin(a) * 21)
+    const mid = new THREE.Vector3(Math.cos(a + 0.4) * 9, 4 + rng() * 6, Math.sin(a + 0.4) * 9)
+    const curve = new THREE.CatmullRomCurve3([new THREE.Vector3(0, 1.2, 0), mid, out])
+    scene.add(new THREE.Mesh(new THREE.TubeGeometry(curve, 24, 0.18 + rng() * 0.22, 6), vein))
+  }
+
+  // Eyes in the walls, looking in. Each closes now and then, in three chunky frames, at its own time.
+  const soft = softEdge()
+  const eyes = [TEX.stillEyes, TEX.stillFace, TEX.stillMouth, TEX.stillScream, TEX.stillSkull, TEX.stillLetterEye, TEX.stillBloodEyes]
+  for (let i = 0; i < 12; i++) {
+    const a = (i / 12) * Math.PI * 2 + rng() * 0.3
+    const y = 1 + rng() * 12
+    const s = new THREE.Sprite(new THREE.SpriteMaterial({ map: texture(eyes[i % eyes.length]), alphaMap: soft, transparent: true, opacity: 0.85, depthWrite: false }))
+    const size = 3 + rng() * 3
+    s.position.set(Math.cos(a) * 19, y, Math.sin(a) * 19)
+    scene.add(s)
+    const every = 6 + rng() * 9
+    const shut = [0.5, 0.08, 0.5]
+    drifting.push((t) => {
+      const p = (t + i * 1.7) % every
+      s.scale.set(size, size * (p < 0.45 ? shut[Math.floor((p / 0.45) * shut.length)] : 0.66), 1)
+    })
+  }
+
+  // Motes of something, drifting up.
+  const n = 120
+  const pos = new Float32Array(n * 3)
+  for (let i = 0; i < n; i++) pos.set([(rng() - 0.5) * 30, rng() * 18 - 2, (rng() - 0.5) * 30], i * 3)
+  const motes = new THREE.Points(new THREE.BufferGeometry().setAttribute('position', new THREE.BufferAttribute(pos, 3)), new THREE.PointsMaterial({ color: 0xc04030, size: 0.12, transparent: true, opacity: 0.6, depthWrite: false }))
+  scene.add(motes)
+  drifting.push((t) => (motes.position.y = (t * 0.3) % 4))
+  return { radius: 12, height: 2, look: 6 }
+}
+
+const BUILDERS = { meadow, painted, space, cult, flesh }
 
 export function mountCustomWorld(canvas: HTMLCanvasElement, id: keyof typeof BUILDERS) {
   const scene = new THREE.Scene()
   const drifting: Drift[] = []
-  const cam = BUILDERS[id](scene, mulberry32(id.length * 7919), drifting)
+  // The flesh world turns up on many pages, so it's seeded by the page: each gets its own sky and its own eyes.
+  const seed = id === 'flesh' ? hash(location.pathname) : id.length * 7919
+  const cam = BUILDERS[id](scene, mulberry32(seed), drifting)
   const camera = new THREE.PerspectiveCamera(60, 1, 0.1, 160)
   const resize = () => fitWorld(canvas, camera)
   resize()

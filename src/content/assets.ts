@@ -8,24 +8,24 @@ const gif = (id: string, w: number, h: number, label: string): Slot => ({ src: `
 
 export const assets = {
   // Photos of Daniel (see plan: "Assets I need from you")
-  headGrin: me('head-grind.png', 512, 512, 'head cut-out (grin), transparent'),
-  headShock: me('head-shock.png', 512, 512, 'head cut-out (shocked), transparent'),
-  headWink: me('head-wink.png', 512, 512, 'head cut-out (wink), transparent'),
-  body: me('full-body-cutout.png', 443, 960, 'full body cut-out'),
-  hero: me('hero-landscape.jpg', 960, 720, 'landscape hero photo'),
-  headshot: me('headshot.jpg', 480, 640, 'normal headshot'),
+  headGrin: me('head-grind.webp', 512, 512, 'head cut-out (grin), transparent'),
+  headShock: me('head-shock.webp', 512, 512, 'head cut-out (shocked), transparent'),
+  headWink: me('head-wink.webp', 512, 512, 'head cut-out (wink), transparent'),
+  body: me('full-body-cutout.webp', 443, 960, 'full body cut-out'),
+  hero: me('hero-landscape.webp', 960, 720, 'landscape hero photo'),
+  headshot: me('headshot.webp', 480, 640, 'normal headshot'),
   // File names are case-sensitive once deployed: match public/me/ exactly.
   // New ones go on the end, so photo indices used around the site keep pointing at the same picture.
   misc: (
     [
-      'MISC-01.JPG', 'MISC-02.JPG', 'MISC-03.JPG', 'MISC-04.JPG', 'MISC-05.JPG', 'MISC-06.JPG', 'MISC-07.JPG',
-      'MISC-08.JPG', 'MISC-09.JPG', 'MISC-10.jpg', 'MISC-11.JPG', 'MISC-12.JPG', 'MISC-13.png',
+      'MISC-01.webp', 'MISC-02.webp', 'MISC-03.webp', 'MISC-04.webp', 'MISC-05.webp', 'MISC-06.webp', 'MISC-07.webp',
+      'MISC-08.webp', 'MISC-09.webp', 'MISC-10.jpg', 'MISC-11.webp', 'MISC-12.webp', 'MISC-13.webp',
       // Close-up selfies: mostly square, three portrait.
-      ['MISC-14.JPG', 400, 534], ['MISC-15.JPG', 400, 512], 'MISC-16.JPG', 'MISC-17.JPG', 'MISC-18.JPG', 'MISC-19.JPG',
-      'MISC-20.JPG', 'MISC-21.JPG', 'MISC-22.JPG', ['MISC-23.JPG', 400, 545],
+      ['MISC-14.webp', 400, 534], ['MISC-15.webp', 400, 512], 'MISC-16.webp', 'MISC-17.webp', 'MISC-18.webp', 'MISC-19.webp',
+      'MISC-20.webp', 'MISC-21.webp', 'MISC-22.webp', ['MISC-23.webp', 400, 545],
     ] as (string | [string, number, number])[]
   ).map((f, i) => (typeof f === 'string' ? me(f, 400, 400, `casual photo #${i + 1}`) : me(f[0], f[1], f[2], `casual photo #${i + 1}`))),
-  hobbies: ['HOBBY-1.jpg', 'HOBBY-2.jpg', 'HOBBY-3.jpg'].map((file, i) => me(file, 400, 300, `hobby photo #${i + 1}`)),
+  hobbies: ['HOBBY-1.jpg', 'HOBBY-2.webp', 'HOBBY-3.jpg'].map((file, i) => me(file, 400, 300, `hobby photo #${i + 1}`)),
 
   // Third-party GIFs (asset-research picks; credits in public/gifs/CREDITS.md)
   globe: gif('gc-globe-invest', 64, 64, 'spinning globe'),
@@ -211,3 +211,56 @@ export const buttons88 = {
   bestViewed: gif('btn-best-viewed', 88, 31, 'This page is best viewed with: button'),
   email: gif('btn-email', 84, 40, 'E-MAIL button'),
 } as const
+
+/**
+ * The possessed site's GIFs (GifCities, credited in public/gifs/CREDITS.md, all flicker-checked): eyes and faces,
+ * blood and rot, occult and 666, static and glitch. Only ever loaded once the site is possessed: they stand in for
+ * the normal decorations (components/media/Img.tsx), matched by shape.
+ */
+export const possessedGifs: Slot[] = [
+  gif('px-eyes-eyeball-0', 91, 91, 'possessed: eyes'),
+  gif('px-eyes-eyeball-1', 45, 35, 'possessed: eyes'),
+  gif('px-eyes-eyeball-2', 80, 60, 'possessed: eyes'),
+  gif('px-eyes-eyeball-4', 40, 40, 'possessed: eyes'),
+  gif('px-eyes-eyeball-6', 72, 37, 'possessed: eyes'),
+  gif('px-eyes-evil-eye-18', 120, 90, 'possessed: eyes'),
+  gif('px-eyes-evil-eye-22', 40, 40, 'possessed: eyes'),
+  gif('px-eyes-teeth-mouth-48', 34, 29, 'possessed: eyes'),
+  gif('px-eyes-teeth-mouth-51', 98, 91, 'possessed: eyes'),
+  gif('px-blood-maggot-69', 114, 154, 'possessed: blood'),
+  gif('px-eyes-creepy-smile-39', 112, 112, 'possessed: eyes'),
+  gif('px-eyes-teeth-mouth-54', 100, 80, 'possessed: eyes'),
+  gif('px-eyes-scary-face-31', 128, 164, 'possessed: eyes'),
+  gif('px-blood-blood-drip-56', 353, 120, 'possessed: blood'),
+  gif('px-blood-blood-drip-57', 480, 20, 'possessed: blood'),
+  gif('px-blood-maggot-67', 160, 100, 'possessed: blood'),
+  gif('px-blood-spider-crawl-81', 78, 44, 'possessed: blood'),
+  gif('px-blood-spider-crawl-88', 25, 25, 'possessed: blood'),
+  gif('px-occult-pentagram-115', 45, 47, 'possessed: occult'),
+  gif('px-occult-pentagram-104', 35, 35, 'possessed: occult'),
+  gif('px-occult-pentagram-105', 60, 60, 'possessed: occult'),
+  gif('px-occult-pentagram-108', 41, 41, 'possessed: occult'),
+  gif('px-occult-pentagram-113', 48, 48, 'possessed: occult'),
+  gif('px-occult-pentagram-114', 100, 100, 'possessed: occult'),
+  gif('px-occult-demon-131', 200, 216, 'possessed: occult'),
+  gif('px-occult-demon-130', 120, 242, 'possessed: occult'),
+  gif('px-occult-demon-136', 160, 160, 'possessed: occult'),
+  gif('px-occult-skull-152', 100, 100, 'possessed: occult'),
+  gif('px-occult-skull-155', 99, 63, 'possessed: occult'),
+  gif('px-occult-skull-158', 90, 130, 'possessed: occult'),
+  gif('px-occult-skull-162', 42, 42, 'possessed: occult'),
+  gif('px-occult-candle-165', 48, 64, 'possessed: occult'),
+  gif('px-occult-candle-169', 39, 134, 'possessed: occult'),
+  gif('px-occult-candle-171', 108, 61, 'possessed: occult'),
+  gif('px-occult-hell-fire-180', 50, 130, 'possessed: occult'),
+  gif('px-occult-hell-fire-183', 256, 256, 'possessed: occult'),
+  gif('px-static-glitch-249', 67, 80, 'possessed: static'),
+  gif('px-static-tv-static-209', 195, 169, 'possessed: static'),
+  gif('px-static-tv-static-210', 131, 106, 'possessed: static'),
+  gif('px-static-static-noise-220', 94, 80, 'possessed: static'),
+  gif('px-static-static-noise-222', 167, 152, 'possessed: static'),
+  gif('px-static-static-noise-221', 44, 33, 'possessed: static'),
+  gif('px-static-error-234', 35, 35, 'possessed: static'),
+  gif('px-occult-666-122', 40, 40, 'possessed: occult'),
+  gif('px-occult-satan-176', 462, 206, 'possessed: occult'),
+]

@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useReducer, useRef, useState, type Dispatch, type FormEvent, type MouseEvent as ReactMouseEvent, type PointerEvent as ReactPointerEvent, type ReactNode, type RefObject } from 'react'
+import { lazy, Suspense, useCallback, useEffect, useMemo, useReducer, useRef, useState, type Dispatch, type FormEvent, type MouseEvent as ReactMouseEvent, type PointerEvent as ReactPointerEvent, type ReactNode, type RefObject } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useSfx } from '../audio/audioContext'
 import { Img } from '../components/media/Img'
@@ -9,20 +9,29 @@ import { diaryStart, FILESYSTEM, recycled, restoredFeelings, restoreErrors, type
 import { useStored } from '../hooks/useLocalStorage'
 import { useClock } from '../hooks/useClock'
 import { gifCursor } from '../lib/cursor'
-import { desktopReducer, graft, joinPath, listDir, locksIn, walk, type DesktopAction, type DeskWindow, type FsContext, type ProgramId } from '../lib/desktop'
+import { desktopReducer, graft, isViewer, joinPath, listDir, locksIn, walk, type AppId, type DesktopAction, type DeskWindow, type FsContext, type ProgramId, type ViewerId } from '../lib/desktop'
 import { openLock } from '../lib/hunt'
 import { summonScare, useHeardAt, usePossessed } from '../lib/possession'
 import { pick } from '../lib/random'
+import { UncorruptedCtx } from '../lib/uncorrupted'
+import { descend, descendedOf, heardAt } from '../lib/possession'
+import { dexProgress, readDex, VISITS_KEY } from '../lib/discovery'
+import { readStored } from '../hooks/useLocalStorage'
+import { daniel } from '../content/daniel'
+import { downloadCertificate } from '../components/ending/certificate'
 
-const PROGRAMS: Record<ProgramId, { title: string; icon: Slot; width: number }> = {
+// The ending only loads for those who reach it.
+const Ascension = lazy(() => import('../components/ending/Ascension').then((m) => ({ default: m.Ascension })))
+
+type Program = { title: string; icon: Slot; width: number }
+const PROGRAMS: Record<AppId, Program> = {
   computer: { title: 'My Computer', icon: icons.kidComputer, width: 380 },
   bin: { title: 'Recycle Bin', icon: icons.crying, width: 320 },
   notepad: { title: 'diary.txt - Notepad', icon: kawaii.bunDiary, width: 320 },
   paint: { title: 'untitled - Paint', icon: cursors.pencil, width: 320 },
   'daniel-exe': { title: 'Daniel.exe', icon: assets.headWink, width: 280 },
-  viewer: { title: 'Notepad', icon: kawaii.bunDiary, width: 340 },
 }
-const ORDER: ProgramId[] = ['computer', 'bin', 'notepad', 'paint', 'daniel-exe']
+const ORDER: AppId[] = ['computer', 'bin', 'notepad', 'paint', 'daniel-exe']
 
 /** off → POST → (ScanDisk, if the plug was pulled) → splash → on → shutting down → safe to turn off. */
 type Phase = 'off' | 'post' | 'scandisk' | 'splash' | 'on' | 'shutting' | 'safe'
@@ -44,7 +53,8 @@ export function Desktop() {
   const [dirty, setDirty] = useStored('desktopDirty', false, 'session')
   const [phase, setPhase] = useState<Phase>(poweredOn ? 'on' : 'off')
   const [selected, setSelected] = useState<ProgramId | null>(null)
-  const [viewing, setViewing] = useState<FsNode | null>(null)
+  // Every file opened gets its own window (so a transmission can stay open while you dig through the rest).
+  const [viewers, setViewers] = useState<Record<ViewerId, FsNode>>({})
   const [feelings, setFeelings] = useStored('feelingsRestored', false)
   const [showHidden, setShowHidden] = useStored('showHidden', false)
   // The answers this visitor got right, by folder path: on a later visit they re-open the same seals.
@@ -79,16 +89,39 @@ export function Desktop() {
     setStartOpen(false)
     sfx('ding')
   }
-  const openFile = (f: FsNode) => {
+  // The end of the hunt: DESCEND.EXE (sealed inside C:\DANIEL) plays the ending, by itself the first time.
+  const [ending, setEnding] = useState<{ phrase: string; replay: boolean } | null>(null)
+  const [keepsake, setKeepsake] = useState<string | null>(null)
+  const finish = (name: string) => {
+    const phrase = ending!.phrase
+    if (!ending!.replay) descend(name)
+    setEnding(null)
+    setKeepsake(phrase)
+    // Then the words they came for, in plain Notepad: the README beside DESCEND.EXE.
+    const [dir, files] = Object.entries(opened).find(([, fs]) => fs.some((f) => f.ending)) ?? []
+    const readme = files?.find((f) => f.name === 'README.txt')
+    if (dir && readme) openFile(readme, `${dir}\\README.txt`)
+  }
+
+  const openFile = (f: FsNode, path: string) => {
+    if (f.ending) return setEnding({ phrase: f.ending.phrase, replay: !!descendedOf() })
     // Look at him. (Once ever, and only once the site has turned.)
     if (possessed && f.name === 'me.jpg') window.setTimeout(summonScare, 1800)
-    setViewing(f)
-    const n = state.windows.length
-    dispatch({ type: 'open', id: 'viewer', x: 120 + n * 22, y: 40 + n * 22 })
+    const id: ViewerId = `viewer:${path}`
+    setViewers((v) => ({ ...v, [id]: f }))
+    // Beside My Computer when there's room (so the next file can still be double-clicked), cascading from there;
+    // on a narrow screen they cascade over it. Already open: it just comes to the front.
+    const n = state.windows.filter((w) => isViewer(w.id)).length
+    const explorer = state.windows.find((w) => w.id === 'computer')
+    const width = area.current?.clientWidth ?? 0
+    const beside = explorer ? explorer.x + PROGRAMS.computer.width + 12 : 0
+    const room = explorer && beside + 340 <= width
+    dispatch({ type: 'open', id, x: (room ? beside : 110) + (n % 6) * 22, y: (room ? explorer.y : 30) + (n % 6) * 22 })
     sfx(f.kind === 'exe' ? 'chord' : 'ding')
   }
   const front = [...state.windows].reverse().find((w) => !w.minimised)?.id
-  const titleFor = (id: ProgramId) => (id === 'viewer' ? viewerTitle(viewing) : PROGRAMS[id].title)
+  const program = (id: ProgramId): Program => (isViewer(id) ? { title: viewerTitle(viewers[id] ?? null), icon: kawaii.bunDiary, width: 340 } : PROGRAMS[id])
+  const titleFor = (id: ProgramId) => program(id).title
 
   const boot = () => {
     setPhase('post')
@@ -132,119 +165,167 @@ export function Desktop() {
   }, [phase])
 
   const busy = phase === 'post' || phase === 'scandisk' || phase === 'splash' || phase === 'shutting'
+  // Readable even while possessed: the hunt's clues live in these files.
   return (
-    <div data-testid="desktop" data-power={phase} className="p-2 sm:p-4" style={{ cursor: busy ? 'wait' : gifCursor(cursors.mouse) }}>
-      <div className="mx-auto max-w-5xl rounded-sm border-2 border-[#8a826c] bg-[#d6cfb6] p-2 shadow-[8px_8px_0_#000] sm:p-3">
-        <div
-          ref={area}
-          className={`relative h-[max(520px,calc(100vh-210px))] overflow-hidden border-4 border-[#404040] ${phase === 'on' ? 'tile-desktop' : 'bg-black'}`}
-          onClick={(e) => e.target === e.currentTarget && setSelected(null)}
-        >
-          {phase === 'on' ? (
-            <div key="on" className="absolute inset-0 animate-crt-on" onClick={(e) => e.target === e.currentTarget && setSelected(null)}>
-              <ul className="absolute left-2 top-2 grid gap-3" aria-label="Desktop icons">
-                {ORDER.map((id) => (
-                  <li key={id}>
-                    <button type="button" {...opener(() => setSelected(id), () => open(id))} className="group flex w-20 flex-col items-center gap-1 text-center font-[Tahoma,sans-serif] text-[11px] text-white">
-                      <Img slot={PROGRAMS[id].icon} width={36} className={`group-hover:animate-boing ${selected === id ? 'brightness-50 sepia hue-rotate-180 saturate-[4]' : ''}`} />
-                      <span className={`px-0.5 ${selected === id ? 'bg-win-title outline-dotted outline-1 outline-white' : ''}`}>{PROGRAMS[id].title.replace(' - Notepad', '').replace(' - Paint', '')}</span>
-                    </button>
-                  </li>
-                ))}
-              </ul>
-
-              {/* Stable DOM order, stacked by z-index: moving a window's node to the front mid-click would swallow the click. */}
-              {[...state.windows].sort((a, b) => a.id.localeCompare(b.id)).map((w) => ({ w, z: state.windows.indexOf(w) })).map(({ w, z }) => (
-                <ProgramWindow key={w.id} win={w} title={titleFor(w.id)} z={10 + z} active={w.id === front} area={area} dispatch={dispatch}>
-                  {w.id === 'computer' && <Explorer
-                      root={root}
-                      ctx={ctx}
-                      setShowHidden={setShowHidden}
-                      isOpen={(p) => !!opened[p]}
-                      unlock={(p, answer, files) => {
-                        setOpened((o) => ({ ...o, [p]: files }))
-                        setKeys((k) => ({ ...k, [p]: answer }))
-                      }}
-                      openFile={openFile}
-                    />}
-                  {w.id === 'bin' && <RecycleBin night={night} feelings={feelings} restoreFeelings={() => setFeelings(true)} />}
-                  {w.id === 'notepad' && <Notepad />}
-                  {w.id === 'paint' && <Paint />}
-                  {w.id === 'daniel-exe' && <DanielExe close={() => dispatch({ type: 'close', id: w.id })} />}
-                  {w.id === 'viewer' && <Viewer file={viewing} />}
-                </ProgramWindow>
-              ))}
-
-              {startOpen && (
-                <nav aria-label="Start menu" className="win-raised absolute bottom-9 left-0 z-50 flex animate-pop-in font-[Tahoma,sans-serif] text-xs text-black">
-                  <div className="flex w-6 items-end bg-gradient-to-t from-win-title to-[#1084d0] pb-1">
-                    <span className="-rotate-90 whitespace-nowrap font-bold text-white [transform-origin:12px_0]">Daniel 95</span>
-                  </div>
-                  <ul className="w-48 py-1">
-                    {ORDER.map((id) => (
-                      <li key={id}>
-                        <button type="button" onClick={() => open(id)} className="flex w-full items-center gap-2 px-2 py-1 text-left hover:bg-win-title hover:text-white">
-                          <Img slot={PROGRAMS[id].icon} width={18} /> {PROGRAMS[id].title}
-                        </button>
-                      </li>
-                    ))}
-                    <li className="my-1 border-t border-win-dark" />
-                    {(
-                      [
-                        ['/dex', 'Object Dex.lnk'],
-                        ['/arcade', 'Arcade.lnk'],
-                        ['/radio', 'DANIEL FM.lnk'],
-                        ['/blinkie-maker', 'Blinkie Maker.lnk'],
-                      ] as const
-                    ).map(([to, label]) => (
-                      <li key={to}>
-                        <button type="button" onClick={() => navigate(to)} className="w-full px-2 py-1 text-left hover:bg-win-title hover:text-white">↗ {label}</button>
-                      </li>
-                    ))}
-                    <li className="my-1 border-t border-win-dark" />
-                    <li>
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setStartOpen(false)
-                          setShutdownOpen(true)
-                        }}
-                        className="w-full px-2 py-1 text-left hover:bg-win-title hover:text-white"
-                      >
-                        ⏻ Shut Down…
+    <UncorruptedCtx.Provider value>
+      <div data-testid="desktop" data-power={phase} data-uncorrupted="" className="p-2 sm:p-4" style={{ cursor: busy ? 'wait' : gifCursor(cursors.mouse) }}>
+        <div className="mx-auto max-w-5xl rounded-sm border-2 border-[#8a826c] bg-[#d6cfb6] p-2 shadow-[8px_8px_0_#000] sm:p-3">
+          <div
+            ref={area}
+            className={`relative h-[max(520px,calc(100vh-210px))] overflow-hidden border-4 border-[#404040] ${phase === 'on' ? 'tile-desktop' : 'bg-black'}`}
+            onClick={(e) => e.target === e.currentTarget && setSelected(null)}
+          >
+            {phase === 'on' ? (
+              <div key="on" className="absolute inset-0 animate-crt-on" onClick={(e) => e.target === e.currentTarget && setSelected(null)}>
+                <ul className="absolute left-2 top-2 grid gap-3" aria-label="Desktop icons">
+                  {ORDER.map((id) => (
+                    <li key={id}>
+                      <button type="button" {...opener(() => setSelected(id), () => open(id))} className="group flex w-20 flex-col items-center gap-1 text-center font-[Tahoma,sans-serif] text-[11px] text-white">
+                        <Img slot={PROGRAMS[id].icon} width={36} className={`group-hover:animate-boing ${selected === id ? 'brightness-50 sepia hue-rotate-180 saturate-[4]' : ''}`} />
+                        <span className={`px-0.5 ${selected === id ? 'bg-win-title outline-dotted outline-1 outline-white' : ''}`}>{PROGRAMS[id].title.replace(' - Notepad', '').replace(' - Paint', '')}</span>
                       </button>
                     </li>
-                  </ul>
-                </nav>
-              )}
-
-              {shutdownOpen && <ShutdownDialog onYes={shutDown} onNo={() => setShutdownOpen(false)} />}
-
-              <div className="win-raised absolute inset-x-0 bottom-0 z-50 flex h-9 items-center gap-1 px-1 font-[Tahoma,sans-serif] text-xs text-black">
-                <button type="button" onClick={() => setStartOpen((o) => !o)} aria-expanded={startOpen} className={`win-raised flex items-center gap-1 px-2 py-0.5 font-bold ${startOpen ? '[border-color:#404040_#fff_#fff_#404040]' : ''}`}>
-                  <Img slot={icons.floppy} width={16} /> Start
-                </button>
-                <div className="flex min-w-0 flex-1 gap-1 overflow-hidden">
-                  {state.windows.map((w) => (
-                    <button
-                      key={w.id}
-                      type="button"
-                      onClick={() => dispatch({ type: 'taskbar', id: w.id })}
-                      className={`win-raised flex min-w-0 max-w-36 items-center gap-1 truncate px-1 py-0.5 ${w.id === front ? 'bg-[#e0e0e0] font-bold [border-color:#404040_#fff_#fff_#404040]' : ''}`}
-                    >
-                      <Img slot={PROGRAMS[w.id].icon} width={14} />
-                      <span className="truncate">{titleFor(w.id)}</span>
-                    </button>
                   ))}
+                </ul>
+
+                {/* Stable DOM order, stacked by z-index: moving a window's node to the front mid-click would swallow the click. */}
+                {[...state.windows].sort((a, b) => a.id.localeCompare(b.id)).map((w) => ({ w, z: state.windows.indexOf(w) })).map(({ w, z }) => (
+                  <ProgramWindow key={w.id} win={w} program={program(w.id)} z={10 + z} active={w.id === front} area={area} dispatch={dispatch}>
+                    {w.id === 'computer' && <Explorer
+                        root={root}
+                        ctx={ctx}
+                        setShowHidden={setShowHidden}
+                        isOpen={(p) => !!opened[p]}
+                        unlock={(p, answer, files) => {
+                          setOpened((o) => ({ ...o, [p]: files }))
+                          setKeys((k) => ({ ...k, [p]: answer }))
+                          const end = files.find((f) => f.ending)?.ending
+                          if (end && !descendedOf()) setEnding({ phrase: end.phrase, replay: false })
+                        }}
+                        openFile={openFile}
+                      />}
+                    {w.id === 'bin' && <RecycleBin night={night} feelings={feelings} restoreFeelings={() => setFeelings(true)} />}
+                    {w.id === 'notepad' && <Notepad />}
+                    {w.id === 'paint' && <Paint />}
+                    {w.id === 'daniel-exe' && <DanielExe close={() => dispatch({ type: 'close', id: w.id })} />}
+                    {isViewer(w.id) && <Viewer file={viewers[w.id] ?? null} />}
+                  </ProgramWindow>
+                ))}
+
+                {startOpen && (
+                  <nav aria-label="Start menu" className="win-raised absolute bottom-9 left-0 z-50 flex animate-pop-in font-[Tahoma,sans-serif] text-xs text-black">
+                    <div className="flex w-6 items-end bg-gradient-to-t from-win-title to-[#1084d0] pb-1">
+                      <span className="-rotate-90 whitespace-nowrap font-bold text-white [transform-origin:12px_0]">Daniel 95</span>
+                    </div>
+                    <ul className="w-48 py-1">
+                      {ORDER.map((id) => (
+                        <li key={id}>
+                          <button type="button" onClick={() => open(id)} className="flex w-full items-center gap-2 px-2 py-1 text-left hover:bg-win-title hover:text-white">
+                            <Img slot={PROGRAMS[id].icon} width={18} /> {PROGRAMS[id].title}
+                          </button>
+                        </li>
+                      ))}
+                      <li className="my-1 border-t border-win-dark" />
+                      {(
+                        [
+                          ['/dex', 'Object Dex.lnk'],
+                          ['/arcade', 'Arcade.lnk'],
+                          ['/radio', 'DANIEL FM.lnk'],
+                          ['/blinkie-maker', 'Blinkie Maker.lnk'],
+                        ] as const
+                      ).map(([to, label]) => (
+                        <li key={to}>
+                          <button type="button" onClick={() => navigate(to)} className="w-full px-2 py-1 text-left hover:bg-win-title hover:text-white">↗ {label}</button>
+                        </li>
+                      ))}
+                      <li className="my-1 border-t border-win-dark" />
+                      <li>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setStartOpen(false)
+                            setShutdownOpen(true)
+                          }}
+                          className="w-full px-2 py-1 text-left hover:bg-win-title hover:text-white"
+                        >
+                          ⏻ Shut Down…
+                        </button>
+                      </li>
+                    </ul>
+                  </nav>
+                )}
+
+                {shutdownOpen && <ShutdownDialog onYes={shutDown} onNo={() => setShutdownOpen(false)} />}
+
+                <div className="win-raised absolute inset-x-0 bottom-0 z-50 flex h-9 items-center gap-1 px-1 font-[Tahoma,sans-serif] text-xs text-black">
+                  <button type="button" onClick={() => setStartOpen((o) => !o)} aria-expanded={startOpen} className={`win-raised flex items-center gap-1 px-2 py-0.5 font-bold ${startOpen ? '[border-color:#404040_#fff_#fff_#404040]' : ''}`}>
+                    <Img slot={icons.floppy} width={16} /> Start
+                  </button>
+                  <div className="flex min-w-0 flex-1 gap-1 overflow-hidden">
+                    {state.windows.map((w) => (
+                      <button
+                        key={w.id}
+                        type="button"
+                        onClick={() => dispatch({ type: 'taskbar', id: w.id })}
+                        className={`win-raised flex min-w-0 max-w-36 items-center gap-1 truncate px-1 py-0.5 ${w.id === front ? 'bg-[#e0e0e0] font-bold [border-color:#404040_#fff_#fff_#404040]' : ''}`}
+                      >
+                        <Img slot={program(w.id).icon} width={14} />
+                        <span className="truncate">{titleFor(w.id)}</span>
+                      </button>
+                    ))}
+                  </div>
+                  <Clock />
                 </div>
-                <Clock />
               </div>
-            </div>
-          ) : (
-            <BootScreen key={phase} phase={phase} onPosted={() => setPhase(dirty ? 'scandisk' : 'splash')} onScanned={() => setDirty(false)} />
-          )}
+            ) : (
+              <BootScreen key={phase} phase={phase} onPosted={() => setPhase(dirty ? 'scandisk' : 'splash')} onScanned={() => setDirty(false)} />
+            )}
+          </div>
+          <Bezel phase={phase} onPower={power} />
         </div>
-        <Bezel phase={phase} onPower={power} />
+      </div>
+      {/* Over the whole screen, not inside Daniel95's: on a phone the monitor is wider than the window. */}
+      {keepsake && <Keepsake phrase={keepsake} onClose={() => setKeepsake(null)} />}
+      {ending && (
+        <Suspense fallback={null}>
+          <Ascension replay={ending.replay} defaultName={descendedOf()?.name ?? 'someone patient'} onDone={finish} />
+        </Suspense>
+      )}
+    </UncorruptedCtx.Provider>
+  )
+}
+
+/** After the ending: something to take away. A certificate of the descent, and a way to tell Daniel. */
+function Keepsake({ phrase, onClose }: { phrase: string; onClose: () => void }) {
+  const me = descendedOf()
+  const record = () => ({
+    name: me?.name ?? 'someone patient',
+    heard: heardAt(),
+    finished: me?.at ?? new Date().toISOString(),
+    visits: readStored(VISITS_KEY, 1),
+    dex: dexProgress(readDex()),
+  })
+  const r = record()
+  const body = [phrase, '', `name: ${r.name}`, `first heard the song: ${r.heard ?? 'unknown'}`, `reached the bottom: ${r.finished}`, `visits: ${r.visits}`, `specimens: ${r.dex.found} of ${r.dex.total}`].join('\n')
+  const mail = `mailto:${daniel.links.email}?subject=${encodeURIComponent('I descended')}&body=${encodeURIComponent(body)}`
+  return (
+    <div role="dialog" aria-label="Take something with you" data-testid="keepsake" className="fixed left-1/2 top-1/2 z-[60] w-[min(340px,calc(100vw-32px))] -translate-x-1/2 -translate-y-1/2 animate-pop-in">
+      <div className="win-raised bg-win p-0.5 font-[Tahoma,sans-serif] text-xs text-black shadow-[6px_6px_0_#0006]">
+        <p className="bg-gradient-to-r from-win-title to-[#1084d0] px-1 font-bold text-white">Take something with you</p>
+        <div className="space-y-2 p-3">
+          <p>You descended. Here's the proof, and a way to tell the one who made this.</p>
+          <div className="flex flex-col gap-1.5">
+            <button type="button" onClick={() => downloadCertificate(record())} className="win-raised px-2 py-1 font-bold" data-testid="download-certificate">
+              Download your certificate
+            </button>
+            <a href={mail} className="win-raised px-2 py-1 text-center font-bold text-black no-underline" data-testid="send-to-daniel">
+              Send it to Daniel
+            </a>
+            <button type="button" onClick={onClose} className="win-raised px-2 py-1">
+              Close
+            </button>
+          </div>
+        </div>
       </div>
     </div>
   )
@@ -396,7 +477,7 @@ function BootScreen({ phase, onPosted, onScanned }: { phase: Exclude<Phase, 'on'
     )
   }
   return (
-    <div className="relative grid h-full place-items-center bg-[#5a8fd8] bg-[url('/me/CLOUD2.JPG')] bg-cover bg-center text-center" data-testid={`screen-${phase}`}>
+    <div className="relative grid h-full place-items-center bg-[#5a8fd8] bg-[url('/me/CLOUD2.webp')] bg-cover bg-center text-center" data-testid={`screen-${phase}`}>
       <div className={phase === 'splash' ? 'animate-crt-on' : ''}>
         <p className="font-times text-5xl font-bold italic text-white [text-shadow:3px_3px_0_#000] sm:text-7xl">
           Daniel<span className="font-impact not-italic text-[#ffd84a]">95</span>
@@ -461,7 +542,7 @@ function Clock() {
 
 type WinProps = {
   win: DeskWindow
-  title: string
+  program: Program
   z: number
   active: boolean
   area: RefObject<HTMLDivElement | null>
@@ -469,8 +550,7 @@ type WinProps = {
   children: ReactNode
 }
 
-function ProgramWindow({ win, title, z, active, area, dispatch, children }: WinProps) {
-  const p = PROGRAMS[win.id]
+function ProgramWindow({ win, program: p, z, active, area, dispatch, children }: WinProps) {
   const drag = useDrag((x, y) => {
     const r = area.current?.getBoundingClientRect()
     if (!r) return
@@ -479,13 +559,13 @@ function ProgramWindow({ win, title, z, active, area, dispatch, children }: WinP
   if (win.minimised) return null
   return (
     <Win95Window
-      title={title}
+      title={p.title}
       icon={p.icon}
       drag={drag}
       onFocus={() => dispatch({ type: 'focus', id: win.id })}
       onMinimise={() => dispatch({ type: 'minimise', id: win.id })}
       onClose={() => dispatch({ type: 'close', id: win.id })}
-      testId={`window-${win.id}`}
+      testId={isViewer(win.id) ? 'window-viewer' : `window-${win.id}`}
       inactive={!active}
       className="absolute max-w-[calc(100%-8px)]"
       style={{ left: win.x, top: win.y, width: p.width, zIndex: z }}
@@ -566,7 +646,7 @@ type ExplorerProps = {
   setShowHidden: (v: boolean) => void
   isOpen: (path: string) => boolean
   unlock: (path: string, answer: string, files: FsNode[]) => void
-  openFile: (f: FsNode) => void
+  openFile: (f: FsNode, path: string) => void
 }
 
 /** My Computer, but you can go in: drives, folders, files, shortcuts, hidden files and password-locked folders. */
@@ -601,7 +681,7 @@ function Explorer({ root, ctx, setShowHidden, isOpen, unlock, openFile }: Explor
     }
     if (n.kind === 'drive' || n.kind === 'folder') return locked(n, p) ? setPrompt({ node: n, path: p }) : go(p)
     if (n.kind === 'link') return navigate(n.to!)
-    openFile(n)
+    openFile(n, joinPath(p))
   }
   const selected = items.find((n) => n.name === sel)
 

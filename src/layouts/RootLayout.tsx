@@ -1,8 +1,9 @@
-import { useEffect } from 'react'
+import { lazy, Suspense, useEffect, useRef } from 'react'
 import { Outlet, ScrollRestoration, useLocation, useMatches } from 'react-router-dom'
 import { AudioProvider } from '../audio/AudioProvider'
 import { useAudio, useUnlockOnGesture } from '../audio/audioContext'
-import { pageSong } from '../audio/pageSongs'
+import { pageSong, possessedPageSong } from '../audio/pageSongs'
+import { findTrack, visibleMixes } from '../audio/tracks'
 import { PopupProvider } from '../components/popups/PopupProvider'
 import { EnterGate } from '../components/EnterGate'
 import { GifConfetti } from '../components/chaos/GifConfetti'
@@ -21,9 +22,10 @@ import { VisitNote } from '../components/VisitNote'
 import { MiniPlayer, MuteButton, WebringBar } from '../components/WebringBar'
 import { useStored } from '../hooks/useLocalStorage'
 import { useSealedPage } from '../hooks/useSealedPage'
-import { usePossessed } from '../lib/possession'
-import { Possession } from '../components/possessed/Possession'
-import { JumpScare } from '../components/possessed/JumpScare'
+import { useDescended, usePossessed } from '../lib/possession'
+
+// The possessed site's layer: only loaded once a visitor is possessed.
+const PossessedLayer = lazy(() => import('../components/possessed/PossessedLayer').then((m) => ({ default: m.PossessedLayer })))
 
 /**
  * `calm`: none of the chaos at all (/boring). `quiet`: the chaos minus pop-up ambushes and the virus alert.
@@ -53,6 +55,13 @@ export function RootLayout() {
       delete html.dataset.possessed
     }
   }, [possessed])
+  // Those who reached the bottom carry a mark for good: a halo on the cursor (index.css), and a ✦ here and there.
+  const descended = !!useDescended()
+  useEffect(() => {
+    const html = document.documentElement
+    if (descended) html.dataset.descended = ''
+    else delete html.dataset.descended
+  }, [descended])
 
   return (
     <SettingsProvider active={!handle.calm}>
@@ -97,8 +106,11 @@ export function RootLayout() {
             {entered && !handle.noWebring && !handle.quiet && <VisitNote />}
             {!handle.solemn && <LiveChat />}
           </div>
-          {possessed && <Possession />}
-          <JumpScare />
+          {possessed && (
+            <Suspense fallback={null}>
+              <PossessedLayer haunt={entered} paused={!!handle.quiet || pathname === '/settings'} rot={!handle.solemn} />
+            </Suspense>
+          )}
         </PopupProvider>
         </PopnukeProvider>
       )}
@@ -116,12 +128,21 @@ function UnlockOnGesture() {
 /** Switches to the page's theme song on arrival, unless the visitor 📌 locked their own pick. A sealed page names its own. */
 function PageSong({ override }: { override?: string }) {
   const { pathname } = useLocation()
-  const { locked, setMix } = useAudio()
+  const { locked, mix, setMix } = useAudio()
+  const possessed = usePossessed()
+  const was = useRef<string | null>(null)
   useEffect(() => {
-    const song = override ?? pageSong(pathname)
-    if (song && !locked) setMix(song)
-    // Only on arrival: unlocking mid-page shouldn't yank the song back.
+    const arrived = was.current !== pathname
+    was.current = pathname
+    // The ending lifts the possession while its song with a name plays: that song stays until they go somewhere.
+    const now = findTrack(mix)
+    if (!arrived && now.kind === 'synth' && now.song.finisher) return
+    // Possessed, the page's possessed song, and a locked pick only stands if it's one the possessed site plays.
+    const keep = locked && (!possessed || visibleMixes(true, true).some((t) => t.id === mix))
+    const song = override ?? (possessed ? possessedPageSong(pathname) : pageSong(pathname))
+    if (song && !keep) setMix(song)
+    // Only on arrival (or on turning): unlocking mid-page shouldn't yank the song back.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [pathname, override])
+  }, [pathname, override, possessed])
   return null
 }

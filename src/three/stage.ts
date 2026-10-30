@@ -92,7 +92,7 @@ function frame(now: number) {
     // Possessed, the 3D goes the colour of the rest of the site. Done here, on the small canvas while it's copied,
     // because a CSS filter on the scaled-up canvas costs a whole extra render pass every frame.
     c.drawImage(r.domElement, 0, fullH - height, width, height, 0, 0, width, height)
-    if (possessedNow()) {
+    if (possessedNow() && !v.scene.userData.untinted) {
       // Bled red, keeping the picture's own transparency: a cheap fill, where a canvas filter would cost every frame.
       c.globalCompositeOperation = 'source-atop'
       c.fillStyle = POSSESSED_TINT
@@ -150,12 +150,17 @@ const rotTextures = new Map<string, THREE.Texture>()
  * size at first upload, so no placeholder).
  */
 export function face(url: string, cover = false) {
-  if (!isPossessed() || !isDaniel(url)) return texture(url, 1, cover)
+  if (!isPossessed() || !isDaniel(url)) {
+    const t = texture(url, 1, cover)
+    t.userData.face = true // a flesh skin (fleshSkin in shapes.ts) leaves his face alone
+    return t
+  }
   let t = rotTextures.get(url)
   if (!t) {
     const tex = new THREE.Texture()
     tex.magFilter = THREE.NearestFilter
     tex.colorSpace = THREE.SRGBColorSpace
+    tex.userData.face = true
     t = tex
     void rotted(url).then((src) => {
       const img = new Image()

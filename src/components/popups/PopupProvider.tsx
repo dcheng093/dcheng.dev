@@ -1,4 +1,4 @@
-import { useCallback, useMemo, useReducer, type ReactNode } from 'react'
+import { useCallback, useMemo, useReducer, useRef, type ReactNode } from 'react'
 import { ads } from '../../content/ads'
 import { useRandomInterval } from '../../hooks/useRandomInterval'
 import { pick } from '../../lib/random'
@@ -9,6 +9,7 @@ import { usePopnuke } from '../popnuke/popnukeState'
 import { chaosScale } from '../../lib/settings'
 import { useSettings } from '../settings/settingsState'
 import { ambush } from '../../lib/popnuke'
+import { pickAmbush } from '../ads/pickAd'
 
 /** Everything the random ambush can throw: popup-format ads plus the interactive specials. */
 const ambushPool = [
@@ -30,6 +31,8 @@ export function PopupProvider({ auto, children }: { auto: boolean; children: Rea
   )
 
   const nuke = usePopnuke()
+  // What the last ambush was: the sponsor gets about a quarter of them, never two in a row.
+  const last = useRef<string | null>(null)
   // Chaos dial: half as many ambushes when calm, twice as many at MAXIMUM.
   const ambushRate = chaosScale(useSettings().settings.chaos).ambushRate
   useRandomInterval(
@@ -42,7 +45,8 @@ export function PopupProvider({ auto, children }: { auto: boolean; children: Rea
           return open('popnuke-ad')
         case 'normal':
           // Once it has had its turn, the POPNUKE ad is just one of the crowd.
-          return open(pick(nuke.adShown ? [...ambushPool, 'popnuke-ad'] : ambushPool), pick<PopupVariant>(['normal', 'normal', 'multiply', 'dodge']))
+          last.current = pickAmbush(nuke.adShown ? [...ambushPool, 'popnuke-ad'] : ambushPool, last.current)
+          return open(last.current, pick<PopupVariant>(['normal', 'normal', 'multiply', 'dodge']))
       }
     },
     auto ? 14_000 / ambushRate : null,

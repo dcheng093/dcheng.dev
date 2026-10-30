@@ -8,8 +8,43 @@ const imgSlot = (ad: Ad) => {
   return ad.img === 'head' ? assets.headGrin : ad.img === 'body' ? assets.body : assets[ad.img]
 }
 
+/**
+ * The sponsor's ads (Gulag Games) look like their own studio, not like the site's joke ads: their dark palette and
+ * condensed type, and their real art filling the slot (box art in tall slots, the man and his horse in wide ones).
+ */
+function SponsorCreative({ ad, format }: { ad: Ad; format: AdFormat }) {
+  const art = ad.art?.[format] ?? imgSlot(ad)!
+  const cta = <span className="inline-block border border-[#f5f5f0] bg-[#c8102e] px-2 py-0.5 font-impact uppercase tracking-wide text-[#f5f5f0]">{ad.cta} »</span>
+  const studio = 'font-impact uppercase leading-none tracking-wide'
+  if (format === 'leaderboard' || format === 'banner') {
+    const big = format === 'leaderboard'
+    return (
+      <div className={`relative w-full overflow-hidden border-2 border-black ${ad.palette} ${big ? 'aspect-[728/90] max-w-[728px]' : 'aspect-[468/60] max-w-[468px]'}`}>
+        <Img slot={art} width={art.w} className="absolute inset-0 h-full w-full object-cover object-[50%_30%]" />
+        <div className="absolute inset-0 bg-gradient-to-r from-[#0b0b0b] via-[#0b0b0bcc] to-transparent" />
+        <div className="relative flex h-full items-center gap-2 px-2">
+          <div className="min-w-0 flex-1">
+            <p className={`truncate ${studio} ${big ? 'text-base sm:text-2xl' : 'text-sm sm:text-lg'}`}>{ad.headline}</p>
+            {ad.body && <p className="hidden truncate font-mono text-[10px] text-[#d8d8d0] sm:block">{ad.body}</p>}
+          </div>
+          <span className="shrink-0 text-[10px] sm:text-xs">{cta}</span>
+        </div>
+      </div>
+    )
+  }
+  return (
+    <div className={`flex flex-col items-center gap-2 overflow-hidden border-2 border-black p-2 text-center ${ad.palette} ${format === 'skyscraper' ? 'h-[600px] w-[120px] justify-between' : format === 'square' ? 'aspect-square w-[250px] max-w-full justify-around' : ''}`}>
+      <span className={`${studio} ${format === 'skyscraper' ? 'text-lg' : 'text-xl'}`}>{ad.headline}</span>
+      <Img slot={art} width={format === 'square' ? 120 : format === 'skyscraper' ? 104 : 280} className="border border-[#f5f5f0]/40" />
+      {ad.body && format !== 'square' && <span className="font-mono text-[11px] leading-snug text-[#d8d8d0]">{ad.body}</span>}
+      {cta}
+    </div>
+  )
+}
+
 /** The visual body of an ad, sized for its IAB-ish format. Click handling lives in AdSlot. */
 export function AdCreative({ ad, format }: { ad: Ad; format: AdFormat }) {
+  if (ad.kind === 'sponsor') return <SponsorCreative ad={ad} format={format} />
   const slot = imgSlot(ad)
   const cta = (
     <span className="inline-block animate-pulse-scale border-2 border-black bg-red-600 px-2 py-0.5 font-impact text-white shadow-[2px_2px_0_#000]">

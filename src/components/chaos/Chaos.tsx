@@ -4,7 +4,8 @@ import { nextHitCount } from '../../lib/hitCounter'
 import { useRandomInterval } from '../../hooks/useRandomInterval'
 import { icons, type Slot } from '../../content/assets'
 import { Img } from '../media/Img'
-import { usePossessed } from '../../lib/possession'
+import { useDescended, usePossessed } from '../../lib/possession'
+import { usePossessedText } from '../../hooks/usePossessedText'
 
 export function Marquee({ children, className = '', speed = 12 }: { children: ReactNode; className?: string; speed?: number }) {
   return (
@@ -22,9 +23,10 @@ export function Blink({ children, className = '' }: { children: ReactNode; class
 
 /** Each letter bobs on its own beat, like LINGsCARS' wavy headings. */
 export function WavyText({ text, className = '' }: { text: string; className?: string }) {
+  const shown = usePossessedText(text)
   return (
-    <span className={className} aria-label={text}>
-      {[...text].map((ch, i) => (
+    <span className={className} aria-label={text} data-no-rot="">
+      {[...shown].map((ch, i) => (
         <span key={i} aria-hidden className="inline-block animate-wave" style={{ animationDelay: `${(i % 8) * 0.12}s` }}>
           {ch === ' ' ? ' ' : ch}
         </span>
@@ -35,9 +37,10 @@ export function WavyText({ text, className = '' }: { text: string; className?: s
 
 export function RainbowText({ text, className = '' }: { text: string; className?: string }) {
   const colors = ['#f00', '#f80', '#ff0', '#0f0', '#0ff', '#00f', '#f0f']
+  const shown = usePossessedText(text)
   return (
-    <span className={`animate-rainbow ${className}`} aria-label={text}>
-      {[...text].map((ch, i) => (
+    <span className={`animate-rainbow ${className}`} aria-label={text} data-no-rot="">
+      {[...shown].map((ch, i) => (
         <span key={i} aria-hidden style={{ color: colors[i % colors.length] }}>
           {ch}
         </span>
@@ -54,8 +57,9 @@ export function HitCounter({ className = '' }: { className?: string }) {
   })
   // Possessed, every visitor is the same visitor.
   const shown = usePossessed() ? 666 : count
+  const descended = useDescended()
   return (
-    <span className={`inline-flex items-center gap-1 font-vt text-lg ${className}`} data-testid="hit-counter">
+    <span className={`inline-flex items-center gap-1 font-vt text-lg ${className}`} data-testid="hit-counter" data-no-rot="">
       <span>you are visitor #</span>
       <span className="inline-flex border-2 border-gray-500 bg-black px-0.5">
         {String(shown).padStart(8, '0').split('').map((d, i) => (
@@ -64,6 +68,11 @@ export function HitCounter({ className = '' }: { className?: string }) {
           </span>
         ))}
       </span>
+      {descended && (
+        <span data-testid="descended-mark" title={`${descended.name} descended`} className="ml-1 text-[#b8860b] [text-shadow:0_0_4px_#ffe9a8]">
+          ✦ descended
+        </span>
+      )}
     </span>
   )
 }

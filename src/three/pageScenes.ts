@@ -24,16 +24,16 @@ export type TextureId = keyof typeof TEXTURES
 
 /** Daniel's texture pack for the enter gate's dream world (src/three/dream.ts). */
 export const DREAM_TEXTURES = {
-  ocean: '/me/OPOCEAN2.JPG',
-  david: '/me/DAVID.png',
-  cd: '/me/016C.png',
-  xray: '/me/cc330122.jpg',
-  pyramids: '/me/qcu50087.jpg',
-  palazzo: '/me/BUILD001.jpg',
-  warehouse: '/me/BUILD027.jpg',
+  ocean: '/me/OPOCEAN2.webp',
+  david: '/me/DAVID.webp',
+  cd: '/me/016C.webp',
+  xray: '/me/cc330122.webp',
+  pyramids: '/me/qcu50087.webp',
+  palazzo: '/me/BUILD001.webp',
+  warehouse: '/me/BUILD027.webp',
   stoneWall: '/me/248__wall_stone_texture-seamless.jpg',
-  stones: '/me/012C.png',
-  crackedStone: '/me/044C.jpg',
+  stones: '/me/012C.webp',
+  crackedStone: '/me/044C.webp',
   gold: '/me/002.GIF',
   goldTopo: '/me/056.GIF',
   oil: '/me/054.GIF',
@@ -46,25 +46,25 @@ export const DREAM_TEXTURES = {
 
 /** The newest texture pack. */
 export const MORE_TEXTURES = {
-  worldMap: '/me/013C.jpg',
-  grass: '/me/073C.jpg',
-  grass2: '/me/ATF_8.png',
-  tieDye: '/me/089C.jpg',
-  tieDyeSpiral: '/me/090C.jpg',
-  tieDyeCircle: '/me/091C.jpg',
-  skyClouds: '/me/BACKGR12.JPG',
-  beef: '/me/BEEF.JPG',
-  wispySky: '/me/CLOUD2.JPG',
-  earth: '/me/EARTH_C.JPG',
-  tree: '/me/FRAXINS3.png',
-  galaxy: '/me/GALAXY2.JPG',
-  purpleMetal: '/me/METAL7.JPG',
-  painting: '/me/Painting.png',
+  worldMap: '/me/013C.webp',
+  grass: '/me/073C.webp',
+  grass2: '/me/ATF_8.webp',
+  tieDye: '/me/089C.webp',
+  tieDyeSpiral: '/me/090C.webp',
+  tieDyeCircle: '/me/091C.webp',
+  skyClouds: '/me/BACKGR12.webp',
+  beef: '/me/BEEF.webp',
+  wispySky: '/me/CLOUD2.webp',
+  earth: '/me/EARTH_C.webp',
+  tree: '/me/FRAXINS3.webp',
+  galaxy: '/me/GALAXY2.webp',
+  purpleMetal: '/me/METAL7.webp',
+  painting: '/me/Painting.webp',
   bronze: '/me/SC009.JPG',
   copper: '/me/SC010.JPG',
-  goldMetal: '/me/SC027.JPG',
-  puffySky: '/me/SKY1.png',
-  goose: '/me/cc200455.jpg',
+  goldMetal: '/me/SC027.webp',
+  puffySky: '/me/SKY1.webp',
+  goose: '/me/cc200455.webp',
   kaleidoscope: '/me/cio60415.jpg',
   cosmic: '/me/cio60416.jpg',
   dollars: '/gifs/bg-dollar-bills.gif',
@@ -75,15 +75,40 @@ export const CULT_TEXTURES = {
   fractalEye: '/me/ahm60074.jpg',
   fractalEye2: '/me/ahm60030.jpg',
   vortex: '/me/ahm60003.jpg',
-  darkMarble: '/me/046C.jpg',
+  darkMarble: '/me/046C.webp',
   blackMetal: '/me/SC051.JPG',
-  crt: '/me/qcu50119.jpg',
-  lattice: '/me/pni50050.jpg',
+  crt: '/me/qcu50119.webp',
+  lattice: '/me/pni50050.webp',
   nightStars: '/me/nightskystar.gif',
 } as const
 
+/** The possessed site's pack (public/possessed/, made by scripts/possessed-assets.mjs): flesh skins for the
+ * objects, and the flesh world's material, skies and eyes. */
+export const POSSESSED_TEXTURES = {
+  fleshSkin: '/possessed/flesh.webp',
+  veinSkin: '/possessed/veins.webp',
+  cellSkin: '/possessed/cells.webp',
+  holeSkin: '/possessed/holes-static.webp',
+  rotSkin: '/possessed/rot-red.webp',
+  nerveSkin: '/possessed/nerve.webp',
+  fleshNormal: '/possessed/flesh-normal.webp',
+  fleshRough: '/possessed/flesh-rough.webp',
+  fleshAo: '/possessed/flesh-ao.webp',
+  fleshHeight: '/possessed/flesh-height.webp',
+  skyCorridor: '/possessed/sky-corridor.webp',
+  skyGraveyard: '/possessed/sky-graveyard.webp',
+  skyChurch: '/possessed/sky-church.webp',
+  stillScream: '/possessed/still-scream.webp',
+  stillSkull: '/possessed/still-skull.webp',
+  stillLetterEye: '/possessed/still-letter-eye.webp',
+  stillBloodEyes: '/possessed/still-blood-eyes.webp',
+  stillEyes: '/possessed/still-eyes.webp',
+  stillMouth: '/possessed/still-mouth.webp',
+  stillFace: '/possessed/still-face.webp',
+} as const
+
 /** Every image texture by name. */
-export const TEX = { ...TEXTURES, ...DREAM_TEXTURES, ...MORE_TEXTURES, ...CULT_TEXTURES } as const
+export const TEX = { ...TEXTURES, ...DREAM_TEXTURES, ...MORE_TEXTURES, ...CULT_TEXTURES, ...POSSESSED_TEXTURES } as const
 export type TexName = keyof typeof TEX
 
 /** Textures drawn in code (src/three/procTextures.ts). Listed here so content can name them. */
@@ -115,7 +140,7 @@ export const SHAPES = [
 ] as const
 export type ShapeId = (typeof SHAPES)[number]
 
-export type WorldId = 'mystic' | 'neon' | 'glitch' | 'meadow' | 'painted' | 'space' | 'cult'
+export type WorldId = 'mystic' | 'neon' | 'glitch' | 'meadow' | 'painted' | 'space' | 'cult' | 'flesh'
 export type Rarity = 'common' | 'rare' | 'legendary'
 export type ObjSize = 's' | 'm' | 'l'
 

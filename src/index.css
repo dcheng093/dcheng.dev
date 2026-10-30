@@ -62,6 +62,15 @@
   --animate-bubble: bubble 2.4s steps(10) infinite;
   --animate-rays: rays 3.4s ease-in-out both;
   --animate-rise-in: rise-in 1.4s ease-out both;
+  /* The possessed pages: blood running down the glass. */
+  --animate-drip: drip 24s steps(24) infinite;
+  /* The ending (components/ending/Ascension.tsx). The light only ever fades in, over seconds. */
+  --animate-retract: retract 5s steps(10) forwards;
+  --animate-peel: peel 3s steps(10) forwards;
+  --animate-eyelid: eyelid 10s steps(16) forwards;
+  --animate-lightline: lightline 10s ease-in forwards;
+  --animate-dawn: dawn 4s ease-out both;
+  --animate-credits: credits linear forwards;
 
   @keyframes jank-x {
     from { translate: -12px 0; }
@@ -217,6 +226,38 @@
     from { opacity: 0; translate: 0 24px; }
     to { opacity: 1; translate: 0 0; }
   }
+  @keyframes retract {
+    from { stroke-dashoffset: 0; }
+    to { stroke-dashoffset: -1; }
+  }
+  @keyframes peel {
+    0% { transform: translateY(0) rotate(0deg); }
+    100% { transform: translateY(115vh) rotate(9deg); }
+  }
+  @keyframes eyelid {
+    0% { transform: scaleY(0); }
+    15%, 50% { transform: scaleY(1); }
+    62%, 100% { transform: scaleY(0); }
+  }
+  @keyframes lightline {
+    0%, 62% { transform: translateY(-50%) scaleY(0); opacity: 0; }
+    66% { transform: translateY(-50%) scaleY(1); opacity: 1; }
+    100% { transform: translateY(-50%) scaleY(400); opacity: 1; }
+  }
+  @keyframes dawn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+  }
+  @keyframes credits {
+    from { transform: translateY(0); }
+    to { transform: translateY(-260%); }
+  }
+  @keyframes drip {
+    0% { transform: translateY(-100%); opacity: 0.9; }
+    60% { transform: translateY(0); opacity: 0.9; }
+    85% { transform: translateY(0); opacity: 0.9; }
+    100% { transform: translateY(0); opacity: 0; }
+  }
 }
 
 /* How much of each interlaced line of a "downloading" picture is in yet (components/DialUp: ScanIn). */
@@ -314,6 +355,11 @@
   html[data-font='comic'] body,
   html[data-font='comic'] body * {
     font-family: 'Comic Sans MS', 'Comic Sans', 'Comic Neue', cursive !important;
+  }
+  /* The mark of the descended (lib/possession): a gold halo over the arrow, unless they chose a cursor themselves. */
+  /* Set once on the root and inherited, so anything with its own cursor (links, title bars) keeps it. */
+  html[data-descended]:not([data-cursor], [data-loading]) {
+    cursor: url("data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' width='24' height='30'><ellipse cx='10' cy='4' rx='7' ry='2.6' fill='none' stroke='%23ffe9a8' stroke-width='3'/><ellipse cx='10' cy='4' rx='7' ry='2.6' fill='none' stroke='%23c9a227' stroke-width='1.5'/><path d='M3 9v17l4.5-4.2 3 6.6 2.6-1.2-3-6.4H16z' fill='%23fff' stroke='%23000' stroke-width='1.2' stroke-linejoin='round'/></svg>") 3 9, auto;
   }
   html[data-cursor],
   html[data-cursor] *:not(input, textarea, select, [contenteditable]) {
@@ -508,17 +554,109 @@
 .boring hr { border: 1px inset #ccc; margin: 0.5em 0; }
 .boring img { image-rendering: auto; display: inline; }
 
-/* The possessed site (src/lib/possession.ts sets html[data-possessed]; components/possessed/ draws the rest).
-   Unlayered, so it wins over the page's own classes. Filters go on pictures only, never on a box with fixed-position
-   children (a filter would trap them); the 3D is tinted as it's drawn (three/stage.ts). Nothing here animates. */
+/* The possessed site (src/lib/possession.ts sets html[data-possessed]; components/possessed/ draws the rest): the same
+   pages rendered wrong, after the Username 666 frames. One eye-holed flesh under everything, every tile rotted,
+   Win95 panels gone the colour of something that shouldn't be outside a body.
+   Unlayered, so it wins over the page's own classes. Rules:
+   - Filters go on pictures only, never on a box with fixed-position children (a filter would trap them); the 3D is
+     tinted as it's drawn (three/stage.ts). No blend modes over the page (they made it lag).
+   - The page root must stay see-through: the 3D objects float on a layer behind it (Page3D, useLiftedBackground).
+     That's why the page's texture is on a layer behind everything, and why the root rule below out-ranks every tile
+     rule.
+   - Every texture here is a static picture (public/possessed/, made by scripts/possessed-assets.mjs), so nothing
+     flickers, and each one only downloads once possession needs it. */
 html[data-possessed] body {
-  background-color: #0a0002;
+  background: #1a0003;
 }
+/* What's under every page is drawn by components/possessed/Possession.tsx: each page's own texture on its own
+   composited layer (a body background would be repainted behind every animated GIF, every frame), shifted every few
+   seconds by transform alone. */
+html[data-possessed] [data-backdrop] {
+  background: none !important;
+}
+/* :nth-child(1) is only there for weight: it has to beat `html[data-possessed] .tile-…` below. */
+html[data-possessed] main > :first-child:nth-child(1) {
+  background: transparent !important;
+}
+/* Every tile family rots into its own texture (Home's eleven bands are all different), so no one picture is
+   everywhere. --rot-size is the texture's own tile size. */
 html[data-possessed] [class*='tile-'] {
-  background-color: #5a0010 !important;
-  background-blend-mode: multiply;
+  background: #1a0003 var(--rot) 0 0 / var(--rot-size, 512px) auto !important;
 }
-html[data-possessed] img:not([data-rotted]) {
+html[data-possessed] .tile-sky { --rot: url('/possessed/smear.webp'); }
+html[data-possessed] .tile-pink-twinkles { --rot: url('/possessed/faces-wall.webp'); }
+html[data-possessed] .tile-stars { --rot: url('/possessed/clawing.webp'); }
+html[data-possessed] .tile-blue-swirl { --rot: url('/possessed/glyphs.webp'); }
+html[data-possessed] .tile-blue-flowers { --rot: url('/possessed/rust-blood.webp'); }
+html[data-possessed] .tile-green-grid { --rot: url('/possessed/dos.webp'); --rot-size: 480px; }
+html[data-possessed] .tile-lava-lamps { --rot: url('/possessed/rot-burn.webp'); }
+html[data-possessed] .tile-brick { --rot: url('/possessed/rust-wall.webp'); }
+html[data-possessed] .tile-flames { --rot: url('/possessed/nerve.webp'); }
+html[data-possessed] .tile-smileys { --rot: url('/possessed/rot-grid.webp'); }
+html[data-possessed] .tile-town { --rot: url('/possessed/cells.webp'); }
+html[data-possessed] .tile-nebula { --rot: url('/possessed/help.webp'); --rot-size: 432px; }
+html[data-possessed] .tile-space-clouds { --rot: url('/possessed/eyes-dark.webp'); --rot-size: 520px; }
+html[data-possessed] .tile-bubbles { --rot: url('/possessed/question.webp'); --rot-size: 360px; }
+html[data-possessed] .tile-pink-sparkles { --rot: url('/possessed/glitch.webp'); }
+html[data-possessed] .tile-quills { --rot: url('/possessed/rot-red.webp'); }
+html[data-possessed] .tile-coffee-cups { --rot: url('/possessed/veins.webp'); }
+html[data-possessed] .tile-marble { --rot: url('/possessed/rot-ruin.webp'); }
+html[data-possessed] .tile-rainbow-triangles { --rot: url('/possessed/holes-static.webp'); --rot-size: 461px; }
+html[data-possessed] .tile-checker { --rot: url('/possessed/rot-red.webp'); }
+html[data-possessed] .tile-casino-table { --rot: url('/possessed/cells.webp'); }
+html[data-possessed] .tile-dollar-bills { --rot: url('/possessed/rot-ruin.webp'); }
+html[data-possessed] .tile-static { --rot: url('/possessed/dos.webp'); --rot-size: 480px; }
+html[data-possessed] .tile-steel { --rot: url('/possessed/rust-wall.webp'); }
+html[data-possessed] .tile-binary { --rot: url('/possessed/glyphs.webp'); }
+html[data-possessed] .tile-graph-paper { --rot: url('/possessed/question.webp'); --rot-size: 360px; }
+html[data-possessed] .tile-horses { --rot: url('/possessed/veins.webp'); }
+html[data-possessed] .tile-oracle { --rot: url('/possessed/nerve.webp'); }
+html[data-possessed] .tile-radio { --rot: url('/possessed/holes-static.webp'); --rot-size: 461px; }
+html[data-possessed] .tile-popnuke { --rot: url('/possessed/rot-burn.webp'); }
+html[data-possessed] .tile-arcade { --rot: url('/possessed/glitch.webp'); }
+html[data-possessed] .tile-blinkie { --rot: url('/possessed/faces-wall.webp'); }
+html[data-possessed] .tile-stickers { --rot: url('/possessed/rot-grid.webp'); }
+html[data-possessed] .tile-cherubs { --rot: url('/possessed/flesh.webp'); }
+html[data-possessed] .tile-orange-flowers { --rot: url('/possessed/rust-blood.webp'); }
+html[data-possessed] .tile-pink-hearts { --rot: url('/possessed/smear.webp'); }
+html[data-possessed] .tile-desktop { --rot: url('/possessed/rot-ruin.webp'); }
+/* The crash screen and the exit: ALL THINGS MUST ROT. On body too, under their (see-through) roots and objects. */
+html[data-possessed]:has(main [data-testid='bsod'], main [data-testid='leave']) body {
+  background: #0c0000 url('/possessed/still-rot.webp') center 30% / min(640px, 100%) auto no-repeat fixed;
+}
+/* Win95 chrome, rotted: pale sickly panels over faint veins, bevels like dried blood, title bars black-red. Text on
+   them stays dark, so everything inside a window still reads. */
+html[data-possessed] {
+  --color-win: #c9a49c;
+  --color-win-dark: #6a3530;
+  --color-win-title: #3a0000;
+}
+html[data-possessed] .win-raised {
+  background-image: linear-gradient(#d4b0a8d9, #d4b0a8d9), url('/possessed/flesh.webp');
+  background-size: auto, 256px auto;
+  border-color: #f0c8bc #2a0000 #2a0000 #f0c8bc;
+  box-shadow: inset -1px -1px #7a2020, inset 1px 1px #f8dcd4;
+}
+html[data-possessed] .win-sunken {
+  border-color: #6a2020 #f0c8bc #f0c8bc #6a2020;
+  box-shadow: inset 1px 1px #2a0000;
+}
+html[data-possessed] .from-win-title {
+  --tw-gradient-to: #120000 !important;
+}
+/* The screens show something now. DANIELAMP's display and DANIEL FM's readout: stills from a channel that isn't
+   broadcasting. (The visualizer still draws over its own.) */
+html[data-possessed] [data-testid='now-playing'] {
+  background: #000 url('/possessed/still-blood-eyes.webp') center / cover !important;
+  text-shadow: 0 0 3px #000, 0 0 6px #000;
+}
+html[data-possessed] [data-testid='radio-lcd'] {
+  background: #100 url('/possessed/still-skull.webp') center / cover !important;
+  color: #ff5a4a !important;
+  text-shadow: 0 0 4px #000;
+}
+/* Every other picture goes the colour of the rest (the possessed GIFs already are; filtering them too only cost). */
+html[data-possessed] img:not([data-rotted]):not([data-possessed-gif]) {
   filter: grayscale(1) sepia(1) hue-rotate(-45deg) saturate(2.6) contrast(1.25) brightness(0.72);
 }
 html[data-possessed] img[data-rotted] {

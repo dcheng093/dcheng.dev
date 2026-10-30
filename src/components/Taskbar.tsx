@@ -5,7 +5,7 @@ import { cursors, icons, type Slot } from '../content/assets'
 import { DanielLogo } from './DanielLogo'
 import { MuteButton } from './WebringBar'
 import { TrayBadge } from './popnuke/TrayBadge'
-import { usePossessed } from '../lib/possession'
+import { useDescended, usePossessed } from '../lib/possession'
 
 // Icons are the site's own GIFs or plain glyphs: colour emoji show as empty boxes on systems without an emoji font.
 const LINKS: { to: string; icon: string | Slot; label: string; className?: string }[] = [
@@ -23,6 +23,7 @@ const LINKS: { to: string; icon: string | Slot; label: string; className?: strin
  */
 export function Taskbar() {
   const { pathname } = useLocation()
+  const descended = useDescended()
   return (
     <nav
       aria-label="Main"
@@ -37,6 +38,8 @@ export function Taskbar() {
             to={l.to}
             aria-label={l.label}
             aria-current={here ? 'page' : undefined}
+            // Possessed or not, the way to Settings (and the baptism) always reads as itself.
+            data-uncorrupted={l.to === '/settings' ? '' : undefined}
             className={`flex h-8 shrink-0 items-center gap-1 px-2 font-bold ${here ? 'win-sunken bg-[repeating-conic-gradient(#c0c0c0_0_25%,#fff_0_50%)] bg-[length:2px_2px]' : 'win-raised'} ${l.className ?? ''}`}
           >
             {typeof l.icon === 'string' ? <span aria-hidden className="text-base leading-none">{l.icon}</span> : <Img slot={l.icon} width={20} />}
@@ -50,7 +53,7 @@ export function Taskbar() {
         <TrayBadge />
         <Clock />
       </div>
-      <Link to="/" aria-label="Daniel Cheng's World Wide Web Site: home" className="shrink-0">
+      <Link to="/" aria-label="Daniel Cheng's World Wide Web Site: home" title={descended ? `✦ ${descended.name} descended` : undefined} className="shrink-0">
         <DanielLogo size={26} />
       </Link>
     </nav>
@@ -66,7 +69,7 @@ function Clock() {
     return () => window.clearInterval(id)
   }, [])
   return (
-    <time dateTime={now.toISOString()} className="px-1 tabular-nums max-[360px]:hidden">
+    <time dateTime={now.toISOString()} data-no-rot="" className="px-1 tabular-nums max-[360px]:hidden">
       {/* Possessed, it's always the same time, and it isn't a time. */}
       {possessed ? '6:66' : now.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })}
     </time>

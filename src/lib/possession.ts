@@ -1,5 +1,6 @@
 import { useSyncExternalStore } from 'react'
 import { readStored, writeStored } from '../hooks/useLocalStorage'
+import { HAUNT_DONE_KEY } from './haunting'
 
 // What the hunt does to the visitor, shared site-wide (one store, so every component sees a change at once):
 // - heard: they reached a sealed page. Remembered forever (the hymn stays in DANIELAMP, the first time is kept).
@@ -63,3 +64,29 @@ export function summonScare() {
   window.dispatchEvent(new Event(SCARE_EVENT))
   return true
 }
+
+/** The ones who reached the bottom of the hunt: when, and the name they gave. Forever (there's no undoing this). */
+export type Descended = { at: string; name: string }
+export const DESCENDED_KEY = 'descended'
+let descendedCache: { raw: string | null; value: Descended | null } = { raw: null, value: null }
+/** Stable between changes (useSyncExternalStore compares snapshots by identity). */
+export function descendedOf(): Descended | null {
+  let raw: string | null
+  try {
+    raw = localStorage.getItem(DESCENDED_KEY)
+  } catch {
+    raw = null
+  }
+  if (raw !== descendedCache.raw) descendedCache = { raw, value: readStored<Descended | null>(DESCENDED_KEY, null) }
+  return descendedCache.value
+}
+
+/** The end: they're marked as descended, the possession lifts, and the haunting is over for good. */
+export function descend(name: string, now = new Date()) {
+  writeStored(DESCENDED_KEY, { at: now.toISOString(), name } satisfies Descended)
+  writeStored(POSSESSED_KEY, false)
+  writeStored(HAUNT_DONE_KEY, true)
+  notify()
+}
+
+export const useDescended = () => useSyncExternalStore(subscribe, descendedOf, () => null)

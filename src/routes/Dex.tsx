@@ -9,7 +9,9 @@ import { useStored } from '../hooks/useLocalStorage'
 import { gifCursor } from '../lib/cursor'
 import { DEX, DEX_KEY, dexProgress, type DexEntry, type Found } from '../lib/discovery'
 import { usePossessed } from '../lib/possession'
+import { Rune } from '../components/Rune'
 import type { ObjSpec } from '../three/pageScenes'
+import { UncorruptedCtx } from '../lib/uncorrupted'
 
 const STARS = { common: '★☆☆', rare: '★★☆', legendary: '★★★' } as const
 
@@ -55,76 +57,79 @@ export function Dex() {
     return [...by]
   }, [])
 
+  // Readable even while possessed: the fragments only show then.
   return (
-    <div data-testid="dex" className="tile-space-clouds min-h-screen p-3 sm:p-6" style={{ cursor: gifCursor(cursors.star) }}>
-      <div className="mx-auto max-w-4xl space-y-4">
-        <header className="win-raised p-3 text-center text-black">
-          <h1 className="font-impact text-3xl sm:text-5xl">
-            <RainbowText text="THE OBJECT DEX" />
-          </h1>
-          <p className="mt-1 font-[Tahoma,sans-serif] text-sm">
-            Not every 3D thing on this website: only the specimens. One on every page of the ring, seven that only come out at night, three that glow. Click one and it's catalogued.
-          </p>
-          <div className="win-sunken mx-auto mt-2 h-5 max-w-md bg-white" role="progressbar" aria-valuenow={n} aria-valuemin={0} aria-valuemax={total} aria-label="Objects catalogued">
-            <div className="h-full bg-[repeating-linear-gradient(90deg,#000080_0_8px,#1084d0_8px_12px)] transition-[width] duration-500" style={{ width: `${(n / total) * 100}%` }} />
-          </div>
-          <p className="mt-1 font-pixel text-[10px]" data-testid="dex-count">
-            {n} / {total} CATALOGUED ({pct}%)
-          </p>
-        </header>
+    <UncorruptedCtx.Provider value>
+      <div data-testid="dex" data-uncorrupted="" className="tile-space-clouds min-h-screen p-3 sm:p-6" style={{ cursor: gifCursor(cursors.star) }}>
+        <div className="mx-auto max-w-4xl space-y-4">
+          <header className="win-raised p-3 text-center text-black">
+            <h1 className="font-impact text-3xl sm:text-5xl">
+              <RainbowText text="THE OBJECT DEX" />
+            </h1>
+            <p className="mt-1 font-[Tahoma,sans-serif] text-sm">
+              Not every 3D thing on this website: only the specimens. One on every page of the ring, seven that only come out at night, three that glow. Click one and it's catalogued.
+            </p>
+            <div className="win-sunken mx-auto mt-2 h-5 max-w-md bg-white" role="progressbar" aria-valuenow={n} aria-valuemin={0} aria-valuemax={total} aria-label="Objects catalogued">
+              <div className="h-full bg-[repeating-linear-gradient(90deg,#000080_0_8px,#1084d0_8px_12px)] transition-[width] duration-500" style={{ width: `${(n / total) * 100}%` }} />
+            </div>
+            <p className="mt-1 font-pixel text-[10px]" data-testid="dex-count">
+              {n} / {total} CATALOGUED ({pct}%)
+            </p>
+          </header>
 
-        <section className="win-raised p-2 font-[Tahoma,sans-serif] text-xs text-black" aria-label="Rewards">
-          <p className="bg-gradient-to-r from-win-title to-[#1084d0] px-1 font-bold text-white">Rewards: hints for Daniel&apos;s Desktop</p>
-          <ul className="mt-1 grid gap-1 sm:grid-cols-2">
-            {DEX_MILESTONES.map((m) => (
-              <li key={m.pct} className="win-sunken bg-white p-1" data-testid={`milestone-${m.pct}`}>
-                {pct >= m.pct ? (
-                  <>
-                    🔓 <b>{m.pct}%</b> · <span className="font-mono">{m.folder}</span> · <span className="text-green-800">{m.hint}</span>
-                  </>
-                ) : (
-                  <span className="text-gray-600">
-                    🔒 <b>{m.pct}%</b> · <span className="font-mono">{m.folder}</span> · hint: ???
-                  </span>
-                )}
-              </li>
-            ))}
-          </ul>
-          <p className="mt-1">
-            The locked folders are in <Link to="/desktop" className="text-blue-800 underline">My Computer</Link>. Every one has another way in, too.
-          </p>
-        </section>
-
-        {pages.map(([page, entries]) => {
-          const got = entries.filter((e) => found[e.spec.id]).length
-          return (
-            <section key={page} className="win-raised p-2 text-black" aria-label={pageName(page)}>
-              <h2 className="flex items-baseline justify-between gap-2 border-b border-win-dark pb-1 font-[Tahoma,sans-serif] text-sm font-bold">
-                {page.startsWith('/') ? <Link to={page} className="text-blue-800 underline">{pageName(page)}</Link> : <span>{pageName(page)}</span>}
-                <span className="shrink-0 font-pixel text-[9px]">
-                  {got}/{entries.length}
-                </span>
-              </h2>
-              <ul className="mt-2 grid grid-cols-2 gap-2 sm:grid-cols-3 md:grid-cols-5">
-                {entries.map(({ spec }) => (
-                  <DexCard key={spec.id} spec={spec} seen={found[spec.id]} possessed={possessed} onOpen={() => setOpen(spec)} />
-                ))}
-              </ul>
-            </section>
-          )
-        })}
-
-        {complete && (
-          <section data-testid="dex-certificate" className="animate-pop-in border-8 border-double border-win-title bg-white p-6 text-center text-black shadow-[8px_8px_0_#000]">
-            <h2 className="font-times text-3xl font-bold italic">Certificate of Total Cataloguing</h2>
-            <p className="mt-2 font-times text-lg">
-              You caught all {total} specimens. Every one. Even the goose. That is not the bottom. It is barely the start.
+          <section className="win-raised p-2 font-[Tahoma,sans-serif] text-xs text-black" aria-label="Rewards">
+            <p className="bg-gradient-to-r from-win-title to-[#1084d0] px-1 font-bold text-white">Rewards: hints for Daniel&apos;s Desktop</p>
+            <ul className="mt-1 grid gap-1 sm:grid-cols-2">
+              {DEX_MILESTONES.map((m) => (
+                <li key={m.pct} className="win-sunken bg-white p-1" data-testid={`milestone-${m.pct}`}>
+                  {pct >= m.pct ? (
+                    <>
+                      🔓 <b>{m.pct}%</b> · <span className="font-mono">{m.folder}</span> · <span className="text-green-800">{m.hint}</span>
+                    </>
+                  ) : (
+                    <span className="text-gray-600">
+                      🔒 <b>{m.pct}%</b> · <span className="font-mono">{m.folder}</span> · hint: ???
+                    </span>
+                  )}
+                </li>
+              ))}
+            </ul>
+            <p className="mt-1">
+              The locked folders are in <Link to="/desktop" className="text-blue-800 underline">My Computer</Link>. Every one has another way in, too.
             </p>
           </section>
-        )}
+
+          {pages.map(([page, entries]) => {
+            const got = entries.filter((e) => found[e.spec.id]).length
+            return (
+              <section key={page} className="win-raised p-2 text-black" aria-label={pageName(page)}>
+                <h2 className="flex items-baseline justify-between gap-2 border-b border-win-dark pb-1 font-[Tahoma,sans-serif] text-sm font-bold">
+                  {page.startsWith('/') ? <Link to={page} className="text-blue-800 underline">{pageName(page)}</Link> : <span>{pageName(page)}</span>}
+                  <span className="shrink-0 font-pixel text-[9px]">
+                    {got}/{entries.length}
+                  </span>
+                </h2>
+                <ul className="mt-2 grid grid-cols-2 gap-2 sm:grid-cols-3 md:grid-cols-5">
+                  {entries.map(({ spec }) => (
+                    <DexCard key={spec.id} spec={spec} seen={found[spec.id]} possessed={possessed} onOpen={() => setOpen(spec)} />
+                  ))}
+                </ul>
+              </section>
+            )
+          })}
+
+          {complete && (
+            <section data-testid="dex-certificate" className="animate-pop-in border-8 border-double border-win-title bg-white p-6 text-center text-black shadow-[8px_8px_0_#000]">
+              <h2 className="font-times text-3xl font-bold italic">Certificate of Total Cataloguing</h2>
+              <p className="mt-2 font-times text-lg">
+                You caught all {total} specimens. Every one. Even the goose. That is not the bottom. It is barely the start.
+              </p>
+            </section>
+          )}
+        </div>
+        {open && <ObjectWindow key={open.id} spec={open} inDex onClose={() => setOpen(null)} />}
       </div>
-      {open && <ObjectWindow key={open.id} spec={open} inDex onClose={() => setOpen(null)} />}
-    </div>
+    </UncorruptedCtx.Provider>
   )
 }
 
@@ -144,7 +149,7 @@ function DexCard({ spec, seen, possessed, onOpen }: { spec: ObjSpec; seen?: stri
                 data-testid="fragment"
                 className={`grid h-6 w-6 shrink-0 place-items-center border font-times text-base font-bold ${possessed ? 'border-[#7a0000] bg-black text-[#ff2a2a] [text-shadow:0_0_4px_#f00]' : 'border-dashed border-gray-400 text-transparent'}`}
               >
-                {possessed ? fragment : '·'}
+                {possessed ? spec.specimen?.glyph ? <Rune glyph={spec.specimen.glyph} /> : fragment : '·'}
               </span>
             )}
           </span>
@@ -154,7 +159,15 @@ function DexCard({ spec, seen, possessed, onOpen }: { spec: ObjSpec; seen?: stri
         </button>
       ) : (
         <div className="win-sunken flex h-full flex-col gap-0.5 bg-[#e8e8e8] p-1.5 font-[Tahoma,sans-serif] text-[11px] leading-tight text-gray-700">
-          <b className="font-pixel text-[10px] text-black">???</b>
+          <span className="flex items-start justify-between gap-1">
+            <b className="font-pixel text-[10px] text-black">???</b>
+            {/* Something will be here once it's caught (and, for the runes and digits, once you've heard the song). */}
+            {fragment && (
+              <span aria-label="An empty seal: catch it to see what it carries" data-testid="fragment-empty" className="grid h-6 w-6 shrink-0 place-items-center border border-dashed border-gray-400 font-times text-sm text-gray-400">
+                ?
+              </span>
+            )}
+          </span>
           <span>made of {spec.madeOf}</span>
           {tags.length > 0 && <span className="text-[10px]">{tags.join(' · ')}</span>}
         </div>

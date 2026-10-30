@@ -1,5 +1,5 @@
 import { createContext, useContext, useEffect } from 'react'
-import type { SfxName } from './synth'
+import type { SfxName, SfxOptions } from './synth'
 import type { MixId } from './tracks'
 
 export type AudioApi = {
@@ -18,7 +18,7 @@ export type AudioApi = {
   setLocked: (locked: boolean) => void
   /** Null until audio is unlocked. */
   getAnalyser: () => AnalyserNode | null
-  sfx: (name: SfxName) => void
+  sfx: (name: SfxName, opts?: SfxOptions) => void
   /** Everything heard as if from underwater (the baptism), or not. */
   muffle: (on: boolean) => void
 }

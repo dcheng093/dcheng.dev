@@ -1,4 +1,4 @@
-import { useHeardAt } from '../lib/possession'
+import { useDescended, useHeardAt, usePossessed } from '../lib/possession'
 import { SYNTH_SONGS, type SynthSong } from './synth'
 
 /** Everything the jukebox can play: the built-in synth songs, then any audio files dropped into src/music/. */
@@ -27,6 +27,13 @@ export const MIXES: Track[] = [
 /** Unknown ids (e.g. a stored pick whose file was since removed) fall back to the first track. */
 export const findTrack = (id: MixId) => MIXES.find((t) => t.id === id) ?? MIXES[0]
 
-/** The tracks this visitor can see: hidden songs join the list once they've reached a sealed page. */
-export const visibleMixes = (heard: boolean) => (heard ? MIXES : MIXES.filter((t) => t.kind !== 'synth' || !t.song.hidden))
-export const useMixes = () => visibleMixes(!!useHeardAt())
+/**
+ * The tracks this visitor can see. Possessed: only the possessed songs, the hymn, and Daniel's own recordings (played
+ * warped). Otherwise: everything but those, with hidden songs (the hymn) joining once they've reached a sealed page.
+ */
+export function visibleMixes(heard: boolean, possessed = false, descended = false) {
+  const finished = (t: Track) => t.kind === 'file' || !t.song.finisher || descended
+  if (possessed) return MIXES.filter((t) => t.kind === 'file' || t.song.possessed || t.id === 'hymn' || (descended && t.song.finisher))
+  return MIXES.filter((t) => finished(t) && (t.kind === 'file' || (!t.song.possessed && (heard || !t.song.hidden))))
+}
+export const useMixes = () => visibleMixes(!!useHeardAt(), usePossessed(), !!useDescended())

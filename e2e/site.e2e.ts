@@ -2,8 +2,18 @@ import { expect, test, type Locator, type Page } from '@playwright/test'
 import { existsSync } from 'node:fs'
 import { resolve } from 'node:path'
 import { pathToFileURL } from 'node:url'
+import { ASCENSION_AT, CALM_MS, CREDITS_MS } from '../src/components/ending/timing.ts'
 
 const ROUTES = ['/', '/dealership', '/shrine/segfault', '/shrine/kettle', '/shrine/chiikawa', '/guestbook', '/under-construction', '/you-won', '/checkout', '/leave', '/scan', '/casino', '/survey', '/work-from-home', '/arcade', '/desktop', '/radio', '/oracle', '/blinkie-maker', '/stickers', '/dex', '/popnuke', '/settings', '/boring']
+
+/**
+ * Goes to a page and waits until it's really there. Most pages load on demand (routes.tsx `lazy`), so straight after
+ * `goto` the app may not have rendered yet: a fake clock jumped then would start no page timers at all.
+ */
+async function arrive(page: Page, path: string) {
+  await page.goto(path)
+  await expect(page.getByTestId('taskbar')).toBeAttached()
+}
 
 /** Skip the enter gate (sessionStorage) and collect real errors, ignoring 404s for not-yet-supplied images. */
 async function prepare(page: Page, { skipGate = true, virus = false, pet = false } = {}) {
@@ -217,7 +227,7 @@ test('the dealership always has the bouncing TRUST ME tower ad, even with reduce
   await page.goto('/dealership')
   const ad = page.getByRole('complementary', { name: 'Ad tower' }).getByText('YOU CAN TRUST ME, I AM DANIEL!').locator('xpath=..')
   await expect(ad).toHaveCount(1)
-  await expect(ad.locator('img')).toHaveAttribute('src', '/me/full-body-cutout.png')
+  await expect(ad.locator('img')).toHaveAttribute('src', '/me/full-body-cutout.webp')
   await expect(ad.getByText('TRUST »')).toBeVisible()
   const anim = await ad.evaluate((el) => [el.querySelector('img')!, el.lastElementChild!].map((e) => `${getComputedStyle(e).animationName} ${getComputedStyle(e).animationIterationCount}`))
   expect(anim).toEqual(['boing infinite', 'pulse-scale infinite'])
@@ -274,7 +284,7 @@ test("the desktop's notepad remembers what you typed, and windows drag", async (
 test('the Albanian virus alert appears a while in and any button closes it', async ({ page }) => {
   await page.clock.install()
   await prepare(page, { virus: true })
-  await page.goto('/casino')
+  await arrive(page, '/casino')
   await expect(page.getByTestId('virus-alert')).toHaveCount(0)
   await page.clock.fastForward(26_000)
   const alert = page.getByRole('alertdialog', { name: 'Virus Alert' })
@@ -603,7 +613,7 @@ test('after closing 3 pop-ups, the next one advertises POPNUKE, and both its but
   test.setTimeout(120_000)
   await page.clock.install()
   await prepare(page)
-  await page.goto('/casino')
+  await arrive(page, '/casino')
   // Close three pop-ups (multiplying ones spawn more, which is fine), then the next ambush is the ad.
   let ad = false
   let closed = 0
@@ -622,7 +632,7 @@ test('installing POPNUKE really blocks the pop-ups and the virus alert, and unin
   test.setTimeout(120_000)
   await page.clock.install()
   await prepare(page, { virus: true })
-  await page.goto('/popnuke')
+  await arrive(page, '/popnuke')
   await page.getByTestId('popnuke-install').scrollIntoViewIfNeeded()
   await page.getByTestId('popnuke-install').click()
   const setup = page.getByTestId('popnuke-setup')
@@ -644,7 +654,7 @@ test('installing POPNUKE really blocks the pop-ups and the virus alert, and unin
   await expect(page.getByTestId('popnuke-badge')).toBeVisible()
 
   // Two minutes of would-be pop-ups (and the virus alert, due at 25s): nothing gets through.
-  await page.goto('/casino')
+  await arrive(page, '/casino')
   // fastForward fires each due timer once per jump, so step through it like the ambush would.
   for (let i = 0; i < 4; i++) await page.clock.fastForward(33_000)
   await expect(page.getByTestId('popup')).toHaveCount(0)
@@ -827,7 +837,7 @@ test('a page loads over dial-up the first time (jerky, status bar, hourglass), t
 
 test('a refresh empties the cache: pages slow-load again the first time after it', async ({ page }) => {
   await prepare(page)
-  await page.goto('/casino')
+  await arrive(page, '/casino')
   await expect(page.getByTestId('page-load')).toHaveCount(0)
   expect(await page.evaluate(() => JSON.parse(sessionStorage.getItem('dialupVisited')!))).toContain('/casino')
   // A refresh goes back to the enter gate on Home, with nothing cached any more.
@@ -843,7 +853,7 @@ test('a refresh empties the cache: pages slow-load again the first time after it
 
 test('scrolling is smooth: no repaint lag, and pictures scrolled to after the load show whole', async ({ page }) => {
   await prepare(page)
-  await page.goto('/dealership')
+  await arrive(page, '/dealership')
   await expect(page.getByTestId('page-load')).toHaveCount(0)
   await expect(page.getByTestId('repaint-lag')).toHaveCount(0)
   // A picture far down the page whose file hasn't been shown anywhere yet: scrolled to, it never "downloads".
@@ -861,7 +871,7 @@ test('scrolling is smooth: no repaint lag, and pictures scrolled to after the lo
 test('windows ease shut before they go', async ({ page }) => {
   await page.clock.install()
   await prepare(page, { virus: true })
-  await page.goto('/casino')
+  await arrive(page, '/casino')
   await page.clock.fastForward(26_000)
   const alert = page.getByRole('alertdialog', { name: 'Virus Alert' })
   await expect(alert).toBeVisible()
@@ -930,7 +940,7 @@ test('Daniel Cam is a live feed of the new selfies', async ({ page }) => {
   await expect(cam).toBeVisible()
   const shown = () => cam.locator('img.opacity-100').getAttribute('src')
   const first = await shown()
-  expect(first).toMatch(/\/me\/MISC-(1[4-9]|2\d)\.JPG/)
+  expect(first).toMatch(/\/me\/MISC-(1[4-9]|2\d)\.webp/)
   await expect.poll(shown, { timeout: 5_000 }).not.toBe(first)
 })
 
@@ -1099,11 +1109,12 @@ const SECRETS = resolve(process.cwd(), 'secrets/hunt.mjs')
 type Hunt = Record<string, string> & { LOCKS: Record<string, { answer: string }> }
 const hunt = async () => (await import(pathToFileURL(SECRETS).href)) as Hunt
 
-test('the descent: the shrine turns the site, and its answers open the folders all the way to the bottom', async ({ page }) => {
+test('the descent: the shrine turns the site, its answers open the folders all the way to the bottom, and the ending plays', async ({ page }) => {
   test.skip(!existsSync(SECRETS), 'needs secrets/hunt.mjs')
-  test.setTimeout(90_000)
+  test.setTimeout(120_000)
   const h = await hunt()
   const errors = await prepare(page)
+  await page.clock.install() // the ending runs for a minute; the clock is skipped through it
   await page.addInitScript(() => sessionStorage.setItem('desktopOn', 'true'))
   await page.goto(h.SHRINE_PATH)
   await expect(page.getByTestId('sealed-page')).toBeVisible()
@@ -1152,6 +1163,42 @@ test('the descent: the shrine turns the site, and its answers open the folders a
   await home()
   await open('C:')
   await unlock('DANIEL', h.DANIEL_ANSWER)
+
+  // The bottom: the ending plays by itself, the first time, with no way to skip it.
+  const ending = page.getByTestId('ascension')
+  await expect(ending).toHaveAttribute('data-stage', 'still')
+  await expect(ending.getByRole('button', { name: /Skip/ })).toHaveCount(0)
+  await page.clock.fastForward(ASCENSION_AT.peel)
+  await expect(ending).toHaveAttribute('data-stage', 'peel')
+  await page.clock.fastForward(ASCENSION_AT.dawn - ASCENSION_AT.peel)
+  await expect(ending).toHaveAttribute('data-stage', 'dawn')
+  await page.clock.fastForward(ASCENSION_AT.name - ASCENSION_AT.dawn)
+  await ending.getByLabel('Your name').fill('E2E')
+  await ending.getByRole('button', { name: 'OK' }).click()
+  await expect(ending).toContainText('descended by')
+  await expect(ending).toContainText('E2E')
+  expect(await horizontalOverflow(page)).toBeLessThanOrEqual(0)
+  await page.clock.fastForward(CREDITS_MS)
+  await expect(ending).toHaveAttribute('data-stage', 'calm')
+  await page.clock.fastForward(CALM_MS)
+  await expect(ending).toHaveCount(0)
+  await expect(page.locator('html')).toHaveAttribute('data-descended', '')
+  await expect(page.locator('html')).not.toHaveAttribute('data-possessed')
+
+  // Then the words, and something to take away.
+  await expect(page.getByRole('region', { name: 'README.txt - Notepad' })).toBeVisible()
+  const keepsake = page.getByRole('dialog', { name: 'Take something with you' })
+  const mail = await keepsake.getByRole('link', { name: 'Send it to Daniel' }).getAttribute('href')
+  expect(mail).toMatch(/^mailto:/)
+  expect(decodeURIComponent(mail!)).toContain(h.FINAL_PHRASE)
+  expect(decodeURIComponent(mail!)).toContain('name: E2E')
+  const [download] = await Promise.all([page.waitForEvent('download'), keepsake.getByRole('button', { name: 'Download your certificate' }).click()])
+  expect(download.suggestedFilename()).toBe('descended-e2e.png')
+  await keepsake.getByRole('button', { name: 'Close' }).click()
+  await page.getByRole('button', { name: 'Close README.txt - Notepad' }).click()
+  await page.clock.runFor(500) // windows ease shut on a timer, and this clock was skipped through the ending
+  await expect(page.getByRole('region', { name: 'README.txt - Notepad' })).toHaveCount(0)
+
   await open('TRANSMISSION_3.TXT')
   await expect(page.getByTestId('viewer-text')).toContainText(h.FINAL_PHRASE)
   await expect(page.getByTestId('viewer-text')).not.toContainText('{{heard}}')
@@ -1162,6 +1209,13 @@ test('the descent: the shrine turns the site, and its answers open the folders a
   await open('C:')
   await open('DANIEL')
   await expect(win.getByTestId('address')).toHaveText('C:\\DANIEL\\')
+  // Once is enough: it doesn't play again by itself, but DESCEND.EXE replays it, and that time it can be skipped.
+  await expect(page.getByTestId('ascension')).toHaveCount(0)
+  await open('DESCEND.EXE')
+  await page.getByTestId('ascension').getByRole('button', { name: /Skip/ }).click()
+  await expect(page.getByTestId('ascension')).toHaveCount(0)
+  await page.goto('/')
+  await expect(page.getByTestId('descended-mark')).toContainText('descended')
   expect(errors).toEqual([])
 })
 
@@ -1212,4 +1266,106 @@ test('DANIELAMP drags by its title bar and stays where it was left', async ({ pa
   await page.getByRole('navigation', { name: 'Main' }).getByRole('link', { name: 'Guestbook' }).click()
   await expect(page).toHaveURL(/\/guestbook$/)
   await expect.poll(async () => Math.round((await player.boundingBox())!.x)).toBe(Math.round(after.x))
+})
+
+/** Seeds a possessed visitor (once per test, so a baptism sticks). */
+const possessVisitor = (page: Page, extra: Record<string, string> = {}) =>
+  page.addInitScript((extra) => {
+    if (sessionStorage.getItem('seededPossession')) return
+    sessionStorage.setItem('seededPossession', 'true')
+    localStorage.setItem('possessed', 'true')
+    localStorage.setItem('secrets', JSON.stringify({ morse: '2026-10-29T03:00:00Z' }))
+    for (const [k, v] of Object.entries(extra)) sessionStorage.setItem(k, v)
+  }, extra)
+
+test('possessed: the 3D objects are still there to catch (drawn, and not hidden behind the page)', async ({ page }) => {
+  test.skip((page.viewportSize()?.width ?? 1000) < 640, 'the Lucky Die is an anchor: big screens only')
+  await prepare(page)
+  await clearMargins(page)
+  await possessVisitor(page)
+  await page.goto('/casino')
+  const die = page.locator('[data-object="dice-a"]')
+  await expect.poll(() => drawnPixels(die), { timeout: 10_000 }).toBeGreaterThan(20)
+  await expect(die).not.toHaveCSS('opacity', '0', { timeout: 10_000 })
+  // Nothing opaque in front of it: the page's background stays see-through while possessed.
+  const box = (await die.boundingBox())!
+  const covered = await page.evaluate(([x, y]) => {
+    for (let el = document.elementFromPoint(x, y); el && el !== document.body; el = el.parentElement) {
+      const bg = getComputedStyle(el).backgroundColor
+      if (el.tagName !== 'CANVAS' && bg !== 'rgba(0, 0, 0, 0)' && bg !== 'transparent' && el.closest('main')) return el.className
+    }
+    return null
+  }, [box.x + box.width / 2, box.y + box.height / 2])
+  expect(covered).toBeNull()
+  await clickObject(page, die)
+  await expect(page.getByTestId('object-window')).toContainText('Lucky Die')
+})
+
+test('possessed: the words rot, but Settings, the Dex and Daniel 95 stay readable; baptism puts the words back', async ({ page }) => {
+  test.setTimeout(60_000)
+  const errors = await prepare(page)
+  await possessVisitor(page)
+  await page.goto('/')
+  await expect(page.getByText('WELCOME 2 MY HEART. STAY IN IT.')).toBeVisible()
+  await expect(page.getByRole('navigation', { name: 'Main' })).toContainText('Ghostbook')
+  await expect(page.getByRole('navigation', { name: 'Main' })).toContainText('Settings')
+  await page.goto('/dex')
+  await expect(page.getByTestId('dex-count')).toContainText('CATALOGUED')
+  await page.goto('/settings')
+  await expect(page.getByRole('button', { name: 'Display Properties' })).toContainText('Display')
+  await page.getByRole('button', { name: 'Baptize Properties' }).click()
+  await page.getByTestId('applet').getByRole('button', { name: 'Baptize', exact: true }).click()
+  await expect(page.getByTestId('baptism')).toHaveCount(0, { timeout: 12_000 })
+  await page.goto('/')
+  await expect(page.getByText('♥ WELCOME 2 MY HEART ♥')).toBeVisible()
+  expect(errors).toEqual([])
+})
+
+test('the Gulag Games banner on Home is a real link to gulaggames.com, in a new tab', async ({ page, context }) => {
+  await prepare(page)
+  await context.route('https://gulaggames.com/**', (r) => r.fulfill({ contentType: 'text/html', body: '<title>Gulag Games</title>' }))
+  await page.goto('/')
+  const ad = page.getByTestId('ad-wall').locator('[data-ad="gulag-games"]').first()
+  await expect(ad).toHaveAttribute('href', 'https://gulaggames.com/')
+  await expect(ad).toHaveAttribute('target', '_blank')
+  const [tab] = await Promise.all([context.waitForEvent('page'), ad.click()])
+  await expect(tab).toHaveURL('https://gulaggames.com/')
+  await expect(page).toHaveURL(/\/$/)
+})
+
+test('the haunting: cracks on the glass, then it breaks (once)', async ({ page }) => {
+  await prepare(page)
+  await possessVisitor(page, { hauntSeconds: '795' })
+  await page.goto('/guestbook')
+  await expect(page.getByTestId('cracks')).toHaveAttribute('data-cracks', '6')
+  await expect(page.getByTestId('cracks')).toHaveAttribute('data-cracks', '7', { timeout: 10_000 })
+  expect(await page.evaluate(() => localStorage.getItem('hauntingDone'))).toBe('true')
+  // The shatter stays until you leave the page; after that it's over for good.
+  await page.getByRole('navigation', { name: 'Main' }).getByRole('link', { name: 'Home', exact: true }).click()
+  await expect(page.getByTestId('cracks')).toHaveCount(0)
+})
+
+test('Daniel 95 opens each file in its own window, so one can stay open while you read another', async ({ page }) => {
+  await prepare(page)
+  await page.addInitScript(() => sessionStorage.setItem('desktopOn', 'true'))
+  await page.goto('/desktop')
+  await page.getByRole('list', { name: 'Desktop icons' }).getByRole('button', { name: 'My Computer' }).dblclick()
+  const files = page.getByTestId('window-computer').getByRole('list', { name: 'Files' })
+  // Brings My Computer back in front of the file that just opened, from Daniel 95's own taskbar (the desktop icon has
+  // the same name, and comes first).
+  const toFront = () => page.getByTestId('desktop').getByRole('button', { name: 'My Computer', exact: true }).last().click()
+  await files.getByRole('button', { name: 'C:', exact: true }).dblclick()
+  await files.getByRole('button', { name: 'SCHOOL', exact: true }).dblclick()
+  await files.getByRole('button', { name: '42', exact: true }).dblclick()
+  await files.getByRole('button', { name: 'libft_notes.txt', exact: true }).dblclick()
+  // On a narrow screen the new window sits over My Computer: bring it back to the front, like a person would.
+  await toFront()
+  await files.getByRole('button', { name: 'norminette.log', exact: true }).dblclick()
+  await expect(page.getByTestId('window-viewer')).toHaveCount(2)
+  await expect(page.getByRole('region', { name: 'libft_notes.txt - Notepad' })).toContainText('ft_strlen')
+  await expect(page.getByRole('region', { name: 'norminette.log - Notepad' })).toContainText('Norme: KO')
+  // Opening one again just brings it forward.
+  await toFront()
+  await files.getByRole('button', { name: 'libft_notes.txt', exact: true }).dblclick()
+  await expect(page.getByTestId('window-viewer')).toHaveCount(2)
 })

@@ -10,8 +10,46 @@ import { disposeScene, fitWorld, register, texture } from './stage'
  * The camera drifts gently down the avenue (no orbit), so the title always sits in open sky. Nothing flashes.
  */
 export function mountDream(canvas: HTMLCanvasElement) {
-  const rng = mulberry32(42)
   const scene = new THREE.Scene()
+  const { drifting, water } = buildDream(scene)
+  const camera = new THREE.PerspectiveCamera(55, 1, 0.1, 140)
+  const resize = () => fitWorld(canvas, camera)
+  resize()
+  window.addEventListener('resize', resize)
+
+  const stop = register({
+    scene,
+    camera,
+    target: canvas,
+    visible: true,
+    update: (t) => {
+      // Drifting, not orbiting: a slow sway down the avenue, gazing up at David.
+      camera.position.set(Math.sin(t * 0.05) * 3, 3.5 + Math.sin(t * 0.13) * 0.6, 22 + Math.sin(t * 0.03) * 3)
+      camera.lookAt(Math.sin(t * 0.04) * 1.5, 9, -30)
+      for (const f of drifting) f(t)
+    },
+  })
+  if (!stop) {
+    window.removeEventListener('resize', resize)
+    water.dispose()
+    disposeScene(scene)
+    return null
+  }
+  return () => {
+    stop()
+    window.removeEventListener('resize', resize)
+    water.dispose()
+    ;(scene.background as THREE.Texture).dispose()
+    disposeScene(scene)
+  }
+}
+
+/**
+ * Fills a scene with the dream. Returns what moves (call each with the time in seconds) and the sea's own texture,
+ * for the caller to dispose. Used by the enter gate (above) and by the link preview's renderer (scripts/og).
+ */
+export function buildDream(scene: THREE.Scene) {
+  const rng = mulberry32(42)
   scene.background = skyGradient()
   scene.fog = new THREE.Fog(0xd9a6d6, 14, 70)
   scene.add(new THREE.AmbientLight(0xffe6ff, 1.3))
@@ -162,37 +200,7 @@ export function mountDream(canvas: HTMLCanvasElement) {
   const motes = new THREE.Points(motesGeo, new THREE.PointsMaterial({ color: 0xffe0ff, size: 0.18, transparent: true, opacity: 0.8, blending: THREE.AdditiveBlending, depthWrite: false }))
   scene.add(motes)
   drifting.push((t) => (motes.position.y = (t * 0.4) % 4 - 2))
-
-  const camera = new THREE.PerspectiveCamera(55, 1, 0.1, 140)
-  const resize = () => fitWorld(canvas, camera)
-  resize()
-  window.addEventListener('resize', resize)
-
-  const stop = register({
-    scene,
-    camera,
-    target: canvas,
-    visible: true,
-    update: (t) => {
-      // Drifting, not orbiting: a slow sway down the avenue, gazing up at David.
-      camera.position.set(Math.sin(t * 0.05) * 3, 3.5 + Math.sin(t * 0.13) * 0.6, 22 + Math.sin(t * 0.03) * 3)
-      camera.lookAt(Math.sin(t * 0.04) * 1.5, 9, -30)
-      for (const f of drifting) f(t)
-    },
-  })
-  if (!stop) {
-    window.removeEventListener('resize', resize)
-    water.dispose()
-    disposeScene(scene)
-    return null
-  }
-  return () => {
-    stop()
-    window.removeEventListener('resize', resize)
-    water.dispose()
-    ;(scene.background as THREE.Texture).dispose()
-    disposeScene(scene)
-  }
+  return { drifting, water }
 }
 
 /** Twilight: deep indigo overhead, through violet and pink, to a peach glow on the horizon. */

@@ -1,16 +1,11 @@
 import type { RouteObject } from 'react-router-dom'
 import { RootLayout, type RouteHandle } from './layouts/RootLayout'
 import { Home } from './routes/Home'
-import { Dealership } from './routes/Dealership'
-import { Shrine } from './routes/Shrine'
-import { Guestbook } from './routes/Guestbook'
-import { Boring } from './routes/Boring'
-import { Checkout, Leave, UnderConstruction, YouWon } from './routes/Traps'
-import { Casino, Scan, WorkFromHome } from './routes/Scams'
 import { FakeBSOD } from './routes/FakeBSOD'
 import { SealedOrBSOD } from './routes/Sealed'
 
-// Cyber Town pages load on demand: they carry their own games/encoders and most visitors never open all six.
+// Every page but Home (where everyone arrives) and the crash screen loads on demand: nobody needs every page's code
+// up front, and each one carries its own games, encoders and copy.
 const lazyPage = <K extends string>(load: () => Promise<Record<K, () => React.JSX.Element>>, name: K) => async () => ({ Component: (await load())[name] })
 
 const fullscreen: RouteHandle = { noWebring: true }
@@ -29,18 +24,18 @@ export const routes: RouteObject[] = [
     hydrateFallbackElement: <p className="grid min-h-screen place-items-center bg-black font-pixel text-lime">LOADING…</p>,
     children: [
       { index: true, element: <Home /> },
-      { path: 'dealership', element: <Dealership /> },
-      { path: 'shrine/:slug', element: <Shrine /> },
-      { path: 'guestbook', element: <Guestbook /> },
-      { path: 'boring', element: <Boring />, handle: { calm: true } satisfies RouteHandle },
-      { path: 'you-won', element: <YouWon /> },
-      { path: 'under-construction', element: <UnderConstruction /> },
-      { path: 'leave', element: <Leave />, handle: fullscreen },
-      { path: 'checkout', element: <Checkout /> },
-      { path: 'scan', element: <Scan /> },
-      { path: 'casino', element: <Casino /> },
+      { path: 'dealership', lazy: lazyPage(() => import('./routes/Dealership'), 'Dealership') },
+      { path: 'shrine/:slug', lazy: lazyPage(() => import('./routes/Shrine'), 'Shrine') },
+      { path: 'guestbook', lazy: lazyPage(() => import('./routes/Guestbook'), 'Guestbook') },
+      { path: 'boring', lazy: lazyPage(() => import('./routes/Boring'), 'Boring'), handle: { calm: true } satisfies RouteHandle },
+      { path: 'you-won', lazy: lazyPage(() => import('./routes/Traps'), 'YouWon') },
+      { path: 'under-construction', lazy: lazyPage(() => import('./routes/Traps'), 'UnderConstruction') },
+      { path: 'leave', lazy: lazyPage(() => import('./routes/Traps'), 'Leave'), handle: fullscreen },
+      { path: 'checkout', lazy: lazyPage(() => import('./routes/Traps'), 'Checkout') },
+      { path: 'scan', lazy: lazyPage(() => import('./routes/Scams'), 'Scan') },
+      { path: 'casino', lazy: lazyPage(() => import('./routes/Scams'), 'Casino') },
       { path: 'survey', lazy: lazyPage(() => import('./routes/Survey'), 'Survey') },
-      { path: 'work-from-home', element: <WorkFromHome /> },
+      { path: 'work-from-home', lazy: lazyPage(() => import('./routes/Scams'), 'WorkFromHome') },
       { path: 'arcade', lazy: lazyPage(() => import('./routes/Arcade'), 'Arcade') },
       { path: 'desktop', lazy: lazyPage(() => import('./routes/Desktop'), 'Desktop'), handle: quiet },
       { path: 'radio', lazy: lazyPage(() => import('./routes/Radio'), 'Radio') },

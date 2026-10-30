@@ -9,8 +9,8 @@ import { FakeBSOD } from './FakeBSOD'
 /** Each legendary's backdrop: butcher-shop tiles, deep space, a meadow sky. */
 const SCENERY: Record<string, string> = {
   beef: 'bg-[repeating-conic-gradient(#fff_0_25%,#c8102e_0_50%)_0_0/48px_48px]',
-  'planet-daniel': "bg-[#05030f] bg-[url('/me/GALAXY2.JPG')] bg-cover bg-center",
-  goose: "bg-[#9cd0ff] bg-[url('/me/CLOUD2.JPG')] bg-cover bg-top",
+  'planet-daniel': "bg-[#05030f] bg-[url('/me/GALAXY2.webp')] bg-cover bg-center",
+  goose: "bg-[#9cd0ff] bg-[url('/me/CLOUD2.webp')] bg-cover bg-top",
 }
 
 /** A legendary's own page. Sealed until you've caught it somewhere on the site. */

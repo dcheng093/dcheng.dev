@@ -1,7 +1,7 @@
 /// <reference types="node" />
 import { describe, expect, it, vi } from 'vitest'
 import { POPUP_CAP, isSpecial, initialPopupState, popupReducer, type PopupState } from '../components/popups/popupState'
-import { pickAd, pickAds, pickAdsIncluding } from '../components/ads/pickAd'
+import { pickAd, pickAds, pickAdsIncluding, pickAmbush } from '../components/ads/pickAd'
 import { ads } from '../content/ads'
 import { pickReply } from '../content/chatScript'
 import { nextHitCount } from '../lib/hitCounter'
@@ -10,7 +10,7 @@ import { WEBRING, neighbour, randomRoute } from '../lib/sitemap'
 import { mergeEntries, pageIndex, pageNumbers, PER_PAGE } from '../lib/guestbook'
 import { guestbookSeed } from '../content/guestbookSeed'
 import { readStored, writeStored } from '../hooks/useLocalStorage'
-import { assets, blinkies, buttons88, cursors, dividers, icons, kawaii, sparkles, type Slot } from '../content/assets'
+import { assets, blinkies, buttons88, cursors, dividers, icons, kawaii, possessedGifs, sparkles, type Slot } from '../content/assets'
 import { readFileSync } from 'node:fs'
 import { payout, spinReels } from '../lib/slots'
 import { CONFETTI_MAX, CONFETTI_MIN, confettiCount, throwConfetti } from '../lib/confetti'
@@ -33,7 +33,7 @@ import { moodOffset, poke, restingBody, step, type Personality } from '../lib/pe
 import { hasGlyph, voxelWord } from '../lib/voxelFont'
 import { bounce, clampOffset, contains, isFree, nearestFree, place, MIN_SIZE } from '../three/space'
 import { shrines } from '../content/shrines'
-import { existsSync } from 'node:fs'
+import { existsSync, readdirSync, statSync } from 'node:fs'
 import { govern } from '../three/stage'
 import { EMBLEM_CLEARANCE } from '../three/popnuke'
 import { arrival, statusLine } from '../lib/dialup'
@@ -45,9 +45,17 @@ import { graft, listDir, locksIn, walk, type FsContext } from '../lib/desktop'
 import { DEX_MILESTONES, FILESYSTEM, MAIL_VISITS, type FsNode } from '../content/desktop'
 import { makeSeal, normalise, openSeal } from '../lib/seal'
 import { openLock, openPage, SEALED, type SealedPage } from '../lib/hunt'
-import { baptize, heardAt, isPossessed, possess as possessVisitor, SCARE_EVENT, summonScare, markScared } from '../lib/possession'
+import { baptize, descend, descendedOf, heardAt, isPossessed, possess as possessVisitor, SCARE_EVENT, summonScare, markScared } from '../lib/possession'
+import { certificateLines, took } from '../components/ending/certificate'
 import { visibleMixes } from '../audio/tracks'
 import { routes } from '../routes'
+import { underlayFor, UNDERLAYS } from '../lib/possessedArt'
+import { hasRuneStrokes } from '../lib/runes'
+import { POSSESSED_COPY } from '../content/possessed'
+import { possessedText, rotText } from '../lib/rot'
+import { possessedPageSong } from '../audio/pageSongs'
+import { cracksAt, dueCues, HAUNT_DONE_KEY, HAUNT_END, SCRIPT } from '../lib/haunting'
+import { SPONSOR_ID } from '../content/ads'
 import { visitNote } from '../lib/visitNote'
 
 const spawn = (s: PopupState, variant: 'normal' | 'multiply' | 'dodge' = 'normal') =>
@@ -222,14 +230,19 @@ describe('web storage helpers', () => {
 
 describe('image slots', () => {
   // Lazy glob: only the file names are needed, matched case-sensitively like the production server.
-  const supplied = new Set(Object.keys(import.meta.glob(['../../public/me/*', '../../public/gifs/*'])).map((p) => p.replace('../../public', '')))
-  const groups = [assets, kawaii, icons, cursors, sparkles, dividers, blinkies, buttons88]
+  const supplied = new Set(
+    Object.keys(import.meta.glob(['../../public/me/*', '../../public/gifs/*', '../../public/possessed/*', '../../public/ads/*', '../../public/sfx/*'])).map((p) => p.replace('../../public', '')),
+  )
+  const groups = [assets, kawaii, icons, cursors, sparkles, dividers, blinkies, buttons88, possessedGifs]
   const slots = groups.flatMap((g) => Object.values(g)).flat().filter((s): s is Slot => /^\/(me|gifs)\//.test(s.src))
   // Read from disk: Vitest blanks stylesheet imports, even ?raw ones.
   const css = readFileSync('src/index.css', 'utf8')
-  const tiles = [...css.matchAll(/url\('(\/gifs\/[^']+)'\)/g)].map((m) => m[1])
+  const tiles = [...css.matchAll(/url\('(\/(?:gifs|possessed)\/[^']+)'\)/g)].map((m) => m[1])
+  // The sponsor's art, and the haunting's recordings.
+  const sponsorArt = ads.flatMap((a) => (a.kind === 'sponsor' ? [a.img as Slot, ...Object.values(a.art ?? {})] : [])).map((s) => s.src)
+  const recordings = ['/sfx/glass-shatter.mp3', '/sfx/breathing.mp3']
 
-  it.each([...new Set([...slots.map((s) => s.src), ...tiles])].map((src) => [src]))('%s exists in public/ with exactly that name', (src) => {
+  it.each([...new Set([...slots.map((s) => s.src), ...tiles, ...sponsorArt, ...recordings])].map((src) => [src]))('%s exists in public/ with exactly that name', (src) => {
     expect(supplied).toContain(src)
   })
 
@@ -272,7 +285,7 @@ describe('music', () => {
   it.each(SYNTH_SONGS.map((s) => [s.label, s] as const))('%s has lead, bass and drums of one length', (_, song) => {
     expect(song.bass).toHaveLength(song.lead.length)
     expect(song.drums).toHaveLength(song.lead.length)
-    expect(song.drums).toMatch(/^[ksh-]+$/)
+    expect(song.drums).toMatch(/^[kshHxbc-]+$/)
     expect(song.lead.some((n) => n !== null)).toBe(true)
   })
 
@@ -290,9 +303,10 @@ describe('music', () => {
     const start = vi.spyOn(Chiptune.prototype, 'start').mockImplementation(() => {})
     const player = new MusicPlayer({} as AudioContext, {} as AudioNode)
     player.start('kettle-blues')
-    expect(start).toHaveBeenLastCalledWith(SYNTH_SONGS.find((s) => s.id === 'kettle-blues'), false)
+    expect(start).toHaveBeenLastCalledWith(SYNTH_SONGS.find((s) => s.id === 'kettle-blues'))
+    // Synth songs are never warped (the possessed site has its own); only Daniel's recordings are.
     player.start('nope', true)
-    expect(start).toHaveBeenLastCalledWith(SYNTH_SONGS[0], true)
+    expect(start).toHaveBeenLastCalledWith(SYNTH_SONGS[0])
     start.mockRestore()
   })
 })
@@ -769,7 +783,11 @@ describe('the Object Dex', () => {
     for (const { spec } of DEX) {
       if (spec.rarity === 'legendary') expect(spec.specimen, spec.id).toEqual({})
       else if (spec.when === 'night') expect(spec.specimen?.digit, spec.id).toMatch(/^\d$/)
-      else expect(spec.specimen?.glyph, spec.id).toMatch(/^[\u16A0-\u16F8]$/)
+      else {
+        expect(spec.specimen?.glyph, spec.id).toMatch(/^[\u16A0-\u16F8]$/)
+        // Drawn by the Dex (fonts can't be trusted with runes), so it must be one it knows how to draw.
+        expect(hasRuneStrokes(spec.specimen!.glyph!), spec.id).toBe(true)
+      }
     }
   })
 
@@ -925,5 +943,193 @@ describe('possession', () => {
     expect(summonScare()).toBe(false)
     expect(scared).toHaveBeenCalledTimes(1)
     window.removeEventListener(SCARE_EVENT, scared)
+  })
+
+  it('descending marks them for good, with their name; the possession lifts and the haunting is over', () => {
+    expect(descendedOf()).toBeNull()
+    possessVisitor()
+    descend('Tester', new Date('2026-11-02T10:00:00Z'))
+    expect(descendedOf()).toEqual({ at: '2026-11-02T10:00:00.000Z', name: 'Tester' })
+    expect(descendedOf()).toBe(descendedOf()) // a stable snapshot for useSyncExternalStore
+    expect(isPossessed()).toBe(false)
+    expect(readStored(HAUNT_DONE_KEY, false)).toBe(true)
+  })
+})
+
+describe('the link preview', () => {
+  const html = readFileSync('index.html', 'utf8')
+  const meta = (attr: string, name: string) => html.match(new RegExp(`<meta ${attr}="${name}" content="([^"]+)"`))?.[1]
+
+  it('points chat apps at a real 1200×630 picture, by absolute URL, as a large card', async () => {
+    const image = meta('property', 'og:image')!
+    expect(image).toMatch(/^https:\/\/www\.dcheng\.dev\//)
+    const file = `public${new URL(image).pathname}`
+    expect(existsSync(file), file).toBe(true)
+    const { default: sharp } = await import('sharp')
+    const { width, height } = await sharp(file).metadata()
+    expect([width, height]).toEqual([1200, 630])
+    expect([meta('property', 'og:image:width'), meta('property', 'og:image:height')]).toEqual(['1200', '630'])
+    expect(meta('name', 'twitter:image')).toBe(image)
+    expect(meta('name', 'twitter:card')).toBe('summary_large_image')
+    expect(meta('property', 'og:title')).toBe(html.match(/<title>([^<]+)<\/title>/)![1].replace(/&#39;|'/g, "'"))
+  })
+})
+
+describe('the ending', () => {
+  it('only finishers hear the song with a name, possessed or not', () => {
+    const daybreak = SYNTH_SONGS.find((s) => s.id === 'daybreak')!
+    expect(daybreak.finisher).toBe(true)
+    for (const possessed of [false, true]) {
+      expect(visibleMixes(true, possessed).some((t) => t.id === 'daybreak')).toBe(false)
+      expect(visibleMixes(true, possessed, true).some((t) => t.id === 'daybreak')).toBe(true)
+    }
+  })
+
+  it('says how long the descent took, in the two largest units', () => {
+    expect(took('2026-10-29T03:00:00Z', '2026-10-29T03:12:00Z')).toBe('12 minutes')
+    expect(took('2026-10-29T03:00:00Z', '2026-10-29T04:01:00Z')).toBe('1 hour, 1 minute')
+    expect(took('2026-10-29T03:00:00Z', '2026-11-01T07:30:00Z')).toBe('3 days, 4 hours')
+    expect(took('2026-10-29T03:00:00Z', '2026-10-29T02:00:00Z')).toBe('0 minutes')
+  })
+
+  it('the certificate records the descent, and copes with not knowing when it began', () => {
+    const base = { name: 'Tester', finished: '2026-11-02T10:00:00Z', visits: 9, dex: { found: 12, total: 38 } }
+    const full = certificateLines({ ...base, heard: '2026-10-29T03:00:00Z' })
+    expect(full.name).toBe('Tester')
+    expect(full.facts.join('\n')).toMatch(/It took: 4 days, 7 hours/)
+    expect(full.facts.join('\n')).toContain('Visits: 9')
+    expect(full.facts.join('\n')).toContain('12 of 38')
+    const unknown = certificateLines({ ...base, heard: null })
+    expect(unknown.facts.some((f) => f.startsWith('It took'))).toBe(false)
+    expect(unknown.facts[0]).toMatch(/a night they remember/)
+  })
+})
+
+describe('the possessed site: text', () => {
+  it('rots the same text the same way every time, keeps lengths, and makes every number 666', () => {
+    const line = 'Twenty-five lines. Four parameters. Five variables. No for loops. These are the commandments.'
+    expect(rotText(line)).toBe(rotText(line))
+    expect(rotText('Visit 42 times, pay £1,068/mo on 10/31')).toMatch(/666 times.*666\/mo on 666/)
+    // Words become runs of the same length (only the occasional trailing sentence adds more).
+    const words = 'Daniel Cheng keeps lots of mice and keyboards on his desk at home'
+    expect(rotText(words).split(' ').map((w) => w.length)).toEqual(words.split(' ').map((w) => w.length))
+    expect(rotText('ok')).toBe('ok')
+  })
+
+  it('uses a hand-written line when there is one, keeping the spacing around it', () => {
+    const [normal, possessed] = Object.entries(POSSESSED_COPY)[0]
+    expect(possessedText(`  ${normal} `)).toBe(`  ${possessed} `)
+    expect(possessedText('   ')).toBe('   ')
+    expect(possessedText('★ ✦ ★')).toBe('★ ✦ ★')
+  })
+
+  it('every hand-written line still matches some text in the source (so edits do not orphan them)', () => {
+    const files = (dir: string): string[] =>
+      readdirSync(dir).flatMap((f) => {
+        const p = `${dir}/${f}`
+        return statSync(p).isDirectory() ? (f === 'test' ? [] : files(p)) : /\.tsx?$/.test(f) && !p.endsWith('content/possessed.ts') ? [p] : []
+      })
+    const source = files('src')
+      .map((f) => readFileSync(f, 'utf8'))
+      .join('\n')
+      .replace(/\\'/g, "'")
+      .replace(/&gt;/g, '>')
+      .replace(/&nbsp;/g, ' ')
+    const orphans = Object.keys(POSSESSED_COPY).filter((k) => !source.includes(k))
+    expect(orphans).toEqual([])
+  })
+})
+
+describe('the possessed site: music', () => {
+  it('lists only its own songs (plus the hymn and the recordings) while possessed, and never them otherwise', () => {
+    const possessed = visibleMixes(true, true)
+    expect(possessed.length).toBeGreaterThanOrEqual(9)
+    expect(possessed.every((t) => t.kind === 'file' || t.song.possessed || t.id === 'hymn')).toBe(true)
+    expect(visibleMixes(true).some((t) => t.kind === 'synth' && t.song.possessed)).toBe(false)
+  })
+
+  it('gives every page of the ring a possessed song that exists', () => {
+    const ids = new Set(SYNTH_SONGS.filter((s) => s.possessed).map((s) => s.id))
+    expect(ids.size).toBeGreaterThanOrEqual(8)
+    for (const page of WEBRING) expect(ids.has(possessedPageSong(page)), page).toBe(true)
+    expect(possessedPageSong('/nowhere')).toBe('p-quiet')
+  })
+})
+
+describe('the haunting', () => {
+  it('plays out between 12 and 15 minutes in, in order, getting worse, ending in the shatter', () => {
+    expect(SCRIPT.map((c) => c.at)).toEqual([...SCRIPT.map((c) => c.at)].sort((a, b) => a - b))
+    expect(SCRIPT[0].at).toBeGreaterThanOrEqual(60)
+    expect(HAUNT_END).toBeGreaterThanOrEqual(12 * 60)
+    expect(HAUNT_END).toBeLessThanOrEqual(15 * 60)
+    expect(SCRIPT.at(-1)?.shatter).toBe(true)
+    expect(SCRIPT.filter((c) => c.shatter)).toHaveLength(1)
+  })
+
+  it('hands out each cue once as time passes, and the cracks only ever grow', () => {
+    let seen = 0
+    for (let t = 0; t < HAUNT_END + 5; t++) seen += dueCues(t, t + 1).length
+    expect(seen).toBe(SCRIPT.length)
+    let last = 0
+    for (let t = 0; t <= HAUNT_END; t += 10) {
+      expect(cracksAt(t)).toBeGreaterThanOrEqual(last)
+      last = cracksAt(t)
+    }
+    expect(cracksAt(0)).toBe(0)
+    expect(last).toBeGreaterThan(3)
+  })
+})
+
+describe('the sponsor (Gulag Games)', () => {
+  const sponsor = ads.find((a) => a.id === SPONSOR_ID)!
+
+  it('is a real link out, with art for every format it runs in', () => {
+    expect(sponsor.to).toBe('https://gulaggames.com/')
+    expect(sponsor.kind).toBe('sponsor')
+    expect(sponsor.formats).toEqual(expect.arrayContaining(['leaderboard', 'banner', 'popup']))
+  })
+
+  it('gets about a quarter of open slots and pop-ups, never two pop-ups in a row, never a row of joke ads', () => {
+    const rng = mulberry32(42)
+    let picks = 0
+    for (let i = 0; i < 4000; i++) if (pickAd('banner', { rng }).id === SPONSOR_ID) picks++
+    expect(picks / 4000).toBeGreaterThan(0.2)
+    expect(picks / 4000).toBeLessThan(0.33)
+    expect(pickAd('banner', { kind: 'surreal', rng: () => 0 }).id).not.toBe(SPONSOR_ID)
+    let last: string | null = null
+    let ambushes = 0
+    for (let i = 0; i < 4000; i++) {
+      const next = pickAmbush(['millionth', 'more-ram', SPONSOR_ID], last, rng)
+      if (next === SPONSOR_ID) {
+        expect(last).not.toBe(SPONSOR_ID)
+        ambushes++
+      }
+      last = next
+    }
+    expect(ambushes / 4000).toBeGreaterThan(0.15)
+    expect(pickAds('button125', 30, rng).some((a) => a.id === SPONSOR_ID)).toBe(false)
+  })
+})
+
+describe('the possessed site: what lies under the pages', () => {
+  it('every underlay exists, and neighbouring pages of the ring never share one', () => {
+    for (const r of UNDERLAYS) expect(existsSync(`public${r.src}`), r.src).toBe(true)
+    for (let i = 1; i < WEBRING.length; i++) expect(underlayFor(WEBRING[i]), WEBRING[i]).not.toBe(underlayFor(WEBRING[i - 1]))
+    expect(underlayFor('/casino')).toBe(underlayFor('/Casino/'))
+  })
+
+  it('no one texture is under most of the site', () => {
+    const counts = new Map<string, number>()
+    for (const page of WEBRING) counts.set(underlayFor(page).src, (counts.get(underlayFor(page).src) ?? 0) + 1)
+    expect(counts.size).toBe(Math.min(UNDERLAYS.length, WEBRING.length))
+    expect(Math.max(...counts.values())).toBeLessThanOrEqual(2)
+  })
+
+  it("Home's bands and the landing gate each rot into a different texture", () => {
+    const css = readFileSync('src/index.css', 'utf8')
+    const home = ['sky', 'pink-twinkles', 'stars', 'blue-swirl', 'blue-flowers', 'green-grid', 'lava-lamps', 'brick', 'flames', 'smileys', 'town', 'nebula']
+    const rot = home.map((t) => css.match(new RegExp(`\\.tile-${t} \\{ --rot: url\\('([^']+)'\\)`))?.[1])
+    expect(rot.every(Boolean)).toBe(true)
+    expect(new Set(rot).size).toBe(home.length)
   })
 })

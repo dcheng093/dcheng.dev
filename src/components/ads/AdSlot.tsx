@@ -13,6 +13,14 @@ export function AdSlot({ format, kind, ad: fixed, className = '' }: { format: Ad
   const { pathname } = useLocation()
   const popups = usePopups()
 
+  // The sponsor's ads are real links to a real site: a new tab, so this one stays open behind it.
+  if (ad.to.startsWith('https://'))
+    return (
+      <a href={ad.to} target="_blank" rel="noopener noreferrer" data-ad={ad.id} aria-label={`Advertisement: ${ad.headline}`} className={`block max-w-full cursor-pointer text-left ${className}`}>
+        <AdCreative ad={ad} format={format} />
+      </a>
+    )
+
   const go = () => {
     if (ad.to === 'random') navigate(randomRoute(pathname))
     else if (ad.to.startsWith('popup:')) popups.open(ad.to.slice('popup:'.length))
