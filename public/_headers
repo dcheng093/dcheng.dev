@@ -14,6 +14,8 @@
   Cache-Control: public, max-age=604800
 /sfx/*
   Cache-Control: public, max-age=604800
+/boring/*
+  Cache-Control: public, max-age=604800
 
 # The link preview (npm run og): a day, so a regenerated card turns up quickly (chat apps cache it on their side too).
 /og.jpg

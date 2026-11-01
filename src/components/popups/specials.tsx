@@ -42,7 +42,7 @@ function CosmicCat({ close }: SpecialProps) {
   return (
     <div className="space-y-2 text-center font-[Tahoma,Verdana,sans-serif] text-black" data-testid="cosmic-cat">
       <p className="font-impact text-xl leading-tight text-blue-800">★ ASTRONOMY ALERT ★</p>
-      <img src="/me/cat.jpg" width={280} height={157} alt="An enormous calico cat, with every planet of the solar system orbiting her" className="win-sunken mx-auto h-auto w-full max-w-[280px]" />
+      <img src="/me/cat.webp" width={280} height={157} alt="An enormous calico cat, with every planet of the solar system orbiting her" className="win-sunken mx-auto h-auto w-full max-w-[280px]" />
       <p className="text-sm">
         <b>SCIENTISTS CONFIRM:</b> the Sun was a decoy. Everything orbits her.
       </p>

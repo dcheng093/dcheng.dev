@@ -1,7 +1,8 @@
-import { useEffect, useRef, type CSSProperties, type ReactNode, type RefObject } from 'react'
+import { useRef, type CSSProperties, type ReactNode } from 'react'
 import type { Slot } from '../../content/assets'
 import { gifCursor } from '../../lib/cursor'
 import { Img } from '../media/Img'
+import { useMedia, useOffscreenPause } from '../../lib/offscreen'
 
 type BandProps = {
   id: string
@@ -14,6 +15,11 @@ type BandProps = {
   flow?: boolean
   /** GIFs heaped into the empty space either side of the 1200px collage on wide screens. */
   edges?: readonly Slot[]
+  /**
+   * Something in it pokes out over the band's top or bottom edge on purpose. Every other band lets the browser skip
+   * laying out and painting it while it's off screen (content-visibility), which would clip that.
+   */
+  spills?: boolean
   className?: string
   children: ReactNode
 }
@@ -22,19 +28,21 @@ type BandProps = {
  * One Cameron's-World-style stratum. Below lg, children flow in a jumbled wrap; at lg+ each
  * <Piece> pins itself absolutely with its own lg: classes so the band becomes a collage.
  */
-export function Band({ id, tile, cursor, title, lgHeight = 600, flow = false, edges, className = '', children }: BandProps) {
+export function Band({ id, tile, cursor, title, lgHeight = 600, flow = false, edges, spills = false, className = '', children }: BandProps) {
   const ref = useRef<HTMLElement>(null)
   useOffscreenPause(ref)
+  const wide = useMedia('(min-width: 1320px)')
   return (
     <section
       ref={ref}
       id={id}
       data-band={id}
-      className={`relative overflow-x-clip border-y-4 border-double border-white ${tile} ${className}`}
+      className={`relative overflow-x-clip border-y-4 border-double border-white ${spills ? '' : 'band-skip'} ${tile} ${className}`}
       style={{ cursor: cursor ? gifCursor(cursor) : undefined, ['--band-h' as string]: `${lgHeight}px` }}
     >
-      {edges && <Gutter side="left" items={edges} />}
-      {edges && <Gutter side="right" items={[...edges].reverse()} />}
+      {/* The gutters only exist on wide screens (1320px+); narrower ones never build their ~40 images. */}
+      {edges && wide && <Gutter side="left" items={edges} />}
+      {edges && wide && <Gutter side="right" items={[...edges].reverse()} />}
       {title && <div className="relative z-10 px-4 pt-4 text-center">{title}</div>}
       <div className={`relative mx-auto flex max-w-[1200px] flex-wrap items-center justify-center gap-4 p-4 ${flow ? 'lg:gap-6' : 'lg:block lg:h-[var(--band-h)]'}`}>
         {children}
@@ -81,23 +89,3 @@ function Gutter({ side, items }: { side: 'left' | 'right'; items: readonly Slot[
   )
 }
 
-// Home is ~20 bands and 400 looping animations. Bands well off screen get `data-offscreen`, which pauses their
-// animations (index.css): nobody can see them, and the page stays smooth. One observer for every band.
-let observer: IntersectionObserver | undefined
-const offscreenObserver = () =>
-  (observer ??= new IntersectionObserver(
-    (entries) => {
-      for (const e of entries) e.target.toggleAttribute('data-offscreen', !e.isIntersecting)
-    },
-    { rootMargin: '300px 0px' },
-  ))
-
-function useOffscreenPause(ref: RefObject<HTMLElement | null>) {
-  useEffect(() => {
-    const el = ref.current
-    if (!el || typeof IntersectionObserver === 'undefined') return
-    const io = offscreenObserver()
-    io.observe(el)
-    return () => io.unobserve(el)
-  }, [ref])
-}

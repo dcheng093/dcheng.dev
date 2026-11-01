@@ -1,13 +1,15 @@
 import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
 import { createBrowserRouter, RouterProvider } from 'react-router-dom'
-import '@fontsource/press-start-2p'
-import '@fontsource/vt323'
-import '@fontsource/silkscreen'
+// Latin only: everything the site writes in its pixel fonts is (the Dex draws its runes itself).
+import '@fontsource/press-start-2p/latin-400.css'
+import '@fontsource/vt323/latin-400.css'
+import '@fontsource/silkscreen/latin-400.css'
 import './index.css'
 import { routes } from './routes'
 import { VISITED_KEY } from './lib/dialup'
 import { countVisit } from './lib/discovery'
+import { prefetchOnIntent } from './lib/prefetch'
 
 // A refresh always lands back on the enter gate at the top of the home page (the gate's click is what unlocks audio),
 // with the dial-up "cache" emptied, so every page slow-loads again the first time. Except the boring site: it's a
@@ -36,6 +38,7 @@ console.log(
 )
 
 const router = createBrowserRouter(routes)
+prefetchOnIntent(routes)
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>

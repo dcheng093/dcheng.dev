@@ -44,7 +44,19 @@ export function markScared() {
   notify()
 }
 
-export const usePossessed = () => useSyncExternalStore(subscribe, isPossessed, () => false)
+/** Snapshot for usePossessed: hundreds of images ask on Home, so parse the stored value only when its text changes. */
+let possessedSnap: { raw: string | null | undefined; value: boolean } = { raw: undefined, value: false }
+function possessedSnapshot() {
+  let raw: string | null = null
+  try {
+    raw = localStorage.getItem(POSSESSED_KEY)
+  } catch {
+    // Blocked storage: read as not possessed, like readStored.
+  }
+  if (raw !== possessedSnap.raw) possessedSnap = { raw, value: isPossessed() }
+  return possessedSnap.value
+}
+export const usePossessed = () => useSyncExternalStore(subscribe, possessedSnapshot, () => false)
 
 /** For code that asks every frame (the 3D copy loop): a cached flag instead of parsing storage each time. */
 let cached: boolean | null = null

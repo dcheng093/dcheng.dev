@@ -9,8 +9,11 @@ const WIDTH = 322 // the 314px pet plus window chrome
 // Phones (either way up): the 340px-tall pet would cover most of a short screen.
 const startsSmall = () => typeof window.matchMedia === 'function' && window.matchMedia('(max-width: 639px), (max-height: 500px)').matches
 
-/** Melly, Daniel's Gify pet, in a draggable window top-right. Starts minimised on phones; remembers either way. */
-export function PetWindow() {
+/**
+ * Melly, Daniel's Gify pet, in a draggable window top-right. Starts minimised on phones; remembers either way.
+ * `ready`: the visitor is past the enter gate. Her page (a whole other site) only loads then, not behind the gate.
+ */
+export function PetWindow({ ready = true }: { ready?: boolean }) {
   const [minimised, setMinimised] = useStored('petMinimised', startsSmall())
   // The iframe is created the first time Melly is shown and only hidden after that, so she never reloads.
   const [loaded, setLoaded] = useState(!minimised)
@@ -32,7 +35,7 @@ export function PetWindow() {
       style={pos ? { left: pos.x, top: pos.y } : undefined}
       bodyClassName="overflow-hidden bg-white"
     >
-      {loaded && (
+      {loaded && ready && (
         <iframe
           title="Melly the Gify pet"
           src={daniel.petUrl}

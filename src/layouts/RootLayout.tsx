@@ -10,7 +10,6 @@ import { GifConfetti } from '../components/chaos/GifConfetti'
 import { CursorTrail } from '../components/CursorTrail'
 import { ClickBurst } from '../components/chaos/ClickBurst'
 import { HiddenSticker } from '../components/HiddenSticker'
-import { Page3D } from '../components/three/Page3D'
 import { LiveChat } from '../components/LiveChat'
 import { PetWindow } from '../components/PetWindow'
 import { PopnukeProvider } from '../components/popnuke/PopnukeProvider'
@@ -24,6 +23,8 @@ import { useStored } from '../hooks/useLocalStorage'
 import { useSealedPage } from '../hooks/useSealedPage'
 import { useDescended, usePossessed } from '../lib/possession'
 
+// The page's 3D (objects, worlds): Home has none, so it loads with the first page that does.
+const Page3D = lazy(() => import('../components/three/Page3D').then((m) => ({ default: m.Page3D })))
 // The possessed site's layer: only loaded once a visitor is possessed.
 const PossessedLayer = lazy(() => import('../components/possessed/PossessedLayer').then((m) => ({ default: m.PossessedLayer })))
 
@@ -107,12 +108,14 @@ export function RootLayout() {
             <main className="relative">
               <Outlet context={sealed} />
               {!handle.solemn && <HiddenSticker />}
-              <Page3D crashed={!!handle.noWebring && pathname !== '/leave'} />
+              <Suspense fallback={null}>
+                <Page3D crashed={!!handle.noWebring && pathname !== '/leave'} />
+              </Suspense>
               {!handle.solemn && <GifConfetti />}
             </main>
             {!handle.noWebring && <WebringBar />}
             {pathname !== '/' && !handle.noWebring && <MiniPlayer />}
-            {!handle.noWebring && !handle.solemn && <PetWindow />}
+            {!handle.noWebring && !handle.solemn && <PetWindow ready={entered} />}
             {entered && !handle.noWebring && !handle.quiet && <VirusAlert />}
             {entered && !handle.noWebring && !handle.quiet && <VisitNote />}
             {!handle.solemn && <LiveChat />}

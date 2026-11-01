@@ -1,5 +1,5 @@
 import { CALENDAR } from '../content/calendar'
-import { MAIL_VISITS } from '../content/desktop'
+import { MAIL_VISITS } from '../content/mailVisits'
 
 /** What today's note says, if anything: a special day beats new mail. Visit 1's letter needs no announcing. */
 export function visitNote(visit: number, today: string): { title: string; text: string; link: string } | null {

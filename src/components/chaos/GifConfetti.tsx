@@ -4,6 +4,7 @@ import { Img } from '../media/Img'
 import { CONFETTI_MAX, confettiCount, throwConfetti } from '../../lib/confetti'
 import { chaosScale } from '../../lib/settings'
 import { useSettings } from '../settings/settingsState'
+import { offscreenObserver } from '../../lib/offscreen'
 
 // Enough pieces for the Chaos dial's MAXIMUM (twice the usual).
 const MOST = CONFETTI_MAX * 2
@@ -33,6 +34,15 @@ function ConfettiLayer() {
     ro.observe(el)
     return () => ro.disconnect()
   }, [])
+  // Each piece pauses while it's well off screen, like the bands do (they're spread down the whole page).
+  useEffect(() => {
+    const el = ref.current
+    if (!el || typeof IntersectionObserver === 'undefined') return
+    const io = offscreenObserver()
+    const kids = [...el.children]
+    for (const k of kids) io.observe(k)
+    return () => kids.forEach((k) => io.unobserve(k))
+  }, [shown])
 
   return (
     <div ref={ref} data-testid="gif-confetti" aria-hidden className="pointer-events-none absolute inset-0 z-40 overflow-hidden">

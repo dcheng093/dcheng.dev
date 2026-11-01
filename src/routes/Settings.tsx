@@ -298,9 +298,9 @@ function Daniel({ draft, set }: AppletProps) {
           return (
             <div key={key} className="grid aspect-square place-items-center overflow-hidden bg-[#eef]">
               {swap ? (
-                <img src={POOL[danielPick(s.src, key, POOL.length)].src} alt="" data-daniel="" className="h-full w-full object-cover [image-rendering:pixelated]" />
+                <img src={POOL[danielPick(s.src, key, POOL.length)].src} alt="" loading="lazy" data-daniel="" className="h-full w-full object-cover [image-rendering:pixelated]" />
               ) : (
-                <img src={s.src} alt="" className="max-h-full max-w-full [image-rendering:pixelated]" />
+                <img src={s.src} alt="" loading="lazy" className="max-h-full max-w-full [image-rendering:pixelated]" />
               )}
             </div>
           )

@@ -5,20 +5,20 @@ import type { PageMood, Personality, Reaction } from '../lib/personality'
 
 /** Daniel's TextureTown textures plus a few of the site's own tiles. Static first frames get used. */
 export const TEXTURES = {
-  streaks: '/me/004.GIF', // red/grey streaks
-  blobs: '/me/1055.GIF', // purple blobs on green
-  marble: '/gifs/bg-marble.gif',
-  steel: '/gifs/bg-steel.gif',
-  nebula: '/gifs/bg-nebula.gif',
-  lava: '/gifs/bg-lava-lamps.gif',
-  graph: '/gifs/bg-graph-paper.gif',
-  binary: '/gifs/bg-binary.gif',
-  orbs: '/gifs/bg-purple-orbs.gif',
-  carpet: '/gifs/bg-gold-carpet.gif',
-  triangles: '/gifs/bg-rainbow-triangles.gif',
-  static: '/gifs/bg-static.gif',
-  lightning: '/me/048.GIF',
-  swirls: '/me/017.GIF',
+  streaks: '/me/004.webp', // red/grey streaks
+  blobs: '/me/1055.webp', // purple blobs on green
+  marble: '/gifs/bg-marble.webp',
+  steel: '/gifs/bg-steel.webp',
+  nebula: '/gifs/bg-nebula.webp',
+  lava: '/gifs/bg-lava-lamps.webp',
+  graph: '/gifs/bg-graph-paper.webp',
+  binary: '/gifs/bg-binary.webp',
+  orbs: '/gifs/bg-purple-orbs.webp',
+  carpet: '/gifs/bg-gold-carpet.webp',
+  triangles: '/gifs/bg-rainbow-triangles.webp',
+  static: '/gifs/bg-static.webp',
+  lightning: '/me/048.webp',
+  swirls: '/me/017.webp',
 } as const
 export type TextureId = keyof typeof TEXTURES
 
@@ -31,17 +31,17 @@ export const DREAM_TEXTURES = {
   pyramids: '/me/qcu50087.webp',
   palazzo: '/me/BUILD001.webp',
   warehouse: '/me/BUILD027.webp',
-  stoneWall: '/me/248__wall_stone_texture-seamless.jpg',
+  stoneWall: '/me/248__wall_stone_texture-seamless.webp',
   stones: '/me/012C.webp',
   crackedStone: '/me/044C.webp',
-  gold: '/me/002.GIF',
-  goldTopo: '/me/056.GIF',
-  oil: '/me/054.GIF',
-  rainbowOil: '/me/082.GIF',
-  psychedelic: '/me/011.GIF',
-  plasma: '/me/009.GIF',
-  swirls: '/me/017.GIF',
-  lightning: '/me/048.GIF',
+  gold: '/me/002.webp',
+  goldTopo: '/me/056.webp',
+  oil: '/me/054.webp',
+  rainbowOil: '/me/082.webp',
+  psychedelic: '/me/011.webp',
+  plasma: '/me/009.webp',
+  swirls: '/me/017.webp',
+  lightning: '/me/048.webp',
 } as const
 
 /** The newest texture pack. */
@@ -60,14 +60,14 @@ export const MORE_TEXTURES = {
   galaxy: '/me/GALAXY2.webp',
   purpleMetal: '/me/METAL7.webp',
   painting: '/me/Painting.webp',
-  bronze: '/me/SC009.JPG',
-  copper: '/me/SC010.JPG',
+  bronze: '/me/SC009.webp',
+  copper: '/me/SC010.webp',
   goldMetal: '/me/SC027.webp',
   puffySky: '/me/SKY1.webp',
   goose: '/me/cc200455.webp',
   kaleidoscope: '/me/cio60415.jpg',
   cosmic: '/me/cio60416.jpg',
-  dollars: '/gifs/bg-dollar-bills.gif',
+  dollars: '/gifs/bg-dollar-bills.webp',
 } as const
 
 /** The congregation's pack: the world behind the sealed page (src/three/worlds.ts, `cult`). */
@@ -76,10 +76,10 @@ export const CULT_TEXTURES = {
   fractalEye2: '/me/ahm60030.jpg',
   vortex: '/me/ahm60003.jpg',
   darkMarble: '/me/046C.webp',
-  blackMetal: '/me/SC051.JPG',
+  blackMetal: '/me/SC051.webp',
   crt: '/me/qcu50119.webp',
   lattice: '/me/pni50050.webp',
-  nightStars: '/me/nightskystar.gif',
+  nightStars: '/me/nightskystar.webp',
 } as const
 
 /** The possessed site's pack (public/possessed/, made by scripts/possessed-assets.mjs): flesh skins for the
@@ -109,7 +109,7 @@ export const POSSESSED_TEXTURES = {
 
 /** The Hall of Fame's pack (/reviews, src/three/worlds.ts `hall`): marble and fractals, polished for the visitors. */
 export const HALL_TEXTURES = {
-  hallMarble: '/me/065C.jpg',
+  hallMarble: '/me/065C.webp',
   fractalRed: '/me/ahm60009.jpg',
   fractalWaves: '/me/ahm60025.jpg',
   fractalRainbow: '/me/ahm60067.jpg',
@@ -117,13 +117,13 @@ export const HALL_TEXTURES = {
 
 /** The same hall once the site is possessed (`hall-rot`): what was hanging behind the frames all along. */
 export const HALL_ROT_TEXTURES = {
-  leafTunnel: '/me/08e09b8bf6290feaee8a3577c0b398ef.jpg',
-  redDoorway: '/me/5d6e3d9a8c4f46632d8fcfa3da9b5180.jpg',
-  redSmear: '/me/72b1018b5dd52574601ecb0870fe937c.jpg',
-  redCollage: '/me/7f28282b8a4de314455bb68d63552c6d.jpg',
-  embers: '/me/b6a079ea869225dae9ed327e3a140e7e.jpg',
-  fleshWeb: '/me/bc52bc87870e2496924684ffd746d39b.jpg',
-  letMeOut: '/me/caaf2914d7133a228f54eebee7a33b97.jpg',
+  leafTunnel: '/me/08e09b8bf6290feaee8a3577c0b398ef.webp',
+  redDoorway: '/me/5d6e3d9a8c4f46632d8fcfa3da9b5180.webp',
+  redSmear: '/me/72b1018b5dd52574601ecb0870fe937c.webp',
+  redCollage: '/me/7f28282b8a4de314455bb68d63552c6d.webp',
+  embers: '/me/b6a079ea869225dae9ed327e3a140e7e.webp',
+  fleshWeb: '/me/bc52bc87870e2496924684ffd746d39b.webp',
+  letMeOut: '/me/caaf2914d7133a228f54eebee7a33b97.webp',
 } as const
 
 /** Every image texture by name. */

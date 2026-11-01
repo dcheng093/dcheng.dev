@@ -23,9 +23,10 @@ const FILES = [
   ['game-valorant.gif', 62],
   ['game-tf2.gif', 62],
   ['game-aimlabs.gif', 62],
-  ['head-grind.png', 85],
-  ['head-shock.png', 85],
-  ['head-wink.png', 85],
+  // Shown at up to 170 px (and 300 px as a 3D card): 344 px covers both on a 2x screen.
+  ['head-grind.png', 85, 344],
+  ['head-shock.png', 85, 344],
+  ['head-wink.png', 85, 344],
   ['full-body-cutout.png', 85, 443],
   ['MISC-13.png', 82, 400],
 ]
@@ -50,9 +51,9 @@ for (const [file, quality, width] of FILES) {
 }
 
 // ——— --all: every other photo and texture, where WebP is actually smaller ———
-// Never these: replay_001.jpg's hidden bytes after the end of the picture are a puzzle (WebP would drop them), and
-// HOBBY-3.jpg is what scripts/seal.mjs builds it from.
-const KEEP = new Set(['replay_001.jpg', 'HOBBY-3.jpg'])
+// Never these: replay_001.jpg's hidden bytes after the end of the picture are a puzzle (WebP would drop them),
+// HOBBY-3.jpg is what scripts/seal.mjs builds it from, and the sealed hunt names HOBBY-1.jpg (renaming it means a reseal).
+const KEEP = new Set(['replay_001.jpg', 'HOBBY-3.jpg', 'HOBBY-1.jpg'])
 
 if (process.argv.includes('--all')) {
   const renamed = new Map()
@@ -60,7 +61,9 @@ if (process.argv.includes('--all')) {
     const here = resolve(dir, file)
     const kept = resolve(originals, file)
     if (!existsSync(kept)) await copyFile(here, kept)
-    const webp = await sharp(kept).webp({ quality: 80, alphaQuality: 90, effort: 5 }).toBuffer()
+    // From the copy the site serves (shrink.mjs has usually already brought it down to 960 px; the original can be far
+    // bigger), never larger than that.
+    const webp = await sharp(here).resize({ width: 960, height: 960, fit: 'inside', withoutEnlargement: true }).webp({ quality: 80, alphaQuality: 90, effort: 5 }).toBuffer()
     const before = (await stat(here)).size
     if (webp.length >= before) continue // already smaller as it is
     const name = file.replace(/\.(jpe?g|png)$/i, '.webp')

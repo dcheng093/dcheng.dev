@@ -754,7 +754,7 @@ test('a dodging close button stays clickable and never sends you anywhere', asyn
 test('/boring is plain and has the real links', async ({ page }) => {
   await prepare(page)
   await page.goto('/boring')
-  await expect(page.getByRole('link', { name: 'GitHub' })).toHaveAttribute('href', /github\.com/)
+  await expect(page.getByRole('link', { name: 'GitHub' }).first()).toHaveAttribute('href', /github\.com/)
   await expect(page.getByTestId('chat-toggle')).toHaveCount(0)
   await expect(page.getByTestId('popup')).toHaveCount(0)
   expect(await horizontalOverflow(page)).toBeLessThanOrEqual(0)

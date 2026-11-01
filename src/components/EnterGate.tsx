@@ -19,7 +19,7 @@ export function EnterGate({ onEnter }: { onEnter: () => void }) {
       <World3D id="dream" className="fixed inset-0" />
       <div className="relative flex max-w-xl flex-col items-center gap-4 text-center">
         <div className="[perspective:400px]">
-          <Img slot="headWink" width={140} className="animate-spin-y" />
+          <Img slot="headWink" width={140} className="animate-spin-y" eager />
         </div>
         <h1 className="wordart text-4xl leading-none sm:text-6xl">{daniel.siteTitle}</h1>
         <p className="font-pixel text-[10px] leading-relaxed text-white [text-shadow:1px_1px_0_#000,0_0_6px_#000] sm:text-xs">
@@ -36,9 +36,9 @@ export function EnterGate({ onEnter }: { onEnter: () => void }) {
           <Blink>⚠</Blink> FLASHING LIGHTS, LOUD MIDI & POPUPS AHEAD <Blink>⚠</Blink>
         </p>
         <div className="flex items-center gap-2">
-          <Img slot="newBadge" />
-          <Img slot="ucBar" width={220} />
-          <Img slot="newBadge" />
+          <Img slot="newBadge" eager />
+          <Img slot="ucBar" width={220} eager />
+          <Img slot="newBadge" eager />
         </div>
       </div>
     </div>

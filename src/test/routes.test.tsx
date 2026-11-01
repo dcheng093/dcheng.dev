@@ -115,8 +115,15 @@ describe('routes', () => {
     expect(screen.queryByRole('navigation', { name: 'Webring' })).toBeNull()
     expect(screen.queryByTestId('mute')).toBeNull()
     expect(screen.queryByTestId('mini-player')).toBeNull()
-    expect(screen.getByRole('link', { name: 'GitHub' })).toHaveAttribute('href', daniel.links.github)
+    expect(screen.getAllByRole('link', { name: 'GitHub' })[0]).toHaveAttribute('href', daniel.links.github)
     expect(screen.getByAltText(daniel.name)).toHaveAttribute('src', '/me/boring/daniel.webp')
+    // All six socials in the hero, Discord as a copy button.
+    const socials = within(screen.getAllByRole('list', { name: 'Socials' })[0])
+    for (const name of ['GitHub', 'YouTube', 'Twitch', 'SoundCloud']) expect(socials.getByRole('link', { name })).toHaveAttribute('href', expect.stringMatching(/^https:/))
+    expect(socials.getByRole('button', { name: /Discord: gholed/ })).toBeInTheDocument()
+    // The 42 card: Milestone 3, and Call-Me-Maybe still in progress.
+    expect(screen.getByText('Milestone 3')).toBeInTheDocument()
+    expect(screen.getAllByText(/in progress/i).length).toBeGreaterThanOrEqual(1)
   })
 
   it('/boring is a normal website even for the possessed and the descended: none of it reaches the page', () => {

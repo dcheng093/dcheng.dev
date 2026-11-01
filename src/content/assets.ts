@@ -1,10 +1,13 @@
 // Every image the site uses, by slot. Files live in public/; a missing file renders a
 // "SUPPLY ME" placeholder at the slot's exact size, so nothing here needs to exist yet.
 
+import { WEBP_GIFS } from './webpGifs'
+
 export type Slot = { src: string; w: number; h: number; label: string }
 
 const me = (file: string, w: number, h: number, label: string): Slot => ({ src: `/me/${file}`, w, h, label })
-const gif = (id: string, w: number, h: number, label: string): Slot => ({ src: `/gifs/${id}.gif`, w, h, label })
+// Most of the GIFs are lossless WebP now (same pixels and frames, fewer bytes): scripts/photos/gifs-to-webp.mjs.
+const gif = (id: string, w: number, h: number, label: string): Slot => ({ src: `/gifs/${id}.${WEBP_GIFS.has(id) ? 'webp' : 'gif'}`, w, h, label })
 
 export const assets = {
   // Photos of Daniel (see plan: "Assets I need from you")
@@ -19,7 +22,7 @@ export const assets = {
   misc: (
     [
       'MISC-01.webp', 'MISC-02.webp', 'MISC-03.webp', 'MISC-04.webp', 'MISC-05.webp', 'MISC-06.webp', 'MISC-07.webp',
-      'MISC-08.webp', 'MISC-09.webp', 'MISC-10.jpg', 'MISC-11.webp', 'MISC-12.webp', 'MISC-13.webp',
+      'MISC-08.webp', 'MISC-09.webp', 'MISC-10.webp', 'MISC-11.webp', 'MISC-12.webp', 'MISC-13.webp',
       // Close-up selfies: mostly square, three portrait.
       ['MISC-14.webp', 400, 534], ['MISC-15.webp', 400, 512], 'MISC-16.webp', 'MISC-17.webp', 'MISC-18.webp', 'MISC-19.webp',
       'MISC-20.webp', 'MISC-21.webp', 'MISC-22.webp', ['MISC-23.webp', 400, 545],

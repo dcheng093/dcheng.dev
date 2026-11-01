@@ -4,18 +4,32 @@
 // Sources live in asset-originals/possessed/ (gitignored, like the other originals): drop new ones in public/me/ and
 // this moves them there on its next run, so the raw files never get deployed.
 import { chromium } from 'playwright'
-import { existsSync, mkdirSync, readFileSync, renameSync, rmSync, writeFileSync } from 'node:fs'
+import { copyFileSync, existsSync, mkdirSync, readdirSync, readFileSync, renameSync, rmSync, writeFileSync } from 'node:fs'
 import { dirname, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..')
 const SOURCES = resolve(ROOT, 'asset-originals/possessed')
 mkdirSync(SOURCES, { recursive: true })
-/** A source picture: from asset-originals/possessed/, moving it there from public/me/ if it was just dropped in. */
+/** Every file under src/, as text: to tell whether the site itself uses a picture. */
+const SITE_SOURCE = (function read(dir) {
+  return readdirSync(dir, { withFileTypes: true })
+    .map((e) => (e.isDirectory() ? read(resolve(dir, e.name)) : /\.(tsx?|css)$/.test(e.name) ? readFileSync(resolve(dir, e.name), 'utf8') : ''))
+    .join('\n')
+})(resolve(ROOT, 'src'))
+
+/**
+ * A source picture: from asset-originals/possessed/, moving it there from public/me/ if it was just dropped in. If the
+ * site also uses that file from public/me/ (a texture, say), it's copied instead, so this never breaks a live page.
+ */
 const ME = (f) => {
   const kept = resolve(SOURCES, f)
   const dropped = resolve(ROOT, 'public/me', f)
-  if (existsSync(dropped)) renameSync(dropped, kept)
+  if (existsSync(dropped)) {
+    if (SITE_SOURCE.includes(`/me/${f}`)) {
+      if (!existsSync(kept)) copyFileSync(dropped, kept)
+    } else renameSync(dropped, kept)
+  }
   return kept
 }
 

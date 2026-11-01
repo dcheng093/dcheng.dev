@@ -1,5 +1,5 @@
 import '@fontsource-variable/space-grotesk'
-import '@fontsource/permanent-marker'
+import '@fontsource/permanent-marker/latin-400.css'
 import { useEffect, type CSSProperties } from 'react'
 import { useLocation } from 'react-router-dom'
 import { About } from '../components/boring/About'
@@ -30,7 +30,7 @@ export function Boring() {
     return () => window.clearTimeout(id)
   }, [hash])
   return (
-    <div data-testid="boring" className="boring min-h-screen bg-[#0a0a0a] text-white" style={{ '--accent': ACCENT, '--accent-2': ACCENT_2 } as CSSProperties}>
+    <div data-testid="boring" className="boring min-h-screen overflow-x-clip bg-[#0a0a0a] text-white" style={{ '--accent': ACCENT, '--accent-2': ACCENT_2 } as CSSProperties}>
       <Navbar />
       <main>
         <Hero />

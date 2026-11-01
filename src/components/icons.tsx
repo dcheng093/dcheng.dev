@@ -23,3 +23,12 @@ export const MailIcon = svg(
 export const ChevronUpIcon = svg('M12 6.6 4.3 14.3l1.4 1.4L12 9.4l6.3 6.3 1.4-1.4L12 6.6Zm0 5L4.3 19.3l1.4 1.4 6.3-6.3 6.3 6.3 1.4-1.4L12 11.6Z')
 export const ArrowIcon = svg('M13.2 5.3 19.9 12l-6.7 6.7-1.4-1.4 4.3-4.3H4v-2h12.1l-4.3-4.3 1.4-1.4Z')
 export const MenuIcon = svg('M3 6h18v2H3V6Zm0 5h18v2H3v-2Zm0 5h18v2H3v-2Z')
+export const YouTubeIcon = svg(
+  'M23.5 6.2a3 3 0 0 0-2.1-2.1C19.5 3.5 12 3.5 12 3.5s-7.5 0-9.4.6A3 3 0 0 0 .5 6.2C0 8.1 0 12 0 12s0 3.9.5 5.8a3 3 0 0 0 2.1 2.1c1.9.6 9.4.6 9.4.6s7.5 0 9.4-.6a3 3 0 0 0 2.1-2.1c.5-1.9.5-5.8.5-5.8s0-3.9-.5-5.8ZM9.5 15.6V8.4l6.3 3.6-6.3 3.6Z',
+)
+export const TwitchIcon = svg(
+  'M11.6 4.7h1.7v5.1h-1.7V4.7Zm4.7 0H18v5.1h-1.7V4.7ZM6 0 1.7 4.3v15.4h5.2V24l4.2-4.3h3.5L22.3 12V0H6Zm14.6 11.1-3.4 3.5h-3.5l-3 3v-3H6.9V1.7h13.7v9.4Z',
+)
+export const SoundCloudIcon = svg(
+  'M1 14h1.2v4H1v-4Zm2.4-2h1.2v6H3.4v-6Zm2.4-1H7v7H5.8v-7Zm2.4-1h1.2v8H8.2v-8Zm2.4-2h1.2v10h-1.2V8Zm2.4.6a5.2 5.2 0 0 1 8.4 2.6 3.5 3.5 0 0 1-.4 7H13V8.6Z',
+)

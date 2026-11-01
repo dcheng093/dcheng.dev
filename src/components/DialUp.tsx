@@ -71,10 +71,15 @@ function DialUpLoad({ path }: { path: string }) {
     current = { start, ms }
     html.dataset.loading = ''
     let raf = 0
+    let shown = ''
+    let width = -1
     const tick = () => {
       const p = Math.min(1, (performance.now() - start) / ms)
-      if (status.current) status.current.textContent = statusLine(path, p)
-      if (bar.current) bar.current.style.width = `${Math.round(p * 100)}%`
+      // Only touch the page when something visibly changed (most frames, nothing has).
+      const line = statusLine(path, p)
+      if (status.current && line !== shown) status.current.textContent = shown = line
+      const pct = Math.round(p * 100)
+      if (bar.current && pct !== width) bar.current.style.width = `${(width = pct)}%`
       if (p < 1) raf = requestAnimationFrame(tick)
     }
     raf = requestAnimationFrame(tick)

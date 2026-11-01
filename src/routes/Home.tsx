@@ -13,6 +13,7 @@ import { assets, blinkies, cursors, dividers, icons, kawaii, type Slot } from '.
 import { daniel } from '../content/daniel'
 import { models } from '../content/dealership'
 import { randomRoute } from '../lib/sitemap'
+import { useExactJumps } from '../lib/offscreen'
 import { useState } from 'react'
 
 const adById = (id: string) => ads.find((a) => a.id === id)!
@@ -33,6 +34,7 @@ const EDGES = {
 } satisfies Record<string, Slot[]>
 
 export function Home() {
+  useExactJumps()
   return (
     <div data-testid="home">
       <HeaderBand />
@@ -63,7 +65,7 @@ function HeaderBand() {
   return (
     <Band id="header" edges={EDGES.header} tile="tile-sky" cursor={cursors.star} lgHeight={470}>
       <Piece lg="lg:left-[3%] lg:top-[30px]" className="[perspective:400px]">
-        <Img slot="headGrin" width={170} className="animate-spin-y" />
+        <Img slot="headGrin" width={170} className="animate-spin-y" eager />
       </Piece>
       <Piece lg="lg:left-[19%] lg:top-[30px] lg:w-[54%]" className="w-full text-center">
         <h1 className="wordart text-4xl leading-none sm:text-6xl lg:text-7xl">{daniel.siteTitle}</h1>
@@ -73,7 +75,7 @@ function HeaderBand() {
         <HitCounter className="bg-white/80 px-2" />
       </Piece>
       <Piece lg="lg:right-[3%] lg:top-[20px]">
-        <Img slot="globeCage" width={140} />
+        <Img slot="globeCage" width={140} eager />
       </Piece>
       <Piece lg="lg:left-[6%] lg:top-[250px]" tilt={-12} className="flex gap-1">
         <Img slot="newBadge" />
@@ -299,6 +301,7 @@ function GameBand() {
   return (
     <Band
       id="games"
+      spills
       edges={EDGES.games}
       tile="tile-stars"
       cursor={cursors.arcade}
@@ -519,7 +522,7 @@ function DestinyBand() {
     { label: '???', slot: 'arrow', go: () => navigate(randomRoute('/')) },
   ]
   return (
-    <Band id="destiny" edges={EDGES.destiny} tile="tile-blue-swirl" cursor={cursors.atom} flow title={<h2 className="font-impact text-4xl text-white [text-shadow:0_0_8px_#0ff] sm:text-6xl"><WavyText text="CHOOSE YOUR DESTINY" /></h2>}>
+    <Band id="destiny" spills edges={EDGES.destiny} tile="tile-blue-swirl" cursor={cursors.atom} flow title={<h2 className="font-impact text-4xl text-white [text-shadow:0_0_8px_#0ff] sm:text-6xl"><WavyText text="CHOOSE YOUR DESTINY" /></h2>}>
       <Jukebox />
       <div className="grid w-[min(520px,100%)] grid-cols-2 gap-2 sm:grid-cols-3">
         {doors.map((d) => (

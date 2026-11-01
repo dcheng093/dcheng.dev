@@ -21,7 +21,8 @@
     "photos:shrink": "node scripts/photos/shrink.mjs",
     "deploy": "npm run build && wrangler deploy",
     "boring-hero": "node scripts/boring-hero/hero.mjs",
-    "boring-cutout": "node scripts/photos/cutout.mjs"
+    "boring-cutout": "node scripts/photos/cutout.mjs",
+    "gifs:webp": "node scripts/photos/gifs-to-webp.mjs"
   },
   "dependencies": {
     "@fontsource-variable/space-grotesk": "^5.3.0",

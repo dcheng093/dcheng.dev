@@ -43,6 +43,7 @@ import { DEFAULT_SETTINGS, chaosScale, danielPick, danielSwap, mergeSettings } f
 import { countVisit, DEX, dexProgress, isNight, monthDay, readDex, recordFind, VISITS_KEY } from '../lib/discovery'
 import { graft, listDir, locksIn, walk, type FsContext } from '../lib/desktop'
 import { DEX_MILESTONES, FILESYSTEM, MAIL_VISITS, type FsNode } from '../content/desktop'
+import { MAIL_VISITS as MAIL_VISITS_EARLY } from '../content/mailVisits'
 import { makeSeal, normalise, openSeal } from '../lib/seal'
 import { openLock, openPage, SEALED, type SealedPage } from '../lib/hunt'
 import { baptize, descend, descendedOf, heardAt, isPossessed, possess as possessVisitor, SCARE_EVENT, summonScare, markScared } from '../lib/possession'
@@ -830,6 +831,8 @@ describe('the clock and return visits', () => {
   it('the note announces new mail and special days, and nothing else', () => {
     expect(visitNote(1, '06-15')).toBeNull()
     expect(visitNote(MAIL_VISITS[1], '06-15')?.text).toMatch(`visit #${MAIL_VISITS[1]}`)
+    // The visit note's own copy of the list (so it doesn't load the filesystem) matches the letters.
+    expect(MAIL_VISITS_EARLY).toEqual(MAIL_VISITS)
     expect(visitNote(4, '06-15')).toBeNull()
     expect(visitNote(4, '10-31')?.text).toMatch(/HALLOWEEN/)
   })

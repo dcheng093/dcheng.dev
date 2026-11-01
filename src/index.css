@@ -375,6 +375,15 @@
   [data-offscreen] * {
     animation-play-state: paused !important;
   }
+  /* Home's bands, while well off screen, aren't laid out or painted at all (Band.tsx; a band whose pieces poke out over
+     its edges opts out). `auto` remembers each band's real height, so the scrollbar doesn't jump. */
+  .band-skip {
+    content-visibility: auto;
+    contain-intrinsic-size: auto 900px;
+  }
+  html[data-jumping] .band-skip {
+    content-visibility: visible;
+  }
 }
 
 @layer components {
@@ -384,99 +393,99 @@
     background: #6cf url('/gifs/bg-sky.gif');
   }
   .tile-pink-twinkles {
-    background: #000 url('/gifs/bg-pink-twinkles.gif');
+    background: #000 url('/gifs/bg-pink-twinkles.webp');
   }
   .tile-green-grid {
-    background: #000 url('/gifs/bg-green-grid.gif');
+    background: #000 url('/gifs/bg-green-grid.webp');
   }
   .tile-stars {
-    background: #000 url('/gifs/bg-stars.gif');
+    background: #000 url('/gifs/bg-stars.webp');
   }
   .tile-blue-flowers {
-    background: #eef4ff url('/gifs/bg-blue-flowers.gif');
+    background: #eef4ff url('/gifs/bg-blue-flowers.webp');
   }
   .tile-lava-lamps {
-    background: #00f url('/gifs/bg-lava-lamps.gif');
+    background: #00f url('/gifs/bg-lava-lamps.webp');
   }
   .tile-blue-swirl {
     background: #22c url('/gifs/bg-blue-swirl.gif');
   }
   .tile-nebula {
-    background: #000 url('/gifs/bg-nebula.gif');
+    background: #000 url('/gifs/bg-nebula.webp');
   }
   .tile-quills {
-    background: #fff url('/gifs/bg-quills.gif');
+    background: #fff url('/gifs/bg-quills.webp');
   }
   .tile-orange-flowers {
-    background: #fff url('/gifs/bg-orange-flowers.gif');
+    background: #fff url('/gifs/bg-orange-flowers.webp');
   }
   .tile-pink-hearts {
-    background: #fcd url('/gifs/bg-pink-hearts.gif');
+    background: #fcd url('/gifs/bg-pink-hearts.webp');
   }
   .tile-space-clouds {
-    background: #000 url('/gifs/bg-space-clouds.gif');
+    background: #000 url('/gifs/bg-space-clouds.webp');
   }
   .tile-steel {
-    background: #ccc url('/gifs/bg-steel.gif');
+    background: #ccc url('/gifs/bg-steel.webp');
   }
   .tile-binary {
-    background: #000 url('/gifs/bg-binary.gif');
+    background: #000 url('/gifs/bg-binary.webp');
   }
   .tile-graph-paper {
-    background: #ffd url('/gifs/bg-graph-paper.gif');
+    background: #ffd url('/gifs/bg-graph-paper.webp');
   }
   .tile-rainbow-triangles {
-    background: #000 url('/gifs/bg-rainbow-triangles.gif');
+    background: #000 url('/gifs/bg-rainbow-triangles.webp');
   }
   .tile-coffee-cups {
     background: #fff url('/gifs/bg-coffee-cups.gif');
   }
   .tile-horses {
-    background: #fff url('/gifs/bg-horses.gif');
+    background: #fff url('/gifs/bg-horses.webp');
   }
   .tile-bubbles {
     background: #8af url('/gifs/bg-bubbles.gif');
   }
   .tile-pink-sparkles {
-    background: #000 url('/gifs/bg-pink-sparkles.gif');
+    background: #000 url('/gifs/bg-pink-sparkles.webp');
   }
   .tile-marble {
-    background: #ccc url('/gifs/bg-marble.gif');
+    background: #ccc url('/gifs/bg-marble.webp');
   }
   .tile-static {
-    background: #888 url('/gifs/bg-static.gif');
+    background: #888 url('/gifs/bg-static.webp');
   }
   /* Static on purpose: the old animated dice tile strobed at 20fps. */
   .tile-casino-table {
     background: #062 url('/gifs/bg-casino-table.jpg');
   }
   .tile-cherubs {
-    background: #cff url('/gifs/bg-cherubs.gif');
+    background: #cff url('/gifs/bg-cherubs.webp');
   }
   .tile-dollar-bills {
-    background: #fff url('/gifs/bg-dollar-bills.gif');
+    background: #fff url('/gifs/bg-dollar-bills.webp');
   }
   .tile-smileys {
-    background: #ff0 url('/gifs/bg-smileys.gif');
+    background: #ff0 url('/gifs/bg-smileys.webp');
   }
   /* Cyber Town pages (each passes scripts/asset-gallery/flicker.mjs). */
   .tile-arcade {
-    background: #210 url('/gifs/bg-gold-carpet.gif');
+    background: #210 url('/gifs/bg-gold-carpet.webp');
   }
   .tile-blinkie {
-    background: #c36 url('/gifs/bg-pink-glitter.gif');
+    background: #c36 url('/gifs/bg-pink-glitter.webp');
   }
   .tile-oracle {
-    background: #203 url('/gifs/bg-purple-orbs.gif');
+    background: #203 url('/gifs/bg-purple-orbs.webp');
   }
   .tile-radio {
     background: #000 url('/gifs/bg-music-notes.gif');
   }
   .tile-stickers {
-    background: #fef6ee url('/gifs/bg-pastel-sparkles.gif');
+    background: #fef6ee url('/gifs/bg-pastel-sparkles.webp');
   }
   .tile-town {
-    background: #000 url('/gifs/bg-cyan-circuit.gif');
+    background: #000 url('/gifs/bg-cyan-circuit.webp');
   }
   /* Hovering a 3D object (they sit behind the page, so this is set from JS). */
   html.over-3d,
@@ -573,8 +582,166 @@ html[data-calm] img {
   from { opacity: 0; translate: 0 12px; }
   to { opacity: 1; translate: 0 0; }
 }
-@keyframes orbit {
-  to { rotate: 360deg; }
+/* The hero: four paint swipes pop out from alternate sides (0.1s apart), then sway and breathe, each on its own beat. */
+.boring-stroke {
+  opacity: 0;
+  animation:
+    boring-stroke-in 0.8s cubic-bezier(0.5, 0, 0.5, 1) calc(var(--i) * 0.1s) both,
+    boring-stroke-idle 8s ease-in-out calc(1s + var(--i) * -2.1s) infinite alternate;
+}
+@keyframes boring-stroke-in {
+  from { scale: 0; opacity: 0; }
+  to { scale: 1; opacity: 0.85; }
+}
+@keyframes boring-stroke-idle {
+  from { rotate: -1deg; translate: -4px 0; }
+  to { rotate: 1deg; translate: 4px 1px; }
+}
+/* The greeting writes itself: the letters' outlines trace in, then the fill comes up (the name in yellow). */
+.boring-greeting {
+  filter: drop-shadow(3px 3px 0 #000);
+}
+.boring-greeting .greet-line {
+  font: 58px 'Permanent Marker', 'Segoe Print', cursive;
+  fill: #fff;
+  fill-opacity: 0;
+  stroke: #fff;
+  stroke-width: 1.4px;
+  stroke-dasharray: 900;
+  stroke-dashoffset: 900;
+  animation: boring-draw 2s ease-out 0.5s forwards;
+}
+.boring-greeting .greet-name {
+  fill: #fff35c;
+  stroke: #fff35c;
+  animation-delay: 0.7s;
+}
+@keyframes boring-draw {
+  70% { stroke-dashoffset: 0; fill-opacity: 0.35; }
+  to { stroke-dashoffset: 0; fill-opacity: 1; stroke-width: 0; }
+}
+.boring-logo text {
+  font: 26px 'Permanent Marker', 'Segoe Print', cursive;
+  fill: #fff;
+  fill-opacity: 0;
+  stroke: #fff;
+  stroke-width: 0.8px;
+  stroke-dasharray: 400;
+  stroke-dashoffset: 400;
+  animation: boring-draw 2.5s ease-out 0.3s forwards;
+}
+.boring-logo .logo-slash {
+  fill: var(--accent);
+  stroke: var(--accent);
+}
+.boring-fade-late {
+  animation: boring-fade 0.6s ease-out 1.8s both;
+}
+/* The socials box springs in. */
+.boring-pop {
+  animation: boring-pop 0.6s cubic-bezier(0.34, 1.56, 0.64, 1) 0.7s both;
+}
+@keyframes boring-pop {
+  from { scale: 0; opacity: 0; }
+  to { scale: 1; opacity: 1; }
+}
+/* Headings: letters rise into place, 30ms apart, once they're on screen (useReveal sets data-shown). */
+.reveal-letters > span[aria-hidden] {
+  display: inline-block;
+  white-space: pre;
+  opacity: 0;
+  translate: 0 10px;
+  transition: opacity 0.2s ease-out, translate 0.2s ease-out;
+  transition-delay: calc(var(--d, 0s) + var(--i) * 30ms);
+}
+.reveal-letters[data-shown] > span[aria-hidden] {
+  opacity: 1;
+  translate: 0 0;
+}
+/* Cards fade up (staggered by --delay) and lift a little under the pointer. */
+.reveal-up {
+  opacity: 0;
+  translate: 0 20px;
+  transition: opacity 0.6s ease-out, translate 0.6s ease-out;
+  transition-delay: var(--delay, 0s);
+}
+.reveal-up[data-shown],
+.reveal-group[data-shown] .reveal-up {
+  opacity: 1;
+  translate: 0 0;
+}
+.reveal-up.lift {
+  /* The lift answers the pointer straight away; only the entrance waits its turn. */
+  transition:
+    opacity 0.6s ease-out var(--delay, 0s),
+    translate 0.6s ease-out var(--delay, 0s),
+    transform 0.25s ease-out,
+    box-shadow 0.25s ease-out;
+}
+.lift:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 14px 30px -12px #000c, 0 0 0 1px #ffffff14;
+}
+/* The stack: each logo springs out of the centre to its ring, then bobs on its own, forever. */
+.orbit-badge {
+  opacity: 0;
+  scale: 0;
+  transition: translate 0.9s cubic-bezier(0.34, 1.56, 0.64, 1), scale 0.9s cubic-bezier(0.34, 1.56, 0.64, 1), opacity 0.3s;
+  transition-delay: var(--delay);
+}
+.orbit[data-shown] .orbit-badge {
+  opacity: 1;
+  scale: 1;
+  translate: var(--tx) var(--ty);
+}
+.orbit-bob {
+  animation: orbit-bob var(--bob) ease-in-out var(--bob-delay) infinite;
+}
+@keyframes orbit-bob {
+  0%, 100% { translate: 0 0; rotate: 0deg; }
+  25% { rotate: 0.5deg; }
+  50% { translate: 0 -10px; }
+  75% { rotate: -0.5deg; }
+}
+/* The 42 card fills in once it's seen: the ring, the milestone strip and the bars. */
+.intra .intra-fill {
+  width: 0;
+  transition: width 1s cubic-bezier(0.2, 0.8, 0.2, 1) var(--delay, 0s);
+}
+.intra[data-shown] .intra-fill {
+  width: var(--to);
+}
+.intra .intra-ring {
+  stroke-dashoffset: var(--full);
+  transition: stroke-dashoffset 1.4s cubic-bezier(0.2, 0.8, 0.2, 1) 0.2s;
+}
+.intra[data-shown] .intra-ring {
+  stroke-dashoffset: var(--off);
+}
+/* The nav underline springs across to the active link: a slight overshoot, then it settles. */
+.boring-underline {
+  transition: translate 0.45s cubic-bezier(0.34, 1.56, 0.64, 1), width 0.45s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+.boring-menu {
+  animation: boring-fade 0.25s ease-out both;
+}
+.boring-menu-item {
+  animation: boring-fade 0.35s ease-out calc(var(--i) * 0.1s) both;
+}
+/* Carousel slides come in from the side they were called from. */
+.boring-slide-next {
+  animation: boring-slide-next 0.5s cubic-bezier(0.2, 0.8, 0.2, 1) both;
+}
+.boring-slide-prev {
+  animation: boring-slide-prev 0.5s cubic-bezier(0.2, 0.8, 0.2, 1) both;
+}
+@keyframes boring-slide-next {
+  from { opacity: 0; translate: 40px 0; }
+  to { opacity: 1; translate: 0 0; }
+}
+@keyframes boring-slide-prev {
+  from { opacity: 0; translate: -40px 0; }
+  to { opacity: 1; translate: 0 0; }
 }
 @keyframes demo-in {
   from { opacity: 0; translate: -6px 0; }

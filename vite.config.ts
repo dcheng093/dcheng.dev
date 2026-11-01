@@ -15,7 +15,12 @@ export default defineConfig({
   optimizeDeps: { entries: ["index.html"] },
   // The biggest chunk is the 3D code (three.js + all the object shapes, ~632 kB), already split out and only
   // loaded on pages with 3D (src/three/). The limit sits just above it so a bloated main bundle (~480 kB) still warns.
-  build: { chunkSizeWarningLimit: 700 },
+  build: {
+    chunkSizeWarningLimit: 700,
+    // Never base64 fonts into the CSS: it blocks the first paint, and the inlined ones were the old .woff fallbacks
+    // that no browser able to run this site ever uses.
+    assetsInlineLimit: (file) => (/\.(woff2?|ttf|otf)$/.test(file) ? false : undefined),
+  },
   test: {
     environment: "jsdom",
     setupFiles: ["./src/test/setup.ts"],

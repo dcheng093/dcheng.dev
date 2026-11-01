@@ -177,6 +177,22 @@ function freeSpot(size: number, rng: () => number, obs: readonly Rect[]) {
   return null
 }
 
+// Every object measures where it is, then moves its canvas. Interleaved, each move would make the next object's
+// measurement wait for the browser to restyle the page; so the moves are queued and all applied together once every
+// object has measured (a microtask: still before this frame is painted).
+const writes = new Map<HTMLCanvasElement, () => void>()
+let flushQueued = false
+function queueWrite(canvas: HTMLCanvasElement, write: () => void) {
+  writes.set(canvas, write)
+  if (flushQueued) return
+  flushQueued = true
+  queueMicrotask(() => {
+    flushQueued = false
+    for (const w of writes.values()) w()
+    writes.clear()
+  })
+}
+
 /**
  * Registers an object. Returns its per-frame driver (moves the DOM, returns the pose for the 3D model)
  * and a cleanup. `el` is the wrapper (its box is an anchor's home), `canvas` is what moves.
@@ -283,13 +299,17 @@ export function drive(el: HTMLElement, canvas: HTMLCanvasElement, spec: ObjSpec,
     if (dy !== entry.body.oy + m.dy) entry.body.vy = 0
 
     const hidden = t < entry.hiddenUntil || lost || dodge.cornered || hopAt > 0
-    canvas.style.opacity = hidden ? '0' : ''
     const sq = entry.body.squash
     const base = entry.drift ? `translate(${entry.drift.x}px, ${entry.drift.y}px) ` : `translate(${dodge.x}px, ${dodge.y}px) `
     const k = shown / size // drifters that had to shrink are scaled from their top-left corner
-    canvas.style.transformOrigin = k < 1 ? '0 0' : ''
-    canvas.style.transform = `${base}translate(${dx}px, ${dy}px) scale(${k * (1 + sq * 0.25)}, ${k * (1 - sq * 0.25)})`
-    canvas.style.filter = m.glitch ? 'hue-rotate(160deg) contrast(2) saturate(3)' : ''
+    const transform = `${base}translate(${dx}px, ${dy}px) scale(${k * (1 + sq * 0.25)}, ${k * (1 - sq * 0.25)})`
+    const glitch = m.glitch
+    queueWrite(canvas, () => {
+      canvas.style.opacity = hidden ? '0' : ''
+      canvas.style.transformOrigin = k < 1 ? '0 0' : ''
+      canvas.style.transform = transform
+      canvas.style.filter = glitch ? 'hue-rotate(160deg) contrast(2) saturate(3)' : ''
+    })
     entry.cx = cx + dx
     entry.cy = cy + dy
     entry.r = shown * 0.42

@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useLayoutEffect, useRef, useState, type CSSProperties } from 'react'
 import { MenuIcon } from '../icons'
 import { goTo } from './useInView'
 
@@ -33,25 +33,50 @@ function useCurrentSection() {
   return current
 }
 
+/** One underline for a row of links: it springs across to whichever is active (and overshoots a touch, then settles). */
+function useUnderline(current: string) {
+  const row = useRef<HTMLDivElement>(null)
+  const [bar, setBar] = useState<{ x: number; w: number } | null>(null)
+  useLayoutEffect(() => {
+    const measure = () => {
+      const link = row.current?.querySelector<HTMLElement>(`[data-section="${current}"] [data-label]`)
+      const box = row.current?.getBoundingClientRect()
+      if (!link || !box) return
+      const r = link.getBoundingClientRect()
+      setBar({ x: r.left - box.left, w: r.width })
+    }
+    measure()
+    window.addEventListener('resize', measure)
+    void document.fonts?.ready.then(measure)
+    return () => window.removeEventListener('resize', measure)
+  }, [current])
+  return { row, bar }
+}
+
 export function Navbar() {
   const current = useCurrentSection()
   const [open, setOpen] = useState(false)
+  const { row, bar } = useUnderline(current)
   const go = (id: string) => {
     setOpen(false)
     goTo(id)
   }
-  const link = (s: (typeof SECTIONS)[number]) => (
+  const link = (s: (typeof SECTIONS)[number], i: number, stagger = false) => (
     <a
       key={s.id}
       href={`#${s.id}`}
+      data-section={s.id}
       onClick={(e) => {
         e.preventDefault()
         go(s.id)
       }}
       aria-current={current === s.id ? 'location' : undefined}
-      className={`font-marker text-lg transition-colors duration-200 ${current === s.id ? 'text-[var(--accent)]' : 'text-white hover:text-white/70'}`}
+      className={`font-marker text-lg transition-colors duration-200 ${current === s.id ? 'text-[var(--accent)]' : 'text-white hover:text-white/70'} ${stagger ? 'boring-menu-item' : ''}`}
+      style={stagger ? ({ '--i': i } as CSSProperties) : undefined}
     >
-      <span className={`border-b-2 pb-0.5 transition-[border-color] duration-200 ${current === s.id ? 'border-[var(--accent)]' : 'border-transparent'}`}>{s.label}</span>
+      <span data-label className={stagger && current === s.id ? 'border-b-2 border-[var(--accent)] pb-0.5' : ''}>
+        {s.label}
+      </span>
     </a>
   )
   return (
@@ -59,20 +84,35 @@ export function Navbar() {
       <nav aria-label="Sections" className="mx-auto flex h-16 max-w-6xl items-center justify-between px-4 sm:px-6">
         <a
           href="#home"
+          aria-label="dcheng.dev: back to the top"
           onClick={(e) => {
             e.preventDefault()
             go('home')
           }}
-          className="font-marker text-2xl tracking-wide text-white"
+          className="block"
         >
-          &lt;dcheng.dev<span className="text-[var(--accent)]">/</span>&gt;
+          {/* The logo writes itself in: outline first, then the fill. */}
+          <svg aria-hidden viewBox="0 0 230 40" className="boring-logo h-9 w-auto overflow-visible">
+            <text x="2" y="30">
+              &lt;dcheng.dev<tspan className="logo-slash">/</tspan>&gt;
+            </text>
+          </svg>
         </a>
-        <div className="hidden items-center gap-8 md:flex">{SECTIONS.map(link)}</div>
+        <div ref={row} className="relative hidden items-center gap-8 md:flex">
+          {SECTIONS.map((s, i) => link(s, i))}
+          {bar && (
+            <span
+              aria-hidden
+              className="boring-underline absolute -bottom-1.5 left-0 h-0.5 rounded-full bg-[var(--accent)]"
+              style={{ width: bar.w, translate: `${bar.x}px 0` }}
+            />
+          )}
+        </div>
         <button type="button" className="text-white md:hidden" aria-label="Menu" aria-expanded={open} onClick={() => setOpen((o) => !o)}>
           <MenuIcon size={26} />
         </button>
       </nav>
-      {open && <div className="flex flex-col items-center gap-4 border-t border-white/10 bg-black/90 py-5 md:hidden">{SECTIONS.map(link)}</div>}
+      {open && <div className="boring-menu flex flex-col items-center gap-4 border-t border-white/10 bg-black/90 py-5 md:hidden">{SECTIONS.map((s, i) => link(s, i, true))}</div>}
     </header>
   )
 }

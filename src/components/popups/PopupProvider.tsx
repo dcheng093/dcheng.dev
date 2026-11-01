@@ -37,6 +37,8 @@ export function PopupProvider({ auto, children }: { auto: boolean; children: Rea
   const ambushRate = chaosScale(useSettings().settings.chaos).ambushRate
   useRandomInterval(
     () => {
+      // Nobody's looking: don't pile pop-ups up in a background tab.
+      if (document.hidden) return
       switch (ambush(nuke.installed, nuke.closed, nuke.adShown)) {
         case 'blocked': // POPNUKE ate it
           return nuke.countBlocked()

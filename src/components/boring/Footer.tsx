@@ -1,6 +1,9 @@
 import { Link } from 'react-router-dom'
 import { pageName, WEBRING } from '../../lib/sitemap'
+import { portfolio } from '../../content/portfolio'
+import { useCopy } from '../../hooks/useCopy'
 import { ArrowIcon, ChevronUpIcon } from '../icons'
+import { SocialLink } from './Hero'
 import { goTo } from './useInView'
 
 /** A page's name for this site: the shrines' own titles are the fun site's voice, so they go by their subject here. */
@@ -13,13 +16,22 @@ const plainName = (path: string) => {
 
 /** Back to top, the copyright, and the site map of the other site (the webring's "List Sites" lands here). */
 export function Footer() {
+  const { copied, copy } = useCopy()
   return (
     <footer className="border-t border-white/10 bg-[#0d0d10] px-4 pb-10 sm:px-6">
       <div className="mx-auto flex max-w-6xl flex-col items-center">
         <button type="button" onClick={() => goTo('home')} aria-label="Back to top" className="-mt-px border-t-2 border-[var(--accent)] px-4 py-3 text-white/70 transition-colors hover:text-white">
           <ChevronUpIcon size={20} />
         </button>
-        <p className="mt-4 text-center text-sm leading-relaxed text-white/50">
+        <ul className="mt-5 flex items-center gap-5 rounded-full bg-white/5 px-5 py-2.5" aria-label="Socials">
+          {portfolio.socials.map((s) => (
+            <li key={s.id} className="[&_*]:!text-white/70 [&_a:hover]:!text-white [&_button:hover]:!text-white">
+              <SocialLink {...s} size={20} onCopy={(text) => void copy(text)} />
+            </li>
+          ))}
+        </ul>
+        <p role="status" className="h-4 text-xs text-white/50">{copied ? 'Discord name copied' : ''}</p>
+        <p className="mt-2 text-center text-sm leading-relaxed text-white/50">
           ©2026
           <br />
           All Rights Reserved

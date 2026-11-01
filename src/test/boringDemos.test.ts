@@ -4,6 +4,9 @@ import { E, generate, key, logoCells, N, S, solve, W } from '../components/borin
 import { ftPrintf, gnlTrace } from '../components/boring/demos/logic/textTools'
 import { acceptsPrefix, CALLS, decode, FUNCTIONS } from '../components/boring/demos/logic/callMeMaybe'
 import { mulberry32 } from '../lib/random'
+import { existsSync } from 'node:fs'
+import { monthYear, portfolio, type DemoId } from '../content/portfolio'
+import { intraStats } from '../components/boring/intraStats'
 
 const shuffled = (n: number, seed: number) => {
   const rng = mulberry32(seed)
@@ -90,5 +93,32 @@ describe('Call Me Maybe (grammar mask)', () => {
     expect(steps.some((s) => s.candidates.some((c) => !c.allowed))).toBe(true)
     const json = JSON.parse(CALLS[i].tokens.join(''))
     expect(FUNCTIONS.map((f) => f.name)).toContain(json.name)
+  })
+})
+
+describe('the boring site data (src/content/portfolio.ts)', () => {
+  it('works the 42 card out from the project list: validated, categories, the ongoing one, newest first', () => {
+    const stats = intraStats(portfolio.intra.projects)
+    expect(stats.validated).toBe(18)
+    expect(stats.ongoing.map((p) => p.name)).toEqual(['Call-Me-Maybe'])
+    expect(stats.byKind.reduce((n, k) => n + k.n, 0)).toBe(stats.validated)
+    expect(stats.recent[0].date >= stats.recent.at(-1)!.date).toBe(true)
+    expect(portfolio.intra.milestone).toBe(3)
+    // Validating a project is a one-line change.
+    const done = intraStats([...portfolio.intra.projects.filter((p) => p.status !== 'ongoing'), { name: 'Call-Me-Maybe', score: 115, date: '2026-12', kind: 'Python' }])
+    expect(done.validated).toBe(19)
+    expect(done.ongoing).toEqual([])
+    expect(done.recent[0].name).toBe('Call-Me-Maybe')
+  })
+
+  it('every project has an animation and a real date, every stack entry a logo, every social a link or a copy', () => {
+    const demos: DemoId[] = ['libft', 'printf', 'gnl', 'pushSwap', 'timebound', 'maze', 'callMe', 'descent']
+    for (const p of portfolio.projects) {
+      expect(demos, p.title).toContain(p.demo)
+      expect(p.date, p.title).toMatch(/^\d{4}-\d{2}$/)
+      expect(monthYear(p.date)).toMatch(/^[A-Z][a-z]{2} \d{4}$/)
+    }
+    for (const s of portfolio.stack) expect(existsSync(`public/boring/logos/${s.logo}.webp`), s.name).toBe(true)
+    for (const s of portfolio.socials) expect(!!s.href !== !!s.copy, s.id).toBe(true)
   })
 })

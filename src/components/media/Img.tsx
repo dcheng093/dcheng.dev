@@ -14,6 +14,8 @@ type Props = {
   className?: string
   style?: CSSProperties
   alt?: string
+  /** On the first screen (the gate, the top of Home): load straight away, first in line, instead of lazily. */
+  eager?: boolean
 }
 
 const resolve = (slot: Slot | AssetKey): Slot => (typeof slot === 'string' ? assets[slot] : slot)
@@ -49,7 +51,7 @@ function useRotted(src: string) {
 }
 
 /** Low-res image that degrades to a "SUPPLY ME" placeholder when the file isn't in public/ yet. */
-export function Img({ slot, width, className = '', style, alt = '' }: Props) {
+export function Img({ slot, width, className = '', style, alt = '', eager = false }: Props) {
   const s = resolve(slot)
   const [missing, setMissing] = useState(false)
   const spot = useId()
@@ -75,7 +77,8 @@ export function Img({ slot, width, className = '', style, alt = '' }: Props) {
         width={w}
         height={h}
         alt={alt}
-        loading="lazy"
+        loading={eager ? 'eager' : 'lazy'}
+        fetchPriority={eager ? 'high' : undefined}
         draggable={false}
         data-possessed-gif=""
         className={`max-w-full h-auto object-contain ${className}`}
@@ -92,7 +95,8 @@ export function Img({ slot, width, className = '', style, alt = '' }: Props) {
         width={w}
         height={h}
         alt={alt}
-        loading="lazy"
+        loading={eager ? 'eager' : 'lazy'}
+        fetchPriority={eager ? 'high' : undefined}
         draggable={false}
         data-daniel=""
         className={`max-w-full h-auto object-cover ${className}`}
@@ -107,7 +111,8 @@ export function Img({ slot, width, className = '', style, alt = '' }: Props) {
       width={w}
       height={h}
       alt={alt}
-      loading="lazy"
+      loading={eager ? 'eager' : 'lazy'}
+        fetchPriority={eager ? 'high' : undefined}
       draggable={false}
       onError={() => setMissing(true)}
       className={`max-w-full h-auto ${className}`}
