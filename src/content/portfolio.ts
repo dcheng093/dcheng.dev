@@ -37,23 +37,33 @@ export const portfolio = {
     { text: ", from re-implementing the C standard library to constraining a language model's output with a grammar, and I like problems where getting the details right is the whole job." },
   ] as { text: string; strong?: boolean; accent?: boolean }[],
   hobby:
-    "Away from the keyboard I'm still at a keyboard: I play competitive FPS games and care far too much about the hardware behind them, from switches and mice to mousepads. Training aim taught me what 42 does too: small, deliberate practice compounds.",
+    "Away from the keyboard I'm still at a keyboard: I play competitive FPS games and care far too much about the hardware behind them, from switches and mice to mousepads. Aim training taught me what 42 does too: small, deliberate practice compounds.",
   contactLine: "Have a question, an opportunity, or just want to connect? Send me an email or reach out on any of my socials and I'll get back to you as soon as I can.",
 
   /**
-   * The tech orbit. `main` sits on the inner ring, `experienced` on the outer. `note` shows on hover.
-   * `logo` is a file in public/boring/logos/ (trimmed, about 160px; originals in asset-originals/me/).
+   * The tech orbit, three rings: `main` in the middle, `experienced` around it, `site` (what this website is built
+   * with) on the outside. `note` shows on hover. `logo` is a file in public/boring/logos/ (trimmed, about 160px;
+   * originals in asset-originals/me/).
    */
   stack: [
-    { name: 'C', level: 'main', note: 'main language', logo: 'c' },
+    { name: 'C', level: 'main', note: 'main language · Libft, ft_printf, get_next_line, push_swap', logo: 'c' },
     { name: 'Python', level: 'main', note: "42's Python track, A-Maze-ing, Call Me Maybe", logo: 'python' },
     { name: 'Ruby', level: 'experienced', note: 'The Descent (DragonRuby)', logo: 'ruby' },
     { name: 'Java', level: 'experienced', note: 'timebound, a Minecraft plugin', logo: 'java' },
     { name: 'Bash', level: 'experienced', note: 'shell scripting', logo: 'bash' },
     { name: 'Git', level: 'experienced', note: 'every project', logo: 'git' },
-  ] as { name: string; level: 'main' | 'experienced'; note: string; logo: string }[],
+    { name: 'React', level: 'site', note: "this website's UI", logo: 'react' },
+    { name: 'TypeScript', level: 'site', note: 'everything on this website', logo: 'typescript' },
+    { name: 'Tailwind CSS', level: 'site', note: "this website's styling", logo: 'tailwind' },
+    { name: 'three.js', level: 'site', note: "this website's 3D: the objects, worlds and the live hero", logo: 'threejs' },
+    { name: 'Vite', level: 'site', note: 'builds this website', logo: 'vite' },
+    { name: 'Cloudflare', level: 'site', note: 'hosts dcheng.dev on Workers', logo: 'cloudflare' },
+  ] as { name: string; level: 'main' | 'experienced' | 'site'; note: string; logo: string }[],
 
-  /** The 42 intra card. `date` is 'YYYY-MM'. Ongoing projects have no score and aren't counted as validated. */
+  /**
+   * The 42 intra card. `date` is 'YYYY-MM'. Ongoing projects have no score and aren't counted as validated.
+   * Entries sharing a `group` (the Python modules) each count, but show as one row in the recent-projects list.
+   */
   intra: {
     login: 'dcheng',
     campus: '42 Kuala Lumpur',
@@ -66,18 +76,18 @@ export const portfolio = {
       { name: 'ft_printf', score: 100, date: '2026-02', kind: 'C' },
       { name: 'get_next_line', score: 125, date: '2026-02', kind: 'C' },
       { name: 'push_swap', score: 100, date: '2026-06', kind: 'C' },
-      { name: 'Python Module 00', score: 100, date: '2026-07', kind: 'Python' },
-      { name: 'Python Module 01', score: 100, date: '2026-07', kind: 'Python' },
-      { name: 'Python Module 02', score: 100, date: '2026-07', kind: 'Python' },
-      { name: 'Python Module 03', score: 100, date: '2026-07', kind: 'Python' },
+      { name: 'Python Module 00', score: 100, date: '2026-07', kind: 'Python', group: 'Python Modules' },
+      { name: 'Python Module 01', score: 100, date: '2026-07', kind: 'Python', group: 'Python Modules' },
+      { name: 'Python Module 02', score: 100, date: '2026-07', kind: 'Python', group: 'Python Modules' },
+      { name: 'Python Module 03', score: 100, date: '2026-07', kind: 'Python', group: 'Python Modules' },
       { name: 'Exam Rank 02', score: 100, date: '2026-09', kind: 'Exam' },
-      { name: 'Python Module 04', score: 100, date: '2026-10', kind: 'Python' },
-      { name: 'Python Module 05', score: 100, date: '2026-10', kind: 'Python' },
-      { name: 'Python Module 06', score: 100, date: '2026-10', kind: 'Python' },
-      { name: 'Python Module 07', score: 100, date: '2026-10', kind: 'Python' },
-      { name: 'Python Module 08', score: 100, date: '2026-10', kind: 'Python' },
-      { name: 'Python Module 09', score: 100, date: '2026-10', kind: 'Python' },
-      { name: 'Python Module 10', score: 100, date: '2026-10', kind: 'Python' },
+      { name: 'Python Module 04', score: 100, date: '2026-10', kind: 'Python', group: 'Python Modules' },
+      { name: 'Python Module 05', score: 100, date: '2026-10', kind: 'Python', group: 'Python Modules' },
+      { name: 'Python Module 06', score: 100, date: '2026-10', kind: 'Python', group: 'Python Modules' },
+      { name: 'Python Module 07', score: 100, date: '2026-10', kind: 'Python', group: 'Python Modules' },
+      { name: 'Python Module 08', score: 100, date: '2026-10', kind: 'Python', group: 'Python Modules' },
+      { name: 'Python Module 09', score: 100, date: '2026-10', kind: 'Python', group: 'Python Modules' },
+      { name: 'Python Module 10', score: 100, date: '2026-10', kind: 'Python', group: 'Python Modules' },
       { name: 'A-Maze-ing', score: 110, date: '2026-10', kind: 'Python' },
       { name: 'Call-Me-Maybe', status: 'ongoing', kind: 'Python' },
     ] as IntraProject[],
@@ -178,7 +188,7 @@ export const portfolio = {
 }
 
 export type IntraKind = 'C' | 'Python' | 'System' | 'Exam'
-export type IntraProject = { name: string; kind: IntraKind } & ({ score: number; date: string; status?: undefined } | { status: 'ongoing'; score?: undefined; date?: string })
+export type IntraProject = { name: string; kind: IntraKind; group?: string } & ({ score: number; date: string; status?: undefined } | { status: 'ongoing'; score?: undefined; date?: string })
 
 export type DemoId = 'libft' | 'printf' | 'gnl' | 'pushSwap' | 'timebound' | 'maze' | 'callMe' | 'descent'
 export type PortfolioProject = {
@@ -194,5 +204,5 @@ export type PortfolioProject = {
 /** '2026-05' → 'May 2026' */
 export const monthYear = (date: string) => {
   const [y, m] = date.split('-').map(Number)
-  return new Date(Date.UTC(y, m - 1, 1)).toLocaleDateString('en-GB', { month: 'short', year: 'numeric', timeZone: 'UTC' })
+  return new Date(Date.UTC(y, m - 1, 1)).toLocaleDateString('en-US', { month: 'short', year: 'numeric', timeZone: 'UTC' })
 }

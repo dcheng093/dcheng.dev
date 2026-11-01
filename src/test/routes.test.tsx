@@ -124,6 +124,12 @@ describe('routes', () => {
     // The 42 card: Milestone 3, and Call-Me-Maybe still in progress.
     expect(screen.getByText('Milestone 3')).toBeInTheDocument()
     expect(screen.getAllByText(/in progress/i).length).toBeGreaterThanOrEqual(1)
+    // The recent-projects list folds the rest away behind an arrow.
+    const more = screen.getByRole('button', { name: 'Show all projects' })
+    expect(more).toHaveAttribute('aria-expanded', 'false')
+    fireEvent.click(more)
+    expect(screen.getByRole('button', { name: 'Show fewer projects' })).toHaveAttribute('aria-expanded', 'true')
+    expect(screen.getByText('Born2beroot')).toBeInTheDocument()
   })
 
   it('/boring is a normal website even for the possessed and the descended: none of it reaches the page', () => {

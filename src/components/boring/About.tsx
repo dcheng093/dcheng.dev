@@ -1,7 +1,8 @@
-import type { CSSProperties } from 'react'
+import { useId, useState, type CSSProperties } from 'react'
 import { monthYear, portfolio } from '../../content/portfolio'
-import { intraStats } from './intraStats'
+import { intraStats, type IntraRow } from './intraStats'
 import { SectionTitle } from './SectionTitle'
+import { ChevronUpIcon } from '../icons'
 import { useReveal } from './useInView'
 
 const card = 'reveal-up lift rounded-3xl bg-[#141418] p-6 ring-1 ring-white/5 sm:p-8'
@@ -45,41 +46,57 @@ export function About() {
   )
 }
 
-// ——— The stack: logos burst out of the centre into two rings, then each bobs on its own (his brother's skill cloud) ———
+// ——— The stack: logos burst out of the centre into three rings, then each bobs on its own (his brother's skill cloud) ———
+
+// Each ring: which level sits on it, its radius (% of the orbit's width) and where its first badge goes (degrees).
+// The rings are turned against each other so no two badges line up.
+const RINGS = [
+  { level: 'main', radius: 17, start: -90 },
+  { level: 'experienced', radius: 31, start: 45 },
+  { level: 'site', radius: 46, start: 0 },
+] as const
 
 function StackOrbit() {
   const ref = useReveal<HTMLDivElement>(0.3)
-  const rings = [portfolio.stack.filter((s) => s.level === 'main'), portfolio.stack.filter((s) => s.level === 'experienced')]
   let n = 0
   return (
-    <div ref={ref} className="orbit relative mx-auto aspect-square w-full max-w-sm [container-type:inline-size]">
-      <div aria-hidden className="absolute inset-[26%] rounded-full border border-dashed border-white/10" />
-      <div aria-hidden className="absolute inset-[4%] rounded-full border border-dashed border-white/10" />
+    <div ref={ref} className="orbit relative mx-auto aspect-square w-full max-w-md [container-type:inline-size]">
+      {RINGS.map((ring) => (
+        <div key={ring.level} aria-hidden className="absolute rounded-full border border-dashed border-white/10" style={{ inset: `${50 - ring.radius}%` }} />
+      ))}
       <p aria-hidden className="absolute inset-0 grid place-items-center font-marker text-lg text-white/40">my stack</p>
       <ul aria-label="Languages and tools">
-        {rings.map((ring, r) =>
-          ring.map((s, i) => {
-            const angle = ((i / ring.length) * 360 + (r ? 30 : -90)) * (Math.PI / 180)
-            const radius = r ? 46 : 24
+        {RINGS.map((ring, r) => {
+          const items = portfolio.stack.filter((s) => s.level === ring.level)
+          return items.map((s, i) => {
+            const angle = ((i / items.length) * 360 + ring.start) * (Math.PI / 180)
             const k = n++
             return (
               <li
                 key={s.name}
-                className="orbit-badge group absolute left-1/2 top-1/2"
+                tabIndex={0}
+                className="orbit-badge group absolute left-1/2 top-1/2 outline-none hover:z-30 focus-within:z-30 focus:z-30"
                 style={
                   {
-                    '--tx': `${(Math.cos(angle) * radius).toFixed(2)}cqw`,
-                    '--ty': `${(Math.sin(angle) * radius).toFixed(2)}cqw`,
+                    '--tx': `${(Math.cos(angle) * ring.radius).toFixed(2)}cqw`,
+                    '--ty': `${(Math.sin(angle) * ring.radius).toFixed(2)}cqw`,
                     '--delay': `${(r * 0.35 + i * 0.05).toFixed(2)}s`,
                     '--bob': `${4 + ((k * 0.7) % 2)}s`,
                     '--bob-delay': `${-((k * 1.3) % 2)}s`,
                   } as CSSProperties
                 }
               >
-                <div className="orbit-bob -ml-8 -mt-8 grid h-16 w-16 place-items-center rounded-full border-2 border-black bg-[#e6e6ee] shadow-[0_0_14px_#ffffff30] transition-transform duration-200 group-hover:scale-110">
-                  <img src={`/boring/logos/${s.logo}.webp`} alt="" width={40} height={40} loading="lazy" className="h-9 w-9 object-contain" />
+                {/* Sized to the orbit (up to 56px), so twelve still fit around a phone-sized one. */}
+                <div className="orbit-bob -ml-[min(1.75rem,6.5cqw)] -mt-[min(1.75rem,6.5cqw)] grid size-[min(3.5rem,13cqw)] place-items-center rounded-full border-2 border-black bg-[#e6e6ee] shadow-[0_0_14px_#ffffff30] transition-transform duration-200 group-hover:scale-110 group-focus:scale-110">
+                  <img src={`/boring/logos/${s.logo}.webp`} alt="" width={40} height={40} loading="lazy" className="size-[58%] object-contain" />
                 </div>
-                <span className="pointer-events-none absolute left-1/2 top-9 z-10 -translate-x-1/2 whitespace-nowrap rounded-md bg-black/90 px-2 py-1 text-xs text-white opacity-0 transition-opacity duration-200 group-hover:opacity-100">
+                {/* The label sits under the badge, leaning inwards (a badge on the right reads leftwards), so it stays
+                    inside the card. */}
+                <span
+                  aria-hidden
+                  className="pointer-events-none absolute left-0 top-[min(2rem,7.5cqw)] w-max max-w-[14rem] rounded-md bg-black/95 px-2.5 py-1.5 text-center text-xs leading-snug text-white opacity-0 shadow-[0_6px_18px_#000a] ring-1 ring-white/15 transition-opacity duration-200 group-hover:opacity-100 group-focus:opacity-100"
+                  style={{ translate: `${(-50 - Math.cos(angle) * 35).toFixed(1)}% 0` }}
+                >
                   <b>{s.name}</b> · {s.note}
                 </span>
                 <span className="sr-only">
@@ -87,8 +104,8 @@ function StackOrbit() {
                 </span>
               </li>
             )
-          }),
-        )}
+          })
+        })}
       </ul>
     </div>
   )
@@ -101,7 +118,10 @@ function IntraCard() {
   const stats = intraStats(intra.projects)
   const ref = useReveal<HTMLDivElement>(0.3)
   const ring = 2 * Math.PI * 42
-  const recent = [...stats.ongoing, ...stats.recent].slice(0, 8)
+  const [all, setAll] = useState(false)
+  const more = useId()
+  const first = stats.rows.slice(0, SHOWN)
+  const rest = stats.rows.slice(SHOWN)
   return (
     <div ref={ref} className="intra rounded-2xl border border-white/10 p-4 text-white">
       <div className="flex items-start justify-between gap-3">
@@ -167,18 +187,53 @@ function IntraCard() {
       </div>
       <p className="mt-5 border-t border-white/10 pt-3 text-sm text-white/60">Recent projects</p>
       <ul className="mt-2 space-y-1.5 text-sm">
-        {recent.map((p) => (
-          <li key={p.name} className="grid grid-cols-[4.6rem_4.4rem_1fr] items-center gap-2">
-            <span className="text-white/50">{p.date ? monthYear(p.date) : 'now'}</span>
-            {p.status === 'ongoing' ? (
-              <span className="animate-pulse rounded bg-amber-400 px-1 py-0.5 text-center text-[10px] font-bold uppercase tracking-wide text-black">in progress</span>
-            ) : (
-              <span className={`rounded px-1.5 py-0.5 text-center text-xs font-semibold ${p.score > 100 ? 'bg-[var(--accent)] text-white' : 'bg-emerald-500 text-black'}`}>{p.score}</span>
-            )}
-            <span className="truncate">{p.name}</span>
-          </li>
+        {first.map((row) => (
+          <IntraLine key={row.name} row={row} />
         ))}
       </ul>
+      {rest.length > 0 && (
+        <>
+          {/* Everything else, folded away until asked for: the height eases open (a 0fr → 1fr grid row). */}
+          <div id={more} className={`grid transition-[grid-template-rows,opacity] duration-500 ease-out ${all ? 'grid-rows-[1fr] opacity-100' : 'grid-rows-[0fr] opacity-0'}`}>
+            <ul className="space-y-1.5 overflow-hidden text-sm" inert={!all}>
+              {rest.map((row, i) => (
+                <IntraLine key={row.name} row={row} className={i === 0 ? 'mt-1.5' : ''} />
+              ))}
+            </ul>
+          </div>
+          <button
+            type="button"
+            onClick={() => setAll((a) => !a)}
+            aria-expanded={all}
+            aria-controls={more}
+            aria-label={all ? 'Show fewer projects' : 'Show all projects'}
+            title={all ? 'Show fewer' : `Show all ${stats.rows.length}`}
+            className="mx-auto mt-3 grid h-8 w-8 place-items-center rounded-full text-white/60 ring-1 ring-white/15 transition-colors hover:bg-white/10 hover:text-white"
+          >
+            <ChevronUpIcon size={18} className={`transition-transform duration-300 ${all ? '' : 'rotate-180'}`} />
+          </button>
+        </>
+      )}
     </div>
+  )
+}
+
+/** How many project rows the card shows before the expand arrow. */
+const SHOWN = 6
+
+function IntraLine({ row, className = '' }: { row: IntraRow; className?: string }) {
+  return (
+    <li className={`grid grid-cols-[4.6rem_4.4rem_1fr] items-center gap-2 ${className}`}>
+      <span className="text-white/50">{row.date ? monthYear(row.date) : 'now'}</span>
+      {row.ongoing ? (
+        <span className="animate-pulse rounded bg-amber-400 px-1 py-0.5 text-center text-[10px] font-bold uppercase tracking-wide text-black">in progress</span>
+      ) : (
+        <span className={`rounded px-1.5 py-0.5 text-center text-xs font-semibold ${row.score! > 100 ? 'bg-[var(--accent)] text-white' : 'bg-emerald-500 text-black'}`}>{row.score}</span>
+      )}
+      <span className="truncate">
+        {row.name}
+        {row.count > 1 && <span className="ml-1.5 text-xs text-white/40">×{row.count}</span>}
+      </span>
+    </li>
   )
 }

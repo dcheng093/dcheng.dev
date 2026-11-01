@@ -111,6 +111,15 @@ describe('the boring site data (src/content/portfolio.ts)', () => {
     expect(done.recent[0].name).toBe('Call-Me-Maybe')
   })
 
+  it('shows the Python modules as one row (each still counted), with the ongoing project on top', () => {
+    const { rows, validated } = intraStats(portfolio.intra.projects)
+    expect(validated).toBe(18)
+    expect(rows[0]).toMatchObject({ name: 'Call-Me-Maybe', ongoing: true })
+    const modules = rows.filter((r) => r.name.startsWith('Python Module'))
+    expect(modules).toEqual([expect.objectContaining({ name: 'Python Modules (00–10)', count: 11, score: 100, date: '2026-10' })])
+    expect(rows.length).toBe(9)
+  })
+
   it('every project has an animation and a real date, every stack entry a logo, every social a link or a copy', () => {
     const demos: DemoId[] = ['libft', 'printf', 'gnl', 'pushSwap', 'timebound', 'maze', 'callMe', 'descent']
     for (const p of portfolio.projects) {
@@ -119,6 +128,7 @@ describe('the boring site data (src/content/portfolio.ts)', () => {
       expect(monthYear(p.date)).toMatch(/^[A-Z][a-z]{2} \d{4}$/)
     }
     for (const s of portfolio.stack) expect(existsSync(`public/boring/logos/${s.logo}.webp`), s.name).toBe(true)
+    expect(new Set(portfolio.stack.map((s) => s.level))).toEqual(new Set(['main', 'experienced', 'site']))
     for (const s of portfolio.socials) expect(!!s.href !== !!s.copy, s.id).toBe(true)
   })
 })
