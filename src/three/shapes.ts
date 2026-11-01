@@ -512,6 +512,59 @@ export function buildShape(shape: ShapeId, tex?: TexRef, extra: Extra = {}): THR
         mesh(cyl(0.3, 0.4, 0.12, 14), M('worldMap'), 0, -0.98),
       )
 
+    // ——— the Hall of Fame's prizes ———
+    case 'thumbsUp': {
+      const skin = M(t('goldMetal'))
+      // A fist side-on, four curled fingers stacked down its front, the thumb straight up.
+      const fingers = [0.28, 0.06, -0.16, -0.38].map((y, i) => mesh(new RoundedBoxGeometry(0.34, 0.24, 0.62 - i * 0.05, 2, 0.1), skin, 0.42, y))
+      const hand = group(
+        mesh(new RoundedBoxGeometry(0.8, 0.95, 0.7, 2, 0.18), skin, 0, -0.05),
+        ...fingers,
+        mesh(new THREE.CapsuleGeometry(0.17, 0.62, 4, 10), skin, -0.04, 0.72, 0, 0, 0, 0.12),
+        mesh(box(0.5, 0.7, 0.62), C(0x1b2a6b), -0.62, -0.1),
+      )
+      // Centred on the whole hand, thumb included, so it spins about its middle.
+      hand.position.set(0.14, -0.38, 0)
+      return group(hand)
+    }
+    case 'rosette': {
+      const ribbon = M(t('fractalRed'), { side: THREE.DoubleSide })
+      // A pleated ring (a star with many shallow points), a gold centre, two tails hanging below.
+      const pleats: [number, number][] = Array.from({ length: 36 }, (_, i) => {
+        const r = i % 2 ? 0.66 : 0.78
+        const a = (i / 36) * Math.PI * 2
+        return [Math.cos(a) * r, Math.sin(a) * r]
+      })
+      const centre = new THREE.MeshLambertMaterial({ map: drawn(64, (c, s) => {
+        c.fillStyle = '#e8b923'
+        c.fillRect(0, 0, s, s)
+        c.fillStyle = '#7a4a00'
+        c.font = 'bold 22px serif'
+        c.textAlign = 'center'
+        c.textBaseline = 'middle'
+        c.fillText('#1', s / 2, s / 2 + 1)
+      }) })
+      return group(
+        extruded(pleats, 0.08, ribbon),
+        mesh(cyl(0.42, 0.42, 0.12, 24), [C(0xc9961a), centre, centre], 0, 0, 0.1, Math.PI / 2),
+        mesh(box(0.3, 0.9, 0.04), ribbon, -0.22, -0.95, -0.05, 0, 0, -0.25),
+        mesh(box(0.3, 0.9, 0.04), ribbon, 0.22, -0.95, -0.05, 0, 0, 0.25),
+      )
+    }
+    case 'laurel': {
+      const leaf = M(t('goldMetal'))
+      // Two arcs of leaves meeting at the top, open at the bottom, like a victor's wreath.
+      const leaves = Array.from({ length: 22 }, (_, i) => {
+        const side = i < 11 ? -1 : 1
+        const k = (i % 11) / 10
+        const a = -Math.PI / 2 + side * (0.35 + k * 2.5)
+        const m = mesh(ball(0.15, 8, 6), leaf, Math.cos(a) * 0.78, Math.sin(a) * 0.78, 0, 0, 0, a + side * 0.6)
+        m.scale.set(1.6, 0.6, 0.5)
+        return m
+      })
+      return group(...leaves, mesh(new THREE.TorusGeometry(0.78, 0.035, 6, 30, Math.PI * 1.7), leaf, 0, 0, 0, 0, 0, -Math.PI / 2 + Math.PI * 0.15))
+    }
+
     // ——— legendaries ———
     case 'beef':
       return group(

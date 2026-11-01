@@ -31,6 +31,7 @@ export const SPECIAL_POPUPS = {
   'quick-survey': { auto: true },
   'spin-to-win': { auto: true },
   'daniel-cam': { auto: true },
+  'cosmic-cat': { auto: true },
   // POPNUKE's own ad: turns up after the visitor has closed a few pop-ups (then joins the rotation).
   'popnuke-ad': { auto: false },
   // First of the three pop-ups that greet you when you uninstall POPNUKE.

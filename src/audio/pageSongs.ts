@@ -32,6 +32,8 @@ export const PAGE_SONGS: Record<string, MixId> = {
   '/stickers': 'sticker-pop',
   '/dex': 'pixel-pusher',
   '/popnuke': 'nuke-it',
+  // The Hall of Fame: an awards night.
+  '/reviews': 'nightcore',
   // Control Panel music: the sound of fiddling with settings at 2am.
   '/settings': 'lofi-debug',
 }
@@ -58,6 +60,7 @@ export const POSSESSED_PAGE_SONGS: Record<string, MixId> = {
   '/stickers': 'p-lullaby',
   '/dex': 'p-quiet',
   '/popnuke': 'p-procession',
+  '/reviews': 'p-procession',
   '/settings': 'p-quiet',
   '/leave': 'p-heartbeat',
   '/shrine/chiikawa': 'p-lullaby',

@@ -26,6 +26,32 @@ export const WEBRING: readonly string[] = [
   '/leave',
 ]
 
+/** Each page's name, for lists of them (the Dex, the boring site's site map). Shrines go by their own titles. */
+const PAGE_NAMES: Record<string, string> = {
+  '/': 'Home',
+  '/dealership': 'The Dealership',
+  '/guestbook': 'The Guestbook',
+  '/under-construction': 'Under Construction',
+  '/you-won': 'You Won!',
+  '/checkout': 'Checkout',
+  '/scan': 'Virus Scan',
+  '/casino': 'The Casino',
+  '/survey': 'The Survey',
+  '/work-from-home': 'Work From Home',
+  '/arcade': 'The Arcade',
+  '/desktop': "Daniel's Desktop",
+  '/radio': 'DANIEL FM',
+  '/oracle': 'The Oracle',
+  '/blinkie-maker': 'Blinkie Maker',
+  '/popnuke': 'POPNUKE',
+  '/settings': 'Control Panel',
+  '/stickers': 'Sticker Book',
+  '/dex': 'The Object Dex',
+  '/leave': 'The Exit',
+  anywhere: 'Anywhere, rarely, glowing',
+}
+export const pageName = (page: string) => shrines.find((s) => `/shrine/${s.slug}` === page)?.title ?? PAGE_NAMES[page] ?? page
+
 export const randomRoute = (exclude?: string, rng: Rng = Math.random) =>
   pick(WEBRING.filter((r) => r !== exclude), rng)
 

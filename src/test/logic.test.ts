@@ -465,7 +465,7 @@ describe('blinkie maker', () => {
 
 describe('3D pages', () => {
   const shrinePaths = shrines.map((s) => `/shrine/${s.slug}`)
-  const IN_SCOPE = [...WEBRING.filter((p) => p !== '/'), ...shrinePaths.filter((p) => !WEBRING.includes(p)), 'bsod']
+  const IN_SCOPE = [...WEBRING.filter((p) => p !== '/'), ...shrinePaths.filter((p) => !WEBRING.includes(p)), 'bsod', '/reviews']
   const DANIEL = new Set(['photoCube', 'head', 'portrait'])
 
   it.each(IN_SCOPE)('%s has 3-5 objects, 1-2 drifters and a photo of Daniel', (key) => {
@@ -481,9 +481,9 @@ describe('3D pages', () => {
     expect(objects.some((o) => DANIEL.has(o.shape)), `${key} needs a Daniel photo object`).toBe(true)
   })
 
-  it('never decorates Home, and keeps full worlds to six pages', () => {
+  it('never decorates Home, and keeps full worlds to seven pages', () => {
     expect(sceneFor('/')).toBeUndefined()
-    expect(Object.values(PAGE_3D).filter((s) => s.world).length).toBe(6)
+    expect(Object.values(PAGE_3D).filter((s) => s.world).length).toBe(7)
   })
 
   it('object ids are unique, with names, lore and a made-of line', () => {
@@ -493,7 +493,7 @@ describe('3D pages', () => {
       expect(o.name.length, o.id).toBeGreaterThan(0)
       expect(o.lore.length, o.id).toBeGreaterThan(10)
       expect(o.madeOf.length, o.id).toBeGreaterThan(0)
-      if (o.tex) expect(o.tex.startsWith('proc:') ? PROC_TEXTURES.includes(o.tex.slice(5) as never) : o.tex in TEX, `${o.id} texture ${o.tex}`).toBe(true)
+      for (const tex of [o.tex, o.possessedTex]) if (tex) expect(tex.startsWith('proc:') ? PROC_TEXTURES.includes(tex.slice(5) as never) : tex in TEX, `${o.id} texture ${tex}`).toBe(true)
       if (o.shape === 'text') for (const ch of o.text ?? '') expect(hasGlyph(ch), `${o.id}: ${ch}`).toBe(true)
     }
   })
@@ -908,7 +908,7 @@ describe('sealing', () => {
 
   it('no secret page is a route, a ring stop, a theme song or a legendary roll', () => {
     const paths = routes[0].children!.map((r) => r.path)
-    expect(paths.filter((p) => p && !['*', 'legendary/:id', 'boring'].includes(p) && !WEBRING.includes(`/${p}`) && !p.includes(':'))).toEqual([])
+    expect(paths.filter((p) => p && !['*', 'legendary/:id', 'boring', 'reviews'].includes(p) && !WEBRING.includes(`/${p}`) && !p.includes(':'))).toEqual([])
     expect(rollLegendary('/somewhere-unknown', () => 0)).toBeUndefined()
     expect(rollLegendary('/scan', () => 0)).toBeDefined()
     expect(DEX.every((e) => e.page === 'anywhere' || WEBRING.includes(e.page))).toBe(true)

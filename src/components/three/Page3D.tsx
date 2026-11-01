@@ -66,18 +66,19 @@ export function Page3D({ crashed = false }: { crashed?: boolean }) {
   return (
     <>
       <div ref={backdrop} aria-hidden data-backdrop className="pointer-events-none absolute inset-0 -z-30" />
-      {/* Possessed, every page's world is the inside of something (except the shrine's own congregation). */}
-      {scene?.world && <World3D key={`${key}-world-${possessed}`} id={possessed && scene.world !== 'cult' ? 'flesh' : scene.world} markPage />}
+      {/* Possessed, every page's world is the inside of something (except the shrine's own congregation), unless it
+          names its own possessed world. */}
+      {scene?.world && <World3D key={`${key}-world-${possessed}`} id={possessed ? (scene.possessedWorld ?? (scene.world === 'cult' ? 'cult' : 'flesh')) : scene.world} markPage />}
       <div ref={pageLayer} aria-hidden data-testid="objects-page" className="pointer-events-none absolute inset-0 -z-10 min-h-screen overflow-hidden" style={layerZ}>
         {layout &&
           objects.map((o, i) => {
             const at = layout.anchors[o.id]
-            return at ? <Obj key={`${key}-${o.id}-${at.size}`} spec={o} size={at.size} at={at} seed={i * 31 + key.length} mood={scene?.mood} onOpen={onOpen} onSecret={catalogue} /> : null
+            return at ? <Obj key={`${key}-${o.id}-${at.size}-${possessed}`} spec={o} size={at.size} at={at} seed={i * 31 + key.length} mood={scene?.mood} onOpen={onOpen} onSecret={catalogue} /> : null
           })}
       </div>
       <div ref={screenLayer} aria-hidden data-testid="objects-screen" className="pointer-events-none fixed inset-0 -z-10 overflow-hidden" style={layerZ}>
         {drifters.map((o, i) => (
-          <Obj key={`${key}-${o.id}`} spec={{ ...o, role: 'drifter' }} size={driftSize(o)} seed={i * 53 + key.length + 7} mood={scene?.mood} onOpen={onOpen} onSecret={catalogue} />
+          <Obj key={`${key}-${o.id}-${possessed}`} spec={{ ...o, role: 'drifter' }} size={driftSize(o)} seed={i * 53 + key.length + 7} mood={scene?.mood} onOpen={onOpen} onSecret={catalogue} />
         ))}
       </div>
       {open && <ObjectWindow key={open.id} spec={open} onClose={() => setOpen(null)} />}

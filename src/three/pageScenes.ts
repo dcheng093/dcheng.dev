@@ -107,8 +107,27 @@ export const POSSESSED_TEXTURES = {
   stillFace: '/possessed/still-face.webp',
 } as const
 
+/** The Hall of Fame's pack (/reviews, src/three/worlds.ts `hall`): marble and fractals, polished for the visitors. */
+export const HALL_TEXTURES = {
+  hallMarble: '/me/065C.jpg',
+  fractalRed: '/me/ahm60009.jpg',
+  fractalWaves: '/me/ahm60025.jpg',
+  fractalRainbow: '/me/ahm60067.jpg',
+} as const
+
+/** The same hall once the site is possessed (`hall-rot`): what was hanging behind the frames all along. */
+export const HALL_ROT_TEXTURES = {
+  leafTunnel: '/me/08e09b8bf6290feaee8a3577c0b398ef.jpg',
+  redDoorway: '/me/5d6e3d9a8c4f46632d8fcfa3da9b5180.jpg',
+  redSmear: '/me/72b1018b5dd52574601ecb0870fe937c.jpg',
+  redCollage: '/me/7f28282b8a4de314455bb68d63552c6d.jpg',
+  embers: '/me/b6a079ea869225dae9ed327e3a140e7e.jpg',
+  fleshWeb: '/me/bc52bc87870e2496924684ffd746d39b.jpg',
+  letMeOut: '/me/caaf2914d7133a228f54eebee7a33b97.jpg',
+} as const
+
 /** Every image texture by name. */
-export const TEX = { ...TEXTURES, ...DREAM_TEXTURES, ...MORE_TEXTURES, ...CULT_TEXTURES, ...POSSESSED_TEXTURES } as const
+export const TEX = { ...TEXTURES, ...DREAM_TEXTURES, ...MORE_TEXTURES, ...CULT_TEXTURES, ...POSSESSED_TEXTURES, ...HALL_TEXTURES, ...HALL_ROT_TEXTURES } as const
 export type TexName = keyof typeof TEX
 
 /** Textures drawn in code (src/three/procTextures.ts). Listed here so content can name them. */
@@ -131,6 +150,8 @@ export const SHAPES = [
   'tarot', 'eye', 'candle', 'moon', 'palette', 'voxelHeart', 'door', 'suitcase', 'sadFace', 'mug', 'teaBag', 'sugarCube',
   'horseshoe', 'carrot', 'hayBale', 'tooth', 'toothbrush', 'dentures', 'mouthwash', 'skull', 'normSlab', 'redX',
   'warning', 'numberStack', 'arrows', 'heart', 'cloud', 'globe',
+  // the Hall of Fame's prizes
+  'thumbsUp', 'rosette', 'laurel',
   // legendaries
   'beef', 'goose', 'planet',
   // POPNUKE, the pop-up blocker
@@ -140,7 +161,7 @@ export const SHAPES = [
 ] as const
 export type ShapeId = (typeof SHAPES)[number]
 
-export type WorldId = 'mystic' | 'neon' | 'glitch' | 'meadow' | 'painted' | 'space' | 'cult' | 'flesh'
+export type WorldId = 'mystic' | 'neon' | 'glitch' | 'meadow' | 'painted' | 'space' | 'cult' | 'flesh' | 'hall' | 'hall-rot'
 export type Rarity = 'common' | 'rare' | 'legendary'
 export type ObjSize = 's' | 'm' | 'l'
 
@@ -153,6 +174,8 @@ export type ObjSpec = {
   madeOf: string
   shape: ShapeId
   tex?: TexRef
+  /** What it wears once the site is possessed, instead of a random flesh skin. */
+  possessedTex?: TexRef
   /** Voxel text for shape 'text'. */
   text?: string
   /** Which casual photo (photoCube/portrait start) or cut-out (head) to use. */
@@ -172,6 +195,7 @@ export type ObjSpec = {
   specimen?: { glyph?: string; digit?: string }
 }
 
-export type PageScene = { world?: WorldId; mood?: PageMood; objects: ObjSpec[] }
+/** `possessedWorld`: the world it turns into once the site is possessed (otherwise the flesh world). */
+export type PageScene = { world?: WorldId; possessedWorld?: WorldId; mood?: PageMood; objects: ObjSpec[] }
 
 export const SIZE_PX: Record<ObjSize, number> = { s: 96, m: 168, l: 300 }

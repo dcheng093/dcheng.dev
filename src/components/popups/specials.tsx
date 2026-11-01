@@ -31,7 +31,28 @@ export function SpecialPopup({ id, close }: SpecialProps & { id: SpecialId }) {
       return <WelcomeBack />
     case 'daniel-cam':
       return <DanielCam close={close} />
+    case 'cosmic-cat':
+      return <CosmicCat close={close} />
   }
+}
+
+/** Breaking news from the observatory: the solar system orbits a cat. Petting her is encouraged. */
+function CosmicCat({ close }: SpecialProps) {
+  const [pets, setPets] = useState(0)
+  return (
+    <div className="space-y-2 text-center font-[Tahoma,Verdana,sans-serif] text-black" data-testid="cosmic-cat">
+      <p className="font-impact text-xl leading-tight text-blue-800">★ ASTRONOMY ALERT ★</p>
+      <img src="/me/cat.jpg" width={280} height={157} alt="An enormous calico cat, with every planet of the solar system orbiting her" className="win-sunken mx-auto h-auto w-full max-w-[280px]" />
+      <p className="text-sm">
+        <b>SCIENTISTS CONFIRM:</b> the Sun was a decoy. Everything orbits her.
+      </p>
+      <p className="text-[11px]">{pets ? `Pets given: ${pets}. The universe purrs.` : 'She has been petted 0 times. This is a cosmic injustice.'}</p>
+      <div className="flex justify-center gap-2">
+        <DialogButton onClick={() => setPets((p) => p + 1)}>Pet the cat</DialogButton>
+        <DialogButton onClick={close}>I accept my place</DialogButton>
+      </div>
+    </div>
+  )
 }
 
 /** A "live webcam" of Daniel: his selfies cross-fading one into the next, and a viewer count nobody believes. */

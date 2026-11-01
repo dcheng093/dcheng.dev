@@ -535,24 +535,51 @@
   }
 }
 
-/* /boring: undo Tailwind preflight so it reads like an unstyled 1997 page. */
-.boring {
-  background: #fff;
-  color: #000;
-  font-family: var(--font-times);
-  font-size: 16px;
-  line-height: normal;
-  padding: 8px;
-  min-height: 100vh;
+/* /boring: Daniel's real portfolio. A normal page: its own fonts, smooth everything, and none of the site's chrome.
+   html[data-calm] (RootLayout) is on while a calm route is open: no starfield behind it, nothing pixelated. */
+html[data-calm] {
+  scroll-padding-top: 64px;
+  scroll-behavior: smooth;
 }
-.boring h1 { font-size: 2em; font-weight: bold; margin: 0.67em 0; }
-.boring h2 { font-size: 1.5em; font-weight: bold; margin: 0.83em 0; }
-.boring p { margin: 1em 0; }
-.boring ul { list-style: disc; padding-left: 40px; margin: 1em 0; }
-.boring a { color: #00e; text-decoration: underline; }
-.boring a:visited { color: #551a8b; }
-.boring hr { border: 1px inset #ccc; margin: 0.5em 0; }
-.boring img { image-rendering: auto; display: inline; }
+html[data-calm] body {
+  background: #0a0a0a;
+  color: #fff;
+}
+html[data-calm] img {
+  image-rendering: auto;
+}
+.boring {
+  font-family: 'Space Grotesk Variable', system-ui, sans-serif;
+}
+.boring .font-marker {
+  font-family: 'Permanent Marker', 'Segoe Print', cursive;
+}
+/* The photo was cropped at the shoulders and the waist: let all three edges dissolve into the scene. */
+.hero-cutout {
+  mask-image: linear-gradient(to bottom, #000 72%, transparent 98%), linear-gradient(to right, transparent, #000 14%, #000 86%, transparent);
+  mask-composite: intersect;
+}
+.boring-rise {
+  animation: boring-rise 0.9s cubic-bezier(0.2, 0.9, 0.25, 1.15) 0.15s both;
+}
+@keyframes boring-rise {
+  from { opacity: 0; translate: 0 120px; }
+  to { opacity: 1; translate: 0 0; }
+}
+.boring-fade {
+  animation: boring-fade 0.45s ease-out both;
+}
+@keyframes boring-fade {
+  from { opacity: 0; translate: 0 12px; }
+  to { opacity: 1; translate: 0 0; }
+}
+@keyframes orbit {
+  to { rotate: 360deg; }
+}
+@keyframes demo-in {
+  from { opacity: 0; translate: -6px 0; }
+  to { opacity: 1; translate: 0 0; }
+}
 
 /* The possessed site (src/lib/possession.ts sets html[data-possessed]; components/possessed/ draws the rest): the same
    pages rendered wrong, after the Username 666 frames. One eye-holed flesh under everything, every tile rotted,
@@ -665,4 +692,84 @@ html[data-possessed] img[data-rotted] {
 html[data-possessed] main h1,
 html[data-possessed] main h2 {
   text-shadow: 0 1px 0 #3a0000, 0 3px 0 #5a000099, 0 8px 6px #3a000066;
+}
+
+/* ——— The Hall of Fame (/reviews) ——— */
+.hall-title {
+  color: #ffd84a;
+  -webkit-text-stroke: 2px #6a3a00;
+  text-shadow: 0 2px 0 #b37a00, 0 4px 0 #6a3a00, 0 8px 10px #000;
+}
+/* A gilded frame: a bevelled gold border round a dark mat. */
+.review-frame {
+  padding: 14px;
+  background: linear-gradient(135deg, #fff2a8 0%, #d9a520 22%, #8a5a00 48%, #f7d36a 70%, #9a6a10 100%);
+  box-shadow: inset 0 0 0 3px #5a3a00, inset 0 0 0 6px #ffe48a, 0 10px 24px #000c;
+}
+.review-shot {
+  position: relative;
+  padding: 6px;
+  background: #1a1018;
+  box-shadow: inset 0 0 0 2px #3a2a10;
+  cursor: zoom-in;
+}
+.review-plaque {
+  background: linear-gradient(#f4dc8a, #b8862a);
+  color: #3a2200;
+  box-shadow: inset 0 0 0 1px #6a4a10;
+}
+.review-sparkle {
+  color: #fffbe0;
+  font-size: 22px;
+  line-height: 1;
+  text-shadow: 0 0 6px #ffd84a;
+  animation: review-twinkle 1.8s steps(3) infinite alternate;
+}
+/* Grows and shrinks; never flashes. */
+@keyframes review-twinkle {
+  from { scale: 0.55; rotate: 0deg; }
+  to { scale: 1.1; rotate: 45deg; }
+}
+
+/* Possessed: the gold rusts, the plaque blackens, and every screenshot tears. A slice of it slides sideways now and
+   then (a copy of the picture, clipped to a strip), held still most of the time: slow, and nothing flashes. */
+html[data-possessed] .hall-title {
+  color: #8a0a0a;
+  -webkit-text-stroke: 2px #1a0000;
+  text-shadow: 0 2px 0 #3a0000, 0 6px 8px #000;
+}
+html[data-possessed] .review-frame {
+  background: linear-gradient(135deg, #3a1a10 0%, #6a2a10 30%, #1a0804 55%, #5a1a0a 80%, #200804 100%);
+  box-shadow: inset 0 0 0 3px #100000, inset 0 0 0 6px #4a0a0a, 0 10px 24px #000;
+}
+html[data-possessed] .review-plaque {
+  background: #100000;
+  color: #c02020;
+  box-shadow: inset 0 0 0 1px #4a0000;
+}
+html[data-possessed] .review-sparkle {
+  color: #6a0000;
+  text-shadow: none;
+}
+html[data-possessed] .review-shot::before,
+html[data-possessed] .review-shot::after {
+  content: '';
+  position: absolute;
+  inset: 6px;
+  background: var(--shot) 0 0 / 100% 100%;
+  /* Exactly the possessed filter the picture under it has: the tear only moves, it never brightens or flashes. */
+  filter: grayscale(1) sepia(1) hue-rotate(-45deg) saturate(2.6) contrast(1.25) brightness(0.72);
+  pointer-events: none;
+  animation: review-tear 7s steps(1) infinite;
+}
+html[data-possessed] .review-shot::after {
+  animation-duration: 11s;
+  animation-delay: -4s;
+}
+@keyframes review-tear {
+  0%, 66%, 100% { clip-path: inset(100% 0 0 0); translate: 0; }
+  68% { clip-path: inset(18% 0 62% 0); translate: -9px 0; }
+  75% { clip-path: inset(48% 0 30% 0); translate: 12px 0; }
+  82% { clip-path: inset(70% 0 12% 0); translate: -6px 0; }
+  89% { clip-path: inset(100% 0 0 0); translate: 0; }
 }

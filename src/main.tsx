@@ -10,7 +10,8 @@ import { VISITED_KEY } from './lib/dialup'
 import { countVisit } from './lib/discovery'
 
 // A refresh always lands back on the enter gate at the top of the home page (the gate's click is what unlocks audio),
-// with the dial-up "cache" emptied, so every page slow-loads again the first time.
+// with the dial-up "cache" emptied, so every page slow-loads again the first time. Except the boring site: it's a
+// normal website, and a normal website stays where you refreshed it.
 if ((performance.getEntriesByType('navigation')[0] as PerformanceNavigationTiming | undefined)?.type === 'reload') {
   // <ScrollRestoration> hands scrolling back to the browser on pagehide, so take it back before the browser restores.
   history.scrollRestoration = 'manual'
@@ -21,7 +22,7 @@ if ((performance.getEntriesByType('navigation')[0] as PerformanceNavigationTimin
   } catch {
     // Blocked storage: nothing was persisted, so the gate shows anyway.
   }
-  if (location.pathname !== '/') history.replaceState(null, '', '/')
+  if (location.pathname !== '/' && !/^\/boring\/?$/i.test(location.pathname)) history.replaceState(null, '', '/')
 }
 
 // Each browser session is one visit; letters and secrets turn up on later ones.

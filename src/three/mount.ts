@@ -40,8 +40,10 @@ function objectScene(spec: ObjSpec) {
   lit(scene)
   const camera = new THREE.PerspectiveCamera(35, 1, 0.1, 20)
   camera.position.z = 3.6
-  const obj = buildShape(spec.shape, spec.tex, { text: spec.text, photo: spec.photo })
-  if (possessedNow()) fleshSkin(obj, hash(spec.id))
+  // Possessed, an object wears its own possessed skin if it has one, or else one of the flesh skins.
+  const own = possessedNow() && spec.possessedTex
+  const obj = buildShape(spec.shape, own || spec.tex, { text: spec.text, photo: spec.photo })
+  if (possessedNow() && !own) fleshSkin(obj, hash(spec.id))
   const pivot = new THREE.Group().add(obj)
   scene.add(pivot)
   if (spec.rarity === 'legendary') scene.add(halo())
@@ -130,7 +132,7 @@ const PROPS: ((rng: () => number) => THREE.BufferGeometry)[] = [
  * texture, around a giant centrepiece, with the camera slowly orbiting. Rendered at a quarter resolution.
  */
 export function mountWorld(canvas: HTMLCanvasElement, id: WorldId) {
-  if (id === 'meadow' || id === 'painted' || id === 'space' || id === 'cult' || id === 'flesh') return mountCustomWorld(canvas, id)
+  if (id !== 'mystic' && id !== 'neon' && id !== 'glitch') return mountCustomWorld(canvas, id)
   const w = WORLDS[id]
   const rng = mulberry32(id.length * 9973)
   const scene = new THREE.Scene()

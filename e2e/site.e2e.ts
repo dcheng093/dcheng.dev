@@ -4,7 +4,7 @@ import { resolve } from 'node:path'
 import { pathToFileURL } from 'node:url'
 import { ASCENSION_AT, CALM_MS, CREDITS_MS } from '../src/components/ending/timing.ts'
 
-const ROUTES = ['/', '/dealership', '/shrine/segfault', '/shrine/kettle', '/shrine/chiikawa', '/guestbook', '/under-construction', '/you-won', '/checkout', '/leave', '/scan', '/casino', '/survey', '/work-from-home', '/arcade', '/desktop', '/radio', '/oracle', '/blinkie-maker', '/stickers', '/dex', '/popnuke', '/settings', '/boring']
+const ROUTES = ['/', '/dealership', '/shrine/segfault', '/shrine/kettle', '/shrine/chiikawa', '/guestbook', '/under-construction', '/you-won', '/checkout', '/leave', '/scan', '/casino', '/survey', '/work-from-home', '/arcade', '/desktop', '/radio', '/oracle', '/blinkie-maker', '/stickers', '/dex', '/popnuke', '/settings', '/reviews', '/boring']
 
 /**
  * Goes to a page and waits until it's really there. Most pages load on demand (routes.tsx `lazy`), so straight after
@@ -105,7 +105,7 @@ test('music survives a trip through the /boring site map', async ({ page }) => {
   await expect(page.getByTestId('boring')).toBeVisible()
   await expect(page.getByTestId('mute')).toHaveCount(0)
   await expect(page.getByTestId('mini-player')).toHaveCount(0)
-  await page.getByTestId('boring').getByRole('link', { name: '/casino', exact: true }).click()
+  await page.getByRole('navigation', { name: 'Site map' }).getByRole('link', { name: 'The Casino', exact: true }).click()
   await expect(page.getByTestId('casino')).toBeVisible()
   // Still unlocked: no click needed to bring the audio controls back.
   await expect(page.getByTestId('mute')).toBeVisible()
@@ -119,7 +119,7 @@ test('the floating player changes the song on non-home pages', async ({ page }) 
   await page.locator('[data-band="header"]').click({ position: { x: 5, y: 5 } })
   await expect(page.getByTestId('mini-player')).toHaveCount(0)
   await page.getByRole('link', { name: 'List Sites' }).click()
-  await page.getByTestId('boring').getByRole('link', { name: '/work-from-home', exact: true }).click()
+  await page.getByRole('navigation', { name: 'Site map' }).getByRole('link', { name: 'Work From Home', exact: true }).click()
   const player = page.getByTestId('mini-player')
   await expect(player).toBeVisible()
   // Work-from-home's theme song.
@@ -341,7 +341,7 @@ test('3D: a TextureTown world on /oracle, objects on /casino, nothing on Home', 
 // Every page except Home. (Exact per-page counts are pinned by the unit tests against the content itself.)
 const OBJECT_PAGES = [
   '/dealership', '/guestbook', '/under-construction', '/you-won', '/checkout', '/scan', '/casino', '/survey', '/work-from-home',
-  '/arcade', '/desktop', '/radio', '/oracle', '/blinkie-maker', '/stickers', '/dex', '/popnuke', '/settings', '/leave', '/this/does/not/exist',
+  '/arcade', '/desktop', '/radio', '/oracle', '/blinkie-maker', '/stickers', '/dex', '/popnuke', '/settings', '/reviews', '/leave', '/this/does/not/exist',
   '/shrine/chiikawa', '/shrine/battlestation', '/shrine/peripherals', '/shrine/segfault', '/shrine/norminette',
   '/shrine/push-swap', '/shrine/kettle', '/shrine/horses', '/shrine/teeth',
 ]
@@ -754,9 +754,27 @@ test('a dodging close button stays clickable and never sends you anywhere', asyn
 test('/boring is plain and has the real links', async ({ page }) => {
   await prepare(page)
   await page.goto('/boring')
-  await expect(page.getByRole('link', { name: /github\.com/ })).toBeVisible()
+  await expect(page.getByRole('link', { name: 'GitHub' })).toHaveAttribute('href', /github\.com/)
   await expect(page.getByTestId('chat-toggle')).toHaveCount(0)
   await expect(page.getByTestId('popup')).toHaveCount(0)
+  expect(await horizontalOverflow(page)).toBeLessThanOrEqual(0)
+  // A normal website: a refresh stays put (the fun site goes back to its gate).
+  await page.reload()
+  await expect(page.getByTestId('boring')).toBeVisible()
+  expect(new URL(page.url()).pathname).toBe('/boring')
+})
+
+test('/reviews hangs the reviews in the Hall of Fame and copies the Discord name', async ({ page }) => {
+  await prepare(page)
+  await page.goto('/reviews')
+  const list = page.getByRole('list', { name: 'Reviews' })
+  await expect(list.getByRole('img')).not.toHaveCount(0)
+  await list.getByRole('button').first().click()
+  await expect(page.getByTestId('review-lightbox')).toBeVisible()
+  await page.keyboard.press('Escape')
+  await expect(page.getByTestId('review-lightbox')).toHaveCount(0)
+  await page.getByTestId('discord-copy').click()
+  await expect(page.getByTestId('discord-copy')).toContainText('copied!')
 })
 
 test('live chat answers', async ({ page }) => {

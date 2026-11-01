@@ -20,8 +20,13 @@ export const routes: RouteObject[] = [
     path: '/',
     element: <RootLayout />,
     errorElement: <FakeBSOD />,
-    // Shown for a blink when the very first page loaded is one of the lazy Cyber Town pages.
-    hydrateFallbackElement: <p className="grid min-h-screen place-items-center bg-black font-pixel text-lime">LOADING…</p>,
+    // Shown for a blink when the very first page loaded is one of the lazy Cyber Town pages (just dark for the boring site).
+    hydrateFallbackElement:
+      typeof location !== 'undefined' && /^\/boring\/?$/i.test(location.pathname) ? (
+        <div className="min-h-screen bg-[#0a0a0a]" />
+      ) : (
+        <p className="grid min-h-screen place-items-center bg-black font-pixel text-lime">LOADING…</p>
+      ),
     children: [
       { index: true, element: <Home /> },
       { path: 'dealership', lazy: lazyPage(() => import('./routes/Dealership'), 'Dealership') },
@@ -43,6 +48,8 @@ export const routes: RouteObject[] = [
       { path: 'blinkie-maker', lazy: lazyPage(() => import('./routes/BlinkieMaker'), 'BlinkieMaker') },
       { path: 'stickers', lazy: lazyPage(() => import('./routes/StickerBook'), 'StickerBook') },
       { path: 'dex', lazy: lazyPage(() => import('./routes/Dex'), 'Dex'), handle: quiet },
+      // Off the ring (the Dex keeps its order), linked from Cyber Town and the taskbar instead.
+      { path: 'reviews', lazy: lazyPage(() => import('./routes/Reviews'), 'Reviews') },
       { path: 'popnuke', lazy: lazyPage(() => import('./routes/Popnuke'), 'Popnuke') },
       { path: 'settings', lazy: lazyPage(() => import('./routes/Settings'), 'Settings') },
       // Secret: not in the webring or sitemap, so random links never spoil them.

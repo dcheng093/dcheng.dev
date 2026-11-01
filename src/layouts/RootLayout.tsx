@@ -56,12 +56,23 @@ export function RootLayout() {
     }
   }, [possessed])
   // Those who reached the bottom carry a mark for good: a halo on the cursor (index.css), and a ✦ here and there.
-  const descended = !!useDescended()
+  // Not on a calm page: that one is a normal website.
+  const descended = !!useDescended() && !handle.calm
   useEffect(() => {
     const html = document.documentElement
     if (descended) html.dataset.descended = ''
     else delete html.dataset.descended
   }, [descended])
+  // A calm page (/boring) gets a plain body: no starfield, nothing pixelated (index.css).
+  const calm = !!handle.calm
+  useEffect(() => {
+    const html = document.documentElement
+    if (!calm) return
+    html.dataset.calm = ''
+    return () => {
+      delete html.dataset.calm
+    }
+  }, [calm])
 
   return (
     <SettingsProvider active={!handle.calm}>

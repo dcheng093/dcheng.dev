@@ -45,6 +45,7 @@ export const POSSESSED_COPY: Record<string, string> = {
   Home: 'Home?',
   Guestbook: 'Ghostbook',
   DONATE: 'OFFER',
+  'Hall of Fame': 'Hall of Shame',
 
   // ——— Pages ———
   '!!! CONGRATULATIONS !!!': '!!! YOU HAVE BEEN CHOSEN !!!',
@@ -76,6 +77,13 @@ export const POSSESSED_COPY: Record<string, string> = {
   Projects: 'Remains',
   'Site map': 'Map of the burial site',
   '…how it works': '…how it gets in',
+
+  // ——— The Hall of Fame (/reviews) ———
+  'HALL OF FAME': 'HALL OF SHAME',
+  'real reviews from real people (allegedly)': 'real reviews from people who were real',
+  'VERIFIED REVIEW ★★★★★': "THEY CAN'T LEAVE ★☆☆☆☆",
+  "want to be featured? send me a message of what you think and i'll include it :)": 'want to be featured? you already are.',
+  '(click to copy)': '(it is already copied into you)',
 
   // ——— The crash screen ———
   DANIEL: 'D A N I E L',

@@ -8,16 +8,18 @@ import { TrayBadge } from './popnuke/TrayBadge'
 import { useDescended, usePossessed } from '../lib/possession'
 
 // Icons are the site's own GIFs or plain glyphs: colour emoji show as empty boxes on systems without an emoji font.
-const LINKS: { to: string; icon: string | Slot; label: string; className?: string }[] = [
+// `compact`: icon-only until there's room (a phone on its side fits four labelled buttons, not five).
+const LINKS: { to: string; icon: string | Slot; label: string; className?: string; compact?: boolean }[] = [
   { to: '/', icon: '⌂', label: 'Home' },
   { to: '/guestbook', icon: cursors.pencil, label: 'Guestbook' },
   { to: '/settings', icon: '⚙', label: 'Settings' },
+  { to: '/reviews', icon: '★', label: 'Hall of Fame', compact: true },
   // There is nothing to donate to. There never will be.
   { to: '/under-construction', icon: icons.moneyBag, label: 'DONATE', className: 'text-red-700' },
 ]
 
 /**
- * The Win95 taskbar along the top of every page: the four places that matter, a system tray (mute, POPNUKE, a
+ * The Win95 taskbar along the top of every page: the five places that matter, a system tray (mute, POPNUKE, a
  * clock), and Daniel's wobbling head on the right. Phones get icon-only buttons; nothing hides behind a menu.
  * Its height (h-11) is where the cached-page blinds start (components/DialUp), so keep the two in step.
  */
@@ -43,7 +45,7 @@ export function Taskbar() {
             className={`flex h-8 shrink-0 items-center gap-1 px-2 font-bold ${here ? 'win-sunken bg-[repeating-conic-gradient(#c0c0c0_0_25%,#fff_0_50%)] bg-[length:2px_2px]' : 'win-raised'} ${l.className ?? ''}`}
           >
             {typeof l.icon === 'string' ? <span aria-hidden className="text-base leading-none">{l.icon}</span> : <Img slot={l.icon} width={20} />}
-            <span className="max-sm:hidden">{l.label}</span>
+            <span className={l.compact ? 'max-md:hidden' : 'max-sm:hidden'}>{l.label}</span>
           </Link>
         )
       })}

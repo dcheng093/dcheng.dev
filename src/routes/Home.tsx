@@ -447,7 +447,9 @@ const TOWN: { to: string; label: string; blurb: string; slot: Slot; anim: string
   { to: '/oracle', label: 'The Magic Kettle', blurb: 'Ask it anything', slot: assets.kettle, anim: 'group-hover:animate-wobble' },
   { to: '/blinkie-maker', label: 'Blinkie Maker', blurb: 'Make your own blinkie', slot: blinkies.iBite, anim: 'group-hover:animate-jank-x' },
   { to: '/stickers', label: 'Sticker Book', blurb: '12 hidden stickers. Find them.', slot: kawaii.cheerBlob, anim: 'group-hover:animate-spin-z' },
-  // The seventh door spans the row: every 3D object on the site, catalogued.
+  // The Hall of Fame spans its row, for the reviews.
+  { to: '/reviews', label: 'HALL OF FAME', blurb: 'What people are saying about this site (all of it true)', slot: assets.trophy, anim: 'group-hover:animate-boing', wide: true },
+  // The last door spans the row: every 3D object on the site, catalogued.
   { to: '/dex', label: 'THE OBJECT DEX', blurb: 'Click the floating things. Catch them all. Some only come out at night.', slot: icons.question, anim: 'group-hover:animate-spin-y', wide: true },
 ]
 

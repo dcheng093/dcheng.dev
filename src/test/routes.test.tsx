@@ -5,6 +5,8 @@ import { createMemoryRouter, RouterProvider, type RouteObject } from 'react-rout
 import { routes } from '../routes'
 import { WEBRING } from '../lib/sitemap'
 import { daniel } from '../content/daniel'
+import { REVIEWS } from '../content/reviews'
+import { Img } from '../components/media/Img'
 import { VIRUS_ALERT_DELAY_MS } from '../components/VirusAlert'
 import { SURVEY } from '../content/survey'
 import { DEX } from '../lib/discovery'
@@ -83,6 +85,15 @@ const testIds: Record<string, string> = {
 }
 
 describe('routes', () => {
+  it('/reviews (off the ring) hangs every review in a frame, plus a way to get featured', async () => {
+    renderAt('/reviews')
+    expect(await screen.findByTestId('reviews')).toBeInTheDocument()
+    const list = screen.getByRole('list', { name: 'Reviews' })
+    expect(within(list).getAllByRole('img').length).toBe(REVIEWS.length)
+    expect(REVIEWS.length).toBeGreaterThanOrEqual(7)
+    expect(screen.getByTestId('discord-copy')).toHaveTextContent(`@${daniel.links.discord}`)
+  })
+
   it.each(WEBRING)('%s renders', async (path) => {
     renderAt(path)
     const id = path.startsWith('/shrine/') ? 'shrine' : testIds[path]
@@ -104,14 +115,31 @@ describe('routes', () => {
     expect(screen.queryByRole('navigation', { name: 'Webring' })).toBeNull()
     expect(screen.queryByTestId('mute')).toBeNull()
     expect(screen.queryByTestId('mini-player')).toBeNull()
-    expect(screen.getByRole('link', { name: daniel.links.github! })).toHaveAttribute('href', daniel.links.github)
+    expect(screen.getByRole('link', { name: 'GitHub' })).toHaveAttribute('href', daniel.links.github)
+    expect(screen.getByAltText(daniel.name)).toHaveAttribute('src', '/me/boring/daniel.webp')
+  })
+
+  it('/boring is a normal website even for the possessed and the descended: none of it reaches the page', () => {
+    localStorage.setItem('possessed', 'true')
+    localStorage.setItem('descended', JSON.stringify({ name: 'someone', at: '2026-01-01T00:00:00.000Z' }))
+    renderAt('/boring')
+    const html = document.documentElement
+    expect(html).not.toHaveAttribute('data-possessed')
+    expect(html).not.toHaveAttribute('data-descended')
+    expect(html).toHaveAttribute('data-calm')
+    expect(screen.getByAltText(daniel.name)).not.toHaveAttribute('data-rotted')
+    // Its site map uses plain names: no shrine titles (the fun site's voice) on the professional page.
+    const map = screen.getByRole('navigation', { name: 'Site map' })
+    expect(within(map).getByRole('link', { name: 'Push swap shrine' })).toHaveAttribute('href', '/shrine/push-swap')
+    expect(map.textContent).not.toMatch(/fuck/i)
+    localStorage.clear()
   })
 
   it('home links to every Cyber Town page and, via sponsored buttons, every scam page', () => {
     renderAt('/')
     const town = screen.getByRole('list', { name: 'Cyber Town' })
     const hrefs = within(town).getAllByRole('link').map((a) => a.getAttribute('href'))
-    expect(hrefs).toEqual(['/arcade', '/desktop', '/radio', '/oracle', '/blinkie-maker', '/stickers', '/dex'])
+    expect(hrefs).toEqual(['/arcade', '/desktop', '/radio', '/oracle', '/blinkie-maker', '/stickers', '/reviews', '/dex'])
     const sponsored = within(screen.getByRole('list', { name: 'Sponsored links' })).getAllByRole('link').map((a) => a.getAttribute('href'))
     expect(sponsored).toEqual(['/scan', '/casino', '/survey', '/work-from-home', '/popnuke'])
   })
@@ -145,7 +173,7 @@ describe('routes', () => {
     ])
   })
 
-  it('the taskbar links Home, Guestbook, Settings and Donate, shows where you are, and the logo goes home', () => {
+  it('the taskbar links Home, Guestbook, Settings, the Hall of Fame and Donate, shows where you are, and the logo goes home', () => {
     renderAt('/guestbook')
     const bar = screen.getByRole('navigation', { name: 'Main' })
     const links = within(bar).getAllByRole('link')
@@ -153,6 +181,7 @@ describe('routes', () => {
       ['Home', '/'],
       ['Guestbook', '/guestbook'],
       ['Settings', '/settings'],
+      ['Hall of Fame', '/reviews'],
       ['DONATE', '/under-construction'],
       ["Daniel Cheng's World Wide Web Site: home", '/'],
     ])
@@ -309,7 +338,7 @@ describe('interactions', () => {
   })
 
   it('missing images render a labelled SUPPLY ME placeholder', async () => {
-    renderAt('/boring')
+    render(<Img slot="headshot" width={160} alt={daniel.name} />)
     const img = screen.getByAltText(daniel.name)
     await act(async () => img.dispatchEvent(new Event('error')))
     expect(screen.getByLabelText('placeholder: normal headshot')).toHaveTextContent('SUPPLY ME: headshot.webp')

@@ -6,7 +6,7 @@ import { WEBRING } from '../lib/sitemap'
 // show anywhere, you only feel them. Daniel's voice; edit freely. Anchors sit in the page margins,
 // drifters roam the screen behind the content (phones only get the drifters).
 
-type Opts = { tex?: TexRef; text?: string; photo?: number; reaction?: Reaction; spot?: [string, string]; rarity?: ObjSpec['rarity']; when?: ObjSpec['when'] }
+type Opts = { tex?: TexRef; possessedTex?: TexRef; text?: string; photo?: number; reaction?: Reaction; spot?: [string, string]; rarity?: ObjSpec['rarity']; when?: ObjSpec['when'] }
 
 /**
  * The Object Dex's specimens: one drifter per page in the ring (drifters, so phones can catch them too), the night
@@ -33,6 +33,7 @@ function obj(id: string, name: string, shape: ShapeId, personality: Personality,
     madeOf,
     shape,
     tex: o.tex,
+    ...(o.possessedTex ? { possessedTex: o.possessedTex } : {}),
     text: o.text,
     photo: o.photo,
     personality,
@@ -192,6 +193,19 @@ export const PAGE_3D: Record<string, PageScene> = {
       obj('installer-cd', 'POPNUKE Installer CD', 'cd', 'showoff', 'm', 'a real CD photo', 'Autorun.inf launches the installer, then a second installer, then a toolbar.', { spot: R(40) }),
       obj('nuke-shield', 'The Nuke Shield', 'shield', 'watcher', 'm', 'purple metal, radiation', 'Stands between you and the pop-ups. Has never once blinked.'),
       obj('ceo-portrait', 'Daniel Cheng, CEO', 'portrait', 'lazy', 's', 'gold frame, photo #3', 'Founder, CEO, CFO, CTO and receptionist of Daniel Cheng Software Ltd.', { photo: 2, spot: R(75) }),
+    ],
+  },
+  // Off the ring (it would disturb the Dex's order), so no specimen here. Possessed, it has its own rotten hall and
+  // every prize its own rot.
+  '/reviews': {
+    world: 'hall',
+    possessedWorld: 'hall-rot',
+    objects: [
+      obj('golden-thumb', 'The Thumb of Approval', 'thumbsUp', 'showoff', 'm', 'solid gold, one thumb', 'Awarded to every website it has ever seen. It has seen one website.', { tex: 'goldMetal', possessedTex: 'fleshWeb', spot: L(18) }),
+      obj('participation-trophy', "Daniel's Participation Trophy", 'trophy', 'dramatic', 'm', 'marble, gold leaf, participation', 'For taking part. Engraved "1ST PLACE" by Daniel himself, with a compass.', { tex: 'hallMarble', possessedTex: 'embers', spot: R(30) }),
+      obj('reviewer-portrait', 'Reviewer of the Month', 'portrait', 'watcher', 's', 'gold frame, photo #8', 'Every month the judges pick the best reviewer. The judges are Daniel. The reviewer is Daniel.', { photo: 7, spot: L(62) }),
+      obj('best-site-rosette', 'Best Website 1999', 'rosette', 'excitable', 's', 'fractal satin, a gold button', 'Won in 1999, before the site existed. The committee was very forward-thinking.', { tex: 'fractalRed', possessedTex: 'redSmear' }),
+      obj('fifth-star', 'The Fifth Star', 'star', 'shy', 's', 'one star, out of five', 'Every review gets five stars. This is the fifth one. It does all the work.', { tex: 'fractalWaves', possessedTex: 'letMeOut' }),
     ],
   },
   '/settings': {

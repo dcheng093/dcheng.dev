@@ -1,64 +1,44 @@
-import { Link } from 'react-router-dom'
-import { Img } from '../components/media/Img'
-import { daniel } from '../content/daniel'
-import { WEBRING } from '../lib/sitemap'
+import '@fontsource-variable/space-grotesk'
+import '@fontsource/permanent-marker'
+import { useEffect, type CSSProperties } from 'react'
+import { useLocation } from 'react-router-dom'
+import { About } from '../components/boring/About'
+import { Contact } from '../components/boring/Contact'
+import { Footer } from '../components/boring/Footer'
+import { Hero } from '../components/boring/Hero'
+import { Navbar } from '../components/boring/Navbar'
+import { Projects } from '../components/boring/Projects'
+import { ACCENT, ACCENT_2 } from '../components/boring/theme'
 
-/** The hidden real layer: plain, unstyled, useful. No popups, no audio, no chat. */
+/**
+ * The boring site: Daniel's real portfolio, modelled on his brother's (elyxiandev.com). A calm route (routes.tsx), so
+ * none of the chaos, the music or the possession reaches it, and it never imports any of them. Professional only.
+ */
 export function Boring() {
-  const { links } = daniel
+  const { hash } = useLocation()
+  useEffect(() => {
+    const was = document.title
+    document.title = 'Daniel Cheng'
+    return () => {
+      document.title = was
+    }
+  }, [])
+  // Arriving at a section (the webring's "List Sites" comes to #sitemap).
+  useEffect(() => {
+    if (!hash) return
+    const id = window.setTimeout(() => document.getElementById(hash.slice(1))?.scrollIntoView({ block: 'start' }), 50)
+    return () => window.clearTimeout(id)
+  }, [hash])
   return (
-    <div className="boring" data-testid="boring">
-      <h1>{daniel.name}</h1>
-      <Img slot="headshot" width={160} alt={daniel.name} />
-      <p>{daniel.boringBio}</p>
-      <h2>Contact</h2>
-      <ul>
-        {links.email && (
-          <li>
-            Email: <a href={`mailto:${links.email}`}>{links.email}</a>
-          </li>
-        )}
-        {links.github && (
-          <li>
-            GitHub: <a href={links.github}>{links.github}</a>
-          </li>
-        )}
-        {links.linkedin && (
-          <li>
-            LinkedIn: <a href={links.linkedin}>{links.linkedin}</a>
-          </li>
-        )}
-        {links.resume && (
-          <li>
-            <a href={links.resume}>Résumé (PDF)</a>
-          </li>
-        )}
-      </ul>
-      <h2>Projects</h2>
-      <ul>
-        {daniel.coding.projects.map((p) => (
-          <li key={p}>{p} (42)</li>
-        ))}
-        {daniel.games.map((g) => (
-          <li key={g.name}>
-            {g.name} — {g.pitch}
-          </li>
-        ))}
-      </ul>
-      <h2>Site map</h2>
-      <ul>
-        {WEBRING.map((r) => (
-          <li key={r}>
-            <Link to={r}>{r}</Link>
-          </li>
-        ))}
-      </ul>
-      <hr />
-      <p>
-        <small>
-          This is the boring version. <Link to="/">Return to the fun version.</Link>
-        </small>
-      </p>
+    <div data-testid="boring" className="boring min-h-screen bg-[#0a0a0a] text-white" style={{ '--accent': ACCENT, '--accent-2': ACCENT_2 } as CSSProperties}>
+      <Navbar />
+      <main>
+        <Hero />
+        <About />
+        <Projects />
+        <Contact />
+      </main>
+      <Footer />
     </div>
   )
 }

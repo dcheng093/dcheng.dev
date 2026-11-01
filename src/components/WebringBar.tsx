@@ -26,7 +26,7 @@ export function WebringBar() {
           <Link className={btn} to={neighbour(pathname, -1)}>« Prev</Link>
           <Link className={btn} to={randomRoute(pathname)}>Random</Link>
           <Link className={btn} to={neighbour(pathname, 1)}>Next »</Link>
-          <Link className={btn} to="/boring">List Sites</Link>
+          <Link className={btn} to="/boring#sitemap">List Sites</Link>
         </div>
         <ButtonWall />
       </div>

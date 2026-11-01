@@ -443,7 +443,131 @@ function flesh(scene: THREE.Scene, rng: () => number, drifting: Drift[]) {
   return { radius: 12, height: 2, look: 6 }
 }
 
-const BUILDERS = { meadow, painted, space, cult, flesh }
+/** An empty gilded frame (or a rusted one) around a canvas of `art`. */
+function frame(art: TexName, edge: THREE.Material, w: number, h: number) {
+  const g = new THREE.Group()
+  g.add(new THREE.Mesh(new THREE.PlaneGeometry(w, h), new THREE.MeshLambertMaterial({ map: texture(TEX[art]), side: THREE.DoubleSide })))
+  const t = 0.35
+  for (const [x, y, fw, fh] of [[0, h / 2, w + t * 2, t], [0, -h / 2, w + t * 2, t], [w / 2, 0, t, h], [-w / 2, 0, t, h]]) {
+    const bar = new THREE.Mesh(new THREE.BoxGeometry(fw, fh, 0.3), edge)
+    bar.position.set(x, y, 0)
+    g.add(bar)
+  }
+  return g
+}
+
+/**
+ * THE HALL OF FAME, behind /reviews: a round gallery under a fractal sky. A colonnade of fractal pillars, a giant
+ * golden wreath and trophy at the centre, empty gilded frames drifting about (waiting for your review), stars on
+ * plinths, gold dust. `rot`: the same hall once the site is possessed. The pillars are flesh, the floor is a
+ * tunnel of dead leaves, the frames hang crooked with what was behind the paintings all along, and the trophy burns.
+ */
+function hallOf(rot: boolean) {
+  return (scene: THREE.Scene, rng: () => number, drifting: Drift[]) => {
+    if (rot) scene.userData.untinted = true // red enough already
+    scene.background = backdrop(rot ? 'redDoorway' : 'fractalWaves')
+    scene.fog = rot ? new THREE.FogExp2(0x220000, 0.035) : new THREE.Fog(0x2a1038, 22, 70)
+    scene.add(new THREE.AmbientLight(rot ? 0x804040 : 0xfff0e0, rot ? 1.0 : 1.3))
+    const sun = new THREE.DirectionalLight(rot ? 0xff6040 : 0xffe8b0, 1.4)
+    sun.position.set(4, 12, 6)
+    scene.add(sun)
+    const gold = rot ? lambert('embers', 1, { emissive: 0x200400 }) : lambert('goldMetal')
+
+    const floor = new THREE.Mesh(new THREE.CircleGeometry(70, 40), lambert(rot ? 'leafTunnel' : 'hallMarble', rot ? 10 : 14))
+    floor.rotation.x = -Math.PI / 2
+    floor.position.y = -1.5
+    scene.add(floor)
+
+    // The colonnade: a ring of pillars behind the camera's orbit, so they frame the hall and never fill the lens.
+    const shafts: TexName[] = rot ? ['fleshWeb', 'redSmear'] : ['fractalRainbow', 'fractalRed']
+    for (let i = 0; i < 14; i++) {
+      const a = (i / 14) * Math.PI * 2
+      const p = new THREE.Group()
+      const shaft = new THREE.Mesh(new THREE.CylinderGeometry(0.9, 1, 12, 14), lambert(shafts[i % 2], 1))
+      shaft.position.y = 4.5
+      const base = new THREE.Mesh(new THREE.BoxGeometry(2.6, 0.8, 2.6), gold)
+      base.position.y = -1.1
+      const capital = new THREE.Mesh(new THREE.BoxGeometry(2.6, 0.8, 2.6), gold)
+      capital.position.y = 10.9
+      p.add(shaft, base, capital)
+      p.position.set(Math.cos(a) * 24, 0, Math.sin(a) * 24)
+      // Possessed, some of them have started to lean.
+      if (rot) p.rotation.set((rng() - 0.5) * 0.25, 0, (rng() - 0.5) * 0.25)
+      scene.add(p)
+    }
+
+    // The centrepiece: the trophy on its plinth, a giant wreath turning behind it.
+    const plinth = new THREE.Mesh(new THREE.CylinderGeometry(2.2, 2.6, 2, 24), lambert(rot ? 'redSmear' : 'hallMarble', 2))
+    plinth.position.y = -0.5
+    scene.add(plinth)
+    const trophy = buildShape('trophy', rot ? 'embers' : 'goldMetal')
+    trophy.scale.setScalar(2.4)
+    trophy.position.y = 2.9
+    scene.add(trophy)
+    const wreath = buildShape('laurel', rot ? 'embers' : 'goldMetal')
+    wreath.scale.setScalar(5)
+    wreath.position.set(0, 4, 0)
+    scene.add(wreath)
+    drifting.push((t) => {
+      trophy.rotation.y = t * 0.35
+      wreath.rotation.y = -t * 0.12
+      wreath.position.y = 4 + Math.sin(t * 0.5) * 0.3
+    })
+    if (rot) {
+      // The trophy smoulders: a red glow that breathes slower than once a second.
+      const ember = new THREE.PointLight(0xff3a1a, 30, 30, 1.5)
+      ember.position.set(0, 3, 0)
+      scene.add(ember)
+      drifting.push((t) => (ember.intensity = 26 + Math.sin(t * 0.9) * 8))
+    }
+
+    // Empty frames, waiting for the next review. Possessed, they hang crooked and show what was behind them.
+    const art: TexName[] = rot ? ['redCollage', 'letMeOut', 'redSmear', 'fleshWeb'] : ['hallMarble', 'fractalRed', 'fractalRainbow', 'fractalWaves']
+    for (let i = 0; i < 8; i++) {
+      const f = frame(art[i % art.length], gold, 2.4 + rng() * 1.2, 1.8 + rng())
+      const a = (i / 8) * Math.PI * 2 + rng() * 0.3
+      const r = 7 + rng() * 3
+      const y = 3 + rng() * 6
+      const phase = rng() * 6
+      const tilt = rot ? (rng() - 0.5) * 0.7 : 0
+      scene.add(f)
+      drifting.push((t) => {
+        const aa = a + t * 0.03
+        f.position.set(Math.cos(aa) * r, y + Math.sin(t * 0.4 + phase) * 0.5, Math.sin(aa) * r)
+        f.rotation.set(0, -aa + Math.PI / 2 + Math.sin(t * 0.2 + phase) * 0.3, tilt + (rot ? Math.sin(t * 0.3 + phase) * 0.08 : 0))
+      })
+    }
+
+    // Stars on plinths, between the pillars.
+    for (let i = 0; i < 6; i++) {
+      const a = (i / 6) * Math.PI * 2 + 0.3
+      const stand = new THREE.Mesh(new THREE.BoxGeometry(1.2, 2, 1.2), lambert(rot ? 'leafTunnel' : 'hallMarble'))
+      stand.position.set(Math.cos(a) * 17, -0.5, Math.sin(a) * 17)
+      scene.add(stand)
+      const star = buildShape('star', rot ? 'letMeOut' : 'fractalRainbow')
+      star.position.set(Math.cos(a) * 17, 1.6, Math.sin(a) * 17)
+      scene.add(star)
+      drifting.push((t) => (star.rotation.y = t * 0.6 + i))
+    }
+
+    // Gold dust (ash, possessed), drifting up.
+    const n = 160
+    const pos = new Float32Array(n * 3)
+    for (let i = 0; i < n; i++) pos.set([(rng() - 0.5) * 40, rng() * 16 - 1, (rng() - 0.5) * 40], i * 3)
+    const dust = new THREE.Points(
+      new THREE.BufferGeometry().setAttribute('position', new THREE.BufferAttribute(pos, 3)),
+      new THREE.PointsMaterial({ color: rot ? 0x8a2a1a : 0xffd86a, size: 0.14, transparent: true, opacity: 0.7, depthWrite: false }),
+    )
+    scene.add(dust)
+    drifting.push((t) => {
+      dust.position.y = (t * 0.25) % 3
+      dust.rotation.y = t * 0.02
+    })
+    return { radius: 14, height: 3, look: 3.5 }
+  }
+}
+
+const BUILDERS = { meadow, painted, space, cult, flesh, hall: hallOf(false), 'hall-rot': hallOf(true) }
 
 export function mountCustomWorld(canvas: HTMLCanvasElement, id: keyof typeof BUILDERS) {
   const scene = new THREE.Scene()

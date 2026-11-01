@@ -1,0 +1,24 @@
+<!doctype html>
+<!-- The boring site's hero backdrop (scripts/boring-hero/hero.mjs screenshots #shot into public/boring/hero.webp).
+     Served by Vite's dev server only; it isn't part of the site's build. -->
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <style>
+      html,
+      body {
+        margin: 0;
+        background: #000;
+      }
+      #shot {
+        display: block;
+        width: 1920px;
+        height: 1080px;
+      }
+    </style>
+  </head>
+  <body>
+    <canvas id="shot"></canvas>
+    <script type="module" src="./hero.ts"></script>
+  </body>
+</html>

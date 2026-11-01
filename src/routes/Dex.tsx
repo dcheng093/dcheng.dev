@@ -4,10 +4,10 @@ import { RainbowText } from '../components/chaos/Chaos'
 import { ObjectWindow } from '../components/three/ObjectWindow'
 import { cursors } from '../content/assets'
 import { DEX_MILESTONES } from '../content/desktop'
-import { shrines } from '../content/shrines'
 import { useStored } from '../hooks/useLocalStorage'
 import { gifCursor } from '../lib/cursor'
 import { DEX, DEX_KEY, dexProgress, type DexEntry, type Found } from '../lib/discovery'
+import { pageName } from '../lib/sitemap'
 import { usePossessed } from '../lib/possession'
 import { Rune } from '../components/Rune'
 import type { ObjSpec } from '../three/pageScenes'
@@ -15,29 +15,6 @@ import { UncorruptedCtx } from '../lib/uncorrupted'
 
 const STARS = { common: '★☆☆', rare: '★★☆', legendary: '★★★' } as const
 
-const PAGE_NAMES: Record<string, string> = {
-  '/dealership': 'The Dealership',
-  '/guestbook': 'The Guestbook',
-  '/under-construction': 'Under Construction',
-  '/you-won': 'You Won!',
-  '/checkout': 'Checkout',
-  '/scan': 'Virus Scan',
-  '/casino': 'The Casino',
-  '/survey': 'The Survey',
-  '/work-from-home': 'Work From Home',
-  '/arcade': 'The Arcade',
-  '/desktop': "Daniel's Desktop",
-  '/radio': 'DANIEL FM',
-  '/oracle': 'The Oracle',
-  '/blinkie-maker': 'Blinkie Maker',
-  '/popnuke': 'POPNUKE',
-  '/settings': 'Control Panel',
-  '/stickers': 'Sticker Book',
-  '/dex': 'The Object Dex',
-  '/leave': 'The Exit',
-  anywhere: 'Anywhere, rarely, glowing',
-}
-const pageName = (page: string) => shrines.find((s) => `/shrine/${s.slug}` === page)?.title ?? PAGE_NAMES[page] ?? page
 
 /**
  * The Object Dex: the site's specimens (one on every page of the ring, the night owls, the legendaries), each
