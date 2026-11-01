@@ -71,8 +71,8 @@ export function Navbar() {
         go(s.id)
       }}
       aria-current={current === s.id ? 'location' : undefined}
-      className={`font-marker text-lg transition-colors duration-200 ${current === s.id ? 'text-[var(--accent)]' : 'text-white hover:text-white/70'} ${stagger ? 'boring-menu-item' : ''}`}
-      style={stagger ? ({ '--i': i } as CSSProperties) : undefined}
+      className={`font-marker text-lg transition-colors duration-200 ${current === s.id ? 'text-[var(--accent)]' : 'text-white hover:text-white/70'} ${stagger ? 'boring-menu-item' : 'boring-nav-item'}`}
+      style={{ '--i': i } as CSSProperties}
     >
       <span data-label className={stagger && current === s.id ? 'border-b-2 border-[var(--accent)] pb-0.5' : ''}>
         {s.label}
@@ -80,7 +80,8 @@ export function Navbar() {
     </a>
   )
   return (
-    <header className="fixed inset-x-0 top-0 z-50 border-b border-white/10 bg-black/75 backdrop-blur-md">
+    // On arrival the bar drops down from above the screen, then its links drop in one after another (index.css).
+    <header className="boring-nav-drop fixed inset-x-0 top-0 z-50 border-b border-white/10 bg-black/75 backdrop-blur-md">
       <nav aria-label="Sections" className="mx-auto flex h-16 max-w-6xl items-center justify-between px-4 sm:px-6">
         <a
           href="#home"
@@ -108,7 +109,7 @@ export function Navbar() {
             />
           )}
         </div>
-        <button type="button" className="text-white md:hidden" aria-label="Menu" aria-expanded={open} onClick={() => setOpen((o) => !o)}>
+        <button type="button" className="boring-nav-item text-white md:hidden" style={{ '--i': 1 } as CSSProperties} aria-label="Menu" aria-expanded={open} onClick={() => setOpen((o) => !o)}>
           <MenuIcon size={26} />
         </button>
       </nav>

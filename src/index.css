@@ -628,7 +628,8 @@ html[data-calm] img {
   stroke-width: 0.8px;
   stroke-dasharray: 400;
   stroke-dashoffset: 400;
-  animation: boring-draw 2.5s ease-out 0.3s forwards;
+  /* Once the bar has landed. */
+  animation: boring-draw 2.5s ease-out 0.55s forwards;
 }
 .boring-logo .logo-slash {
   fill: var(--accent);
@@ -694,14 +695,15 @@ html[data-calm] img {
   scale: 1;
   translate: var(--tx) var(--ty);
 }
-.orbit-bob {
-  animation: orbit-bob var(--bob) ease-in-out var(--bob-delay) infinite;
+/* Each logo wanders its own slow loop (a rough figure-eight) and tilts as it goes; no two share a pace or a phase. */
+.orbit-float {
+  animation: orbit-float var(--dur) ease-in-out var(--phase) infinite;
 }
-@keyframes orbit-bob {
+@keyframes orbit-float {
   0%, 100% { translate: 0 0; rotate: 0deg; }
-  25% { rotate: 0.5deg; }
-  50% { translate: 0 -10px; }
-  75% { rotate: -0.5deg; }
+  25% { translate: var(--fx) calc(var(--fy) * -1); rotate: var(--rot); }
+  50% { translate: calc(var(--fx) * 0.3) calc(var(--fy) * 0.7); rotate: 0deg; }
+  75% { translate: calc(var(--fx) * -1) calc(var(--fy) * -0.4); rotate: calc(var(--rot) * -1); }
 }
 /* The 42 card fills in once it's seen: the ring, the milestone strip and the bars. */
 .intra .intra-fill {
@@ -718,9 +720,30 @@ html[data-calm] img {
 .intra[data-shown] .intra-ring {
   stroke-dashoffset: var(--off);
 }
+/* Arriving: the navbar drops down from above the screen and settles, then its links drop in one by one, and the
+   underline turns up under the current one once they've landed. */
+.boring-nav-drop {
+  animation: boring-nav-drop 0.7s cubic-bezier(0.22, 1.25, 0.36, 1) 0.1s both;
+}
+@keyframes boring-nav-drop {
+  from { translate: 0 -100%; }
+  to { translate: 0 0; }
+}
+.boring-nav-item {
+  animation: boring-nav-item 0.45s cubic-bezier(0.34, 1.56, 0.64, 1) calc(0.55s + var(--i) * 0.08s) both;
+}
+@keyframes boring-nav-item {
+  from { opacity: 0; translate: 0 -14px; }
+  to { opacity: 1; translate: 0 0; }
+}
 /* The nav underline springs across to the active link: a slight overshoot, then it settles. */
 .boring-underline {
   transition: translate 0.45s cubic-bezier(0.34, 1.56, 0.64, 1), width 0.45s cubic-bezier(0.34, 1.56, 0.64, 1);
+  /* Opacity only: its position is the inline translate, which an animated translate would override. */
+  animation: boring-appear 0.35s ease-out 1.05s both;
+}
+@keyframes boring-appear {
+  from { opacity: 0; }
 }
 .boring-menu {
   animation: boring-fade 0.25s ease-out both;

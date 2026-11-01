@@ -1,6 +1,7 @@
 import { useId, useState, type CSSProperties } from 'react'
 import { monthYear, portfolio } from '../../content/portfolio'
 import { intraStats, type IntraRow } from './intraStats'
+import { mulberry32 } from '../../lib/random'
 import { SectionTitle } from './SectionTitle'
 import { ChevronUpIcon } from '../icons'
 import { useReveal } from './useInView'
@@ -46,30 +47,34 @@ export function About() {
   )
 }
 
-// ——— The stack: logos burst out of the centre into three rings, then each bobs on its own (his brother's skill cloud) ———
+// ——— The stack: logos burst out of the centre into a loose cluster, then each floats on its own (his brother's cloud) ———
 
-// Each ring: which level sits on it, its radius (% of the orbit's width) and where its first badge goes (degrees).
-// The rings are turned against each other so no two badges line up.
+// Where each group sits (radius as % of the orbit's width), how big its logos are, and an uneven starting angle so
+// the groups never line up. Every logo is then nudged by its own seeded jitter: a cluster, not a diagram.
 const RINGS = [
-  { level: 'main', radius: 17, start: -90 },
-  { level: 'experienced', radius: 31, start: 45 },
-  { level: 'site', radius: 46, start: 0 },
+  { level: 'main', radius: 17, size: 1, start: -104 },
+  { level: 'experienced', radius: 31, size: 0.9, start: 37 },
+  { level: 'site', radius: 45, size: 0.82, start: 11 },
 ] as const
+
+/** A stable random number generator per logo name, so the cluster looks the same on every visit. */
+const seeded = (name: string) => mulberry32([...name].reduce((h, c) => Math.imul(h ^ c.charCodeAt(0), 16777619), 2166136261))
 
 function StackOrbit() {
   const ref = useReveal<HTMLDivElement>(0.3)
   let n = 0
   return (
     <div ref={ref} className="orbit relative mx-auto aspect-square w-full max-w-md [container-type:inline-size]">
-      {RINGS.map((ring) => (
-        <div key={ring.level} aria-hidden className="absolute rounded-full border border-dashed border-white/10" style={{ inset: `${50 - ring.radius}%` }} />
-      ))}
+      <div aria-hidden className="absolute inset-[18%] rounded-full bg-[radial-gradient(circle,color-mix(in_srgb,var(--accent)_22%,transparent)_0%,transparent_70%)] blur-xl" />
       <p aria-hidden className="absolute inset-0 grid place-items-center font-marker text-lg text-white/40">my stack</p>
       <ul aria-label="Languages and tools">
         {RINGS.map((ring, r) => {
           const items = portfolio.stack.filter((s) => s.level === ring.level)
           return items.map((s, i) => {
-            const angle = ((i / items.length) * 360 + ring.start) * (Math.PI / 180)
+            const rng = seeded(s.name)
+            const angle = ((i / items.length) * 360 + ring.start + (rng() - 0.5) * 28) * (Math.PI / 180)
+            const radius = Math.min(46, ring.radius + (rng() - 0.5) * 8)
+            const scale = ring.size * (0.94 + rng() * 0.12)
             const k = n++
             return (
               <li
@@ -78,16 +83,21 @@ function StackOrbit() {
                 className="orbit-badge group absolute left-1/2 top-1/2 outline-none hover:z-30 focus-within:z-30 focus:z-30"
                 style={
                   {
-                    '--tx': `${(Math.cos(angle) * ring.radius).toFixed(2)}cqw`,
-                    '--ty': `${(Math.sin(angle) * ring.radius).toFixed(2)}cqw`,
-                    '--delay': `${(r * 0.35 + i * 0.05).toFixed(2)}s`,
-                    '--bob': `${4 + ((k * 0.7) % 2)}s`,
-                    '--bob-delay': `${-((k * 1.3) % 2)}s`,
+                    '--tx': `${(Math.cos(angle) * radius).toFixed(2)}cqw`,
+                    '--ty': `${(Math.sin(angle) * radius).toFixed(2)}cqw`,
+                    '--delay': `${(r * 0.3 + i * 0.06).toFixed(2)}s`,
+                    // Its own slow loop: how far it wanders, how much it tilts, how long a lap takes, where it starts.
+                    '--fx': `${(4 + rng() * 5).toFixed(1)}px`,
+                    '--fy': `${(4 + rng() * 5).toFixed(1)}px`,
+                    '--rot': `${(2 + rng() * 2.5).toFixed(1)}deg`,
+                    '--dur': `${(7 + rng() * 6).toFixed(1)}s`,
+                    '--phase': `${(-rng() * 12 - k).toFixed(1)}s`,
+                    '--s': scale.toFixed(3),
                   } as CSSProperties
                 }
               >
-                {/* Sized to the orbit (up to 56px), so twelve still fit around a phone-sized one. */}
-                <div className="orbit-bob -ml-[min(1.75rem,6.5cqw)] -mt-[min(1.75rem,6.5cqw)] grid size-[min(3.5rem,13cqw)] place-items-center rounded-full border-2 border-black bg-[#e6e6ee] shadow-[0_0_14px_#ffffff30] transition-transform duration-200 group-hover:scale-110 group-focus:scale-110">
+                {/* Sized to the orbit (up to 56px before its own scale), so twelve still fit around a phone-sized one. */}
+                <div className="orbit-float grid place-items-center rounded-full border-2 border-black bg-[#e6e6ee] shadow-[0_0_14px_#ffffff30] transition-[scale] duration-200 group-hover:scale-110 group-focus:scale-110 [height:calc(min(3.5rem,13cqw)*var(--s))] [margin:calc(min(1.75rem,6.5cqw)*var(--s)*-1)_0_0_calc(min(1.75rem,6.5cqw)*var(--s)*-1)] [width:calc(min(3.5rem,13cqw)*var(--s))]">
                   <img src={`/boring/logos/${s.logo}.webp`} alt="" width={40} height={40} loading="lazy" className="size-[58%] object-contain" />
                 </div>
                 {/* The label sits under the badge, leaning inwards (a badge on the right reads leftwards), so it stays
