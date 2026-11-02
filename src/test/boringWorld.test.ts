@@ -2,7 +2,7 @@ import { afterEach, describe, expect, it } from 'vitest'
 import { getProgress, isReady, markReady, reportProgress, resetBoot } from '../components/boring/boot'
 import { flightIndex, keyframe } from '../components/boring/flight'
 import { WAYPOINTS } from '../components/boring/heroScene'
-import { adaptStep, pickTier, QUALITY, RATIO_STEPS } from '../components/boring/quality'
+import { adaptStep, isSoftwareRenderer, pickTier, QUALITY, RATIO_STEPS, SOFTWARE_RATIO, startStep, topStep } from '../components/boring/quality'
 import { worldTexture, worldTextures } from '../components/boring/worldTextures'
 import { portfolio } from '../content/portfolio'
 
@@ -61,6 +61,27 @@ describe('the /boring world quality (quality.ts)', () => {
     expect(adaptStep(1, 10, top)).toBe(2)
     expect(adaptStep(top, 10, top)).toBe(top)
     expect(adaptStep(1, 18, top)).toBe(1)
+  })
+
+  it('knows a CPU drawing WebGL from a GPU', () => {
+    for (const cpu of ['ANGLE (Google, Vulkan 1.3.0 (SwiftShader Device (Subzero) (0x0000C0DE)), SwiftShader driver)', 'llvmpipe (LLVM 15.0.7, 256 bits)', 'Microsoft Basic Render Driver'])
+      expect(isSoftwareRenderer(cpu)).toBe(true)
+    for (const gpu of ['ANGLE (NVIDIA, NVIDIA GeForce RTX 3060 (0x00002504) Direct3D11 vs_5_0 ps_5_0, D3D11)', 'Apple M2', 'ANGLE (Intel, Intel(R) UHD Graphics 620, OpenGL 4.6)', ''])
+      expect(isSoftwareRenderer(gpu)).toBe(false)
+  })
+
+  it('gives a software renderer the lite world, however big the machine', () => {
+    expect(pickTier({ coarse: false, width: 1920, memory: 16, cores: 16, software: true })).toBe('lite')
+    expect(pickTier({ coarse: false, width: 1920, memory: 16, cores: 16, software: false })).toBe('full')
+  })
+
+  it('starts a GPU as sharp as allowed and a software renderer cheap', () => {
+    expect(RATIO_STEPS[topStep(1.25)]).toBe(1.25)
+    expect(RATIO_STEPS[topStep(1)]).toBe(1)
+    expect(startStep(topStep(1.25), false)).toBe(topStep(1.25))
+    expect(RATIO_STEPS[startStep(topStep(1), true)]).toBe(SOFTWARE_RATIO)
+    // A GPU never starts below 0.75 (only a struggling one adapts down past it).
+    expect(RATIO_STEPS[topStep(1)]).toBeGreaterThanOrEqual(0.75)
   })
 })
 

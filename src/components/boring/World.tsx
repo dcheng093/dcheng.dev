@@ -2,13 +2,19 @@ import { useEffect, useRef, useState } from 'react'
 import { isReady, reportProgress } from './boot'
 import { flightIndex } from './flight'
 import { setPlace, usePlace, type Place } from './place'
-import { adaptStep, deviceHints, pickTier, QUALITY, RATIO_STEPS } from './quality'
+import { adaptStep, deviceHints, isSoftwareRenderer, pickTier, QUALITY, RATIO_STEPS, startStep, topStep } from './quality'
 
-const canWebGL = () => {
+/** Whether WebGL2 works here, and what's drawing it (a GPU's name, or a software renderer's). */
+const probeWebGL = () => {
   try {
-    return !!document.createElement('canvas').getContext('webgl2')
+    const gl = document.createElement('canvas').getContext('webgl2')
+    if (!gl) return { ok: false, renderer: '' }
+    const info = gl.getExtension('WEBGL_debug_renderer_info')
+    const renderer = String(gl.getParameter(info ? info.UNMASKED_RENDERER_WEBGL : gl.RENDERER) ?? '')
+    gl.getExtension('WEBGL_lose_context')?.loseContext()
+    return { ok: true, renderer }
   } catch {
-    return false
+    return { ok: false, renderer: '' }
   }
 }
 
@@ -55,18 +61,20 @@ export function World() {
     let cancelled = false
     let cleanup = () => {}
     const start = async () => {
-      if (!canWebGL()) return reportProgress(1)
+      const probe = probeWebGL()
+      if (!probe.ok) return reportProgress(1)
+      // Hardware acceleration off: the CPU draws every pixel, so the lighter world, at a lower resolution.
+      const software = isSoftwareRenderer(probe.renderer)
       const [THREE, { buildHeroScene, WAYPOINTS }] = await Promise.all([import('three'), import('./heroScene')])
       const el = canvas.current
       if (cancelled || !el) return
       reportProgress(0.5)
-      const tier = pickTier(deviceHints())
+      const tier = pickTier(deviceHints(software))
       const quality = QUALITY[tier]
       const renderer = new THREE.WebGLRenderer({ canvas: el, antialias: tier === 'full', powerPreference: tier === 'full' ? 'high-performance' : 'low-power' })
       // The pixel ratio: as sharp as this tier allows (and the screen has), stepped down if frames run slow.
-      const ceiling = Math.min(quality.maxRatio, Math.max(1, window.devicePixelRatio || 1))
-      const top = RATIO_STEPS.reduce((best, r, i) => (r <= ceiling ? i : best), 0)
-      let step = top
+      const top = topStep(Math.min(quality.maxRatio, Math.max(1, window.devicePixelRatio || 1)))
+      let step = startStep(top, software)
       renderer.setPixelRatio(RATIO_STEPS[step])
       const scene = new THREE.Scene()
       const { camera, update, touch } = await buildHeroScene(scene, renderer, window.innerWidth / Math.max(1, window.innerHeight), tier)
@@ -159,7 +167,7 @@ export function World() {
         }
       }
       frame = requestAnimationFrame(loop)
-      if (import.meta.env.DEV) Object.assign(window, { __boringWorld: { camera, get index() { return index }, get dive() { return dive }, get ratio() { return RATIO_STEPS[step] }, tier } })
+      if (import.meta.env.DEV) Object.assign(window, { __boringWorld: { camera, get index() { return index }, get dive() { return dive }, get ratio() { return RATIO_STEPS[step] }, tier, software, gpu: probe.renderer } })
 
       cleanup = () => {
         cancelAnimationFrame(frame)
