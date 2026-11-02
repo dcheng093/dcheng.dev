@@ -229,6 +229,13 @@ export async function buildHeroScene(scene: THREE.Scene, renderer: THREE.WebGLRe
   scene.add(rim)
 
   const sun = new THREE.Mesh(new THREE.CircleGeometry(9, 64), new THREE.MeshBasicMaterial({ color: 0xffe2f0, fog: false }))
+  // A flat disc: turned to face whichever camera draws it (the view, and the lake's mirror), so it stays round
+  // instead of squashing into a tilting ellipse as the camera flies and sways.
+  const viewer = new THREE.Vector3()
+  sun.onBeforeRender = (_r, _s, cam) => {
+    sun.lookAt(viewer.setFromMatrixPosition(cam.matrixWorld))
+    sun.updateMatrixWorld()
+  }
   scene.add(sun)
   const halo = new THREE.Sprite(new THREE.SpriteMaterial({ map: glowTexture('rgba(255,170,220,0.55)'), blending: THREE.AdditiveBlending, depthWrite: false, fog: false, transparent: true }))
   halo.scale.set(120, 120, 1)
@@ -390,7 +397,9 @@ export async function buildHeroScene(scene: THREE.Scene, renderer: THREE.WebGLRe
     fog.color.copy(fogC)
     const sunY = keyframe(KEYS.sunY, index)
     sun.position.set(SUN_XZ[0], sunY, SUN_XZ[1])
-    halo.position.copy(sun.position)
+    // The glow sits a little behind the disc (away from the camera): at the same point, its plane would cut through
+    // the disc's and light one half of it, a seam that swings around as the camera moves.
+    halo.position.copy(sun.position).addScaledVector(sunDir.subVectors(sun.position, pos).normalize(), 6)
     sunDir.copy(sun.position).normalize()
     sunLight.position.copy(sunDir).multiplyScalar(100)
     sunLight.intensity = keyframe(KEYS.sun, index)
