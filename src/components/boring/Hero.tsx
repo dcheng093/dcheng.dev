@@ -1,124 +1,83 @@
 import type { CSSProperties } from 'react'
 import { portfolio, type SocialId } from '../../content/portfolio'
-import { useCopy } from '../../hooks/useCopy'
-import { mulberry32 } from '../../lib/random'
 import { DiscordIcon, GitHubIcon, MailIcon, SoundCloudIcon, TwitchIcon, YouTubeIcon } from '../icons'
-import { HeroBackdrop } from './HeroBackdrop'
-import { RevealText } from './SectionTitle'
-import { ACCENT, ACCENT_2 } from './theme'
+import { HeroDrawing } from './HeroDrawing'
+import { goTo } from './useInView'
 
-/** A paint stroke in a 1×1 box (for an objectBoundingBox clip path): fat in the middle, ragged, a dry tapering tail. */
-function brush() {
-  const rng = mulberry32(7)
-  const top: string[] = []
-  const bottom: string[] = []
-  const n = 30
-  for (let i = 0; i <= n; i++) {
-    const t = i / n
-    const body = 0.5 * Math.sin(Math.PI * Math.min(1, t * 1.12)) ** 0.55 * (1 - t * 0.4)
-    top.push(`${t.toFixed(3)},${(0.5 - body - rng() * 0.07).toFixed(3)}`)
-    bottom.unshift(`${t.toFixed(3)},${(0.5 + body + rng() * 0.07).toFixed(3)}`)
-  }
-  return `M${top.join(' L')} L${bottom.join(' L')} Z`
-}
-const BRUSH = brush()
-
-// Four swipes of paint (his brother's are pink, blue, lime and purple); each grows from alternate sides, 0.1s apart.
-const STROKES = [
-  { color: '#ff5fc8', top: '2%', left: '-4%', width: '96%', rotate: -4 },
-  { color: ACCENT, top: '24%', left: '2%', width: '104%', rotate: 2 },
-  { color: ACCENT_2, top: '50%', left: '-2%', width: '92%', rotate: -3 },
-  { color: '#b8ff5a', top: '70%', left: '8%', width: '86%', rotate: 3 },
-]
-
-const SOCIAL_ICONS: Record<SocialId, { Icon: typeof GitHubIcon; color: string }> = {
-  github: { Icon: GitHubIcon, color: '#111' },
-  email: { Icon: MailIcon, color: '#ea4335' },
-  discord: { Icon: DiscordIcon, color: '#5865f2' },
-  youtube: { Icon: YouTubeIcon, color: '#ff0000' },
-  twitch: { Icon: TwitchIcon, color: '#9146ff' },
-  soundcloud: { Icon: SoundCloudIcon, color: '#ff5500' },
+const SOCIAL_ICONS: Record<SocialId, typeof GitHubIcon> = {
+  github: GitHubIcon,
+  email: MailIcon,
+  discord: DiscordIcon,
+  youtube: YouTubeIcon,
+  twitch: TwitchIcon,
+  soundcloud: SoundCloudIcon,
 }
 
-export function SocialLink({ id, label, href, copy, size = 28, onCopy }: { id: SocialId; label: string; href?: string; copy?: string; size?: number; onCopy?: (text: string) => void }) {
-  const { Icon, color } = SOCIAL_ICONS[id]
-  const cls = 'grid place-items-center transition-transform duration-200 hover:scale-110'
+/** A social as a link (or, for Discord, a button that copies the name), with its label beside the icon. */
+export function SocialLink({ id, label, href, copy, onCopy, showLabel = false, className = '' }: { id: SocialId; label: string; href?: string; copy?: string; onCopy?: (text: string) => void; showLabel?: boolean; className?: string }) {
+  const Icon = SOCIAL_ICONS[id]
+  const body = (
+    <>
+      <Icon size={18} />
+      {showLabel && <span>{label}</span>}
+    </>
+  )
+  const cls = `boring-link inline-flex items-center gap-2 ${className}`
   if (copy)
     return (
-      <button type="button" onClick={() => onCopy?.(copy)} aria-label={`${label}: ${copy} (copy)`} className={cls} style={{ color }}>
-        <Icon size={size} />
+      <button type="button" onClick={() => onCopy?.(copy)} aria-label={`${label}: ${copy} (copy)`} className={cls}>
+        {body}
       </button>
     )
   return (
-    <a href={href} target={href?.startsWith('mailto:') ? undefined : '_blank'} rel="noreferrer" aria-label={label} className={cls} style={{ color }}>
-      <Icon size={size} />
+    <a href={href} target={href?.startsWith('mailto:') ? undefined : '_blank'} rel="noreferrer" aria-label={label} className={cls}>
+      {body}
     </a>
   )
 }
 
+/** The opening: a construction drawing traces itself, then the name rises into it, huge, with the one-line pitch. */
 export function Hero() {
-  const { copied, copy } = useCopy()
-  const [first, second, name] = portfolio.greeting
+  const [first, ...rest] = portfolio.name.split(' ')
   return (
-    <section id="home" className="relative isolate flex min-h-[100svh] items-end overflow-hidden pt-16">
-      <HeroBackdrop />
-      <div aria-hidden className="pointer-events-none absolute inset-0 -z-10 bg-gradient-to-b from-black/40 via-black/5 to-[#0a0a0a]" />
-      <svg aria-hidden width="0" height="0" className="absolute">
-        <clipPath id="boring-brush" clipPathUnits="objectBoundingBox">
-          <path d={BRUSH} />
-        </clipPath>
-      </svg>
-      <div className="mx-auto grid w-full max-w-6xl items-end gap-4 px-4 sm:px-6 md:grid-cols-2">
-        <div className="order-2 flex flex-col items-center pb-14 md:order-1 md:pb-28">
-          <div className="relative w-[min(88vw,520px)]">
-            <div aria-hidden className="absolute inset-0">
-              {STROKES.map((s, i) => (
-                <div key={s.color} className="absolute h-[34%]" style={{ top: s.top, left: s.left, width: s.width, transform: `rotate(${s.rotate}deg)` }}>
-                  <div
-                    className="boring-stroke h-full w-full"
-                    style={{ backgroundColor: s.color, clipPath: 'url(#boring-brush)', transformOrigin: i % 2 ? 'left center' : 'right center', '--i': i } as CSSProperties}
-                  />
-                </div>
-              ))}
-            </div>
-            <h1 className="relative">
-              <span className="sr-only">{portfolio.greeting.join(' ')}</span>
-              <svg aria-hidden viewBox="0 0 520 250" className="boring-greeting block w-full overflow-visible">
-                <text x="34" y="78" className="greet-line">{first}</text>
-                <text x="34" y="148" className="greet-line">{second}</text>
-                <text x="34" y="222" className="greet-line greet-name">{name}</text>
-              </svg>
-            </h1>
-          </div>
-          <p className="boring-fade-late mt-2 text-center font-medium text-white [text-shadow:2px_2px_0_#000]">{portfolio.tagline}</p>
-          <p className="mt-6 font-marker text-xl text-white">
-            <RevealText text="My Socials" delay={1} />
-          </p>
-          <div className="relative mt-2">
-            <ul className="boring-pop grid grid-cols-3 gap-x-5 gap-y-3 rounded-xl border-4 border-black bg-[#fff4c2] px-5 py-3 shadow-[5px_5px_0_#000]" aria-label="Socials">
-              {portfolio.socials.map((s) => (
-                <li key={s.id}>
-                  <SocialLink {...s} onCopy={(text) => void copy(text)} />
-                </li>
-              ))}
-            </ul>
-            <span
-              role="status"
-              className={`absolute left-1/2 top-full mt-2 -translate-x-1/2 whitespace-nowrap rounded bg-black px-2 py-0.5 text-xs text-white transition-opacity duration-200 ${copied ? 'opacity-100' : 'opacity-0'}`}
-            >
-              {copied ? `copied my Discord: ${portfolio.socials.find((s) => s.copy)?.copy}` : ''}
+    <section id="home" data-place="intro" className="relative flex min-h-[100svh] flex-col justify-end overflow-hidden px-5 pb-12 pt-28 sm:px-10 lg:px-16">
+      <HeroDrawing />
+      <h1 className="relative text-[#f4f1ea]" aria-label={portfolio.name}>
+        {[first, rest.join(' ')].map((word, i) => (
+          // The type size is on the mask, so its em padding leaves room for the "g"'s descender.
+          <span key={word} aria-hidden className="-mb-[0.2em] block overflow-hidden pb-[0.24em] font-display text-[clamp(4.2rem,15vw,15rem)] font-bold leading-[0.86] tracking-[-0.045em]">
+            <span className="hero-rise block" style={{ '--i': i } as CSSProperties}>
+              {word}
             </span>
-          </div>
-        </div>
-        <img
-          src="/me/boring/daniel.webp"
-          alt={portfolio.name}
-          width={595}
-          height={1100}
-          fetchPriority="high"
-          className="boring-rise hero-cutout order-1 mx-auto h-auto max-h-[52svh] w-auto md:order-2 md:max-h-[84svh]"
-        />
+          </span>
+        ))}
+      </h1>
+      <div className="relative mt-8 grid gap-8 lg:grid-cols-[1.4fr_1fr] lg:items-end">
+        <p className="hero-fade font-serif-ed max-w-2xl text-[clamp(1.6rem,3vw,2.6rem)] leading-[1.05] tracking-[-0.02em] text-[#f4f1ea]/90" style={{ '--d': '1.3s' } as CSSProperties}>
+          {portfolio.heroLine}
+        </p>
+        <nav aria-label="Contents" className="hero-fade" style={{ '--d': '1.5s' } as CSSProperties}>
+          <ol className="flex flex-wrap gap-x-6 gap-y-1.5 text-sm lg:justify-end">
+            {portfolio.chapters.map((c, i) => (
+              <li key={c.id}>
+                <a
+                  href={`#${c.id}`}
+                  onClick={(e) => {
+                    e.preventDefault()
+                    goTo(c.id)
+                  }}
+                  className="boring-link inline-flex gap-2 text-[#f4f1ea]/80 hover:text-[#f4f1ea]"
+                >
+                  <span className="tabular-nums text-[#f4f1ea]/40">{String(i + 1).padStart(2, '0')}</span>
+                  {c.title}
+                </a>
+              </li>
+            ))}
+          </ol>
+        </nav>
       </div>
+      {/* Scroll cue: a thin line that keeps drawing downwards. */}
+      <span aria-hidden className="scroll-cue absolute bottom-0 left-1/2 h-14 w-px -translate-x-1/2 bg-gradient-to-b from-transparent to-[#f4f1ea]/70" />
     </section>
   )
 }

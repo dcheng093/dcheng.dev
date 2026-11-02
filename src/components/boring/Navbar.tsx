@@ -1,119 +1,86 @@
-import { useEffect, useLayoutEffect, useRef, useState, type CSSProperties } from 'react'
+import { useEffect, useState, type CSSProperties } from 'react'
+import { portfolio } from '../../content/portfolio'
 import { MenuIcon } from '../icons'
 import { goTo } from './useInView'
 
-const SECTIONS = [
-  { id: 'home', label: 'Home' },
-  { id: 'about', label: 'About' },
-  { id: 'projects', label: 'Projects' },
-  { id: 'contact', label: 'Contact' },
-] as const
-
-/** The section the reader is in: the last one whose top has passed the upper third of the screen. */
-function useCurrentSection() {
-  const [current, setCurrent] = useState<string>('home')
+/**
+ * The header: the name on the left, "Get in touch" on the right. See-through over the hero, smoked glass once
+ * scrolled. On arrival it drops in from above, then its parts land one after another (index.css). The chapters live
+ * in the sidebar (wide screens) or this menu (phones).
+ */
+export function Navbar() {
+  const [scrolled, setScrolled] = useState(false)
+  const [open, setOpen] = useState(false)
   useEffect(() => {
-    const update = () => {
-      const line = window.innerHeight / 3
-      let at: string = SECTIONS[0].id
-      for (const s of SECTIONS) {
-        const el = document.getElementById(s.id)
-        if (el && el.getBoundingClientRect().top <= line) at = s.id
-      }
-      setCurrent(at)
-    }
+    const update = () => setScrolled(window.scrollY > 40)
     update()
     window.addEventListener('scroll', update, { passive: true })
-    window.addEventListener('resize', update)
-    return () => {
-      window.removeEventListener('scroll', update)
-      window.removeEventListener('resize', update)
-    }
+    return () => window.removeEventListener('scroll', update)
   }, [])
-  return current
-}
-
-/** One underline for a row of links: it springs across to whichever is active (and overshoots a touch, then settles). */
-function useUnderline(current: string) {
-  const row = useRef<HTMLDivElement>(null)
-  const [bar, setBar] = useState<{ x: number; w: number } | null>(null)
-  useLayoutEffect(() => {
-    const measure = () => {
-      const link = row.current?.querySelector<HTMLElement>(`[data-section="${current}"] [data-label]`)
-      const box = row.current?.getBoundingClientRect()
-      if (!link || !box) return
-      const r = link.getBoundingClientRect()
-      setBar({ x: r.left - box.left, w: r.width })
-    }
-    measure()
-    window.addEventListener('resize', measure)
-    void document.fonts?.ready.then(measure)
-    return () => window.removeEventListener('resize', measure)
-  }, [current])
-  return { row, bar }
-}
-
-export function Navbar() {
-  const current = useCurrentSection()
-  const [open, setOpen] = useState(false)
-  const { row, bar } = useUnderline(current)
   const go = (id: string) => {
     setOpen(false)
     goTo(id)
   }
-  const link = (s: (typeof SECTIONS)[number], i: number, stagger = false) => (
-    <a
-      key={s.id}
-      href={`#${s.id}`}
-      data-section={s.id}
-      onClick={(e) => {
-        e.preventDefault()
-        go(s.id)
-      }}
-      aria-current={current === s.id ? 'location' : undefined}
-      className={`font-marker text-lg transition-colors duration-200 ${current === s.id ? 'text-[var(--accent)]' : 'text-white hover:text-white/70'} ${stagger ? 'boring-menu-item' : 'boring-nav-item'}`}
-      style={{ '--i': i } as CSSProperties}
-    >
-      <span data-label className={stagger && current === s.id ? 'border-b-2 border-[var(--accent)] pb-0.5' : ''}>
-        {s.label}
-      </span>
-    </a>
-  )
   return (
-    // On arrival the bar drops down from above the screen, then its links drop in one after another (index.css).
-    <header className="boring-nav-drop fixed inset-x-0 top-0 z-50 border-b border-white/10 bg-black/75 backdrop-blur-md">
-      <nav aria-label="Sections" className="mx-auto flex h-16 max-w-6xl items-center justify-between px-4 sm:px-6">
+    <header
+      className={`boring-nav-drop fixed inset-x-0 top-0 z-50 transition-[background-color,backdrop-filter,border-color] duration-500 ${scrolled || open ? 'border-b border-[#f4f1ea]/10 bg-[#050507]/70 backdrop-blur-xl' : 'border-b border-transparent'}`}
+    >
+      <nav aria-label="Sections" className="flex h-14 items-center justify-between px-5 sm:px-10">
         <a
           href="#home"
-          aria-label="dcheng.dev: back to the top"
           onClick={(e) => {
             e.preventDefault()
             go('home')
           }}
-          className="block"
+          className="boring-nav-item font-display text-lg font-bold tracking-[-0.03em] text-[#f4f1ea]"
+          style={{ '--i': 0 } as CSSProperties}
         >
-          {/* The logo writes itself in: outline first, then the fill. */}
-          <svg aria-hidden viewBox="0 0 230 40" className="boring-logo h-9 w-auto overflow-visible">
-            <text x="2" y="30">
-              &lt;dcheng.dev<tspan className="logo-slash">/</tspan>&gt;
-            </text>
-          </svg>
+          {portfolio.name}
+          <span className="text-[var(--accent)]">.</span>
         </a>
-        <div ref={row} className="relative hidden items-center gap-8 md:flex">
-          {SECTIONS.map((s, i) => link(s, i))}
-          {bar && (
-            <span
-              aria-hidden
-              className="boring-underline absolute -bottom-1.5 left-0 h-0.5 rounded-full bg-[var(--accent)]"
-              style={{ width: bar.w, translate: `${bar.x}px 0` }}
-            />
-          )}
+        <div className="flex items-center gap-3">
+          <a
+            href="#contact"
+            onClick={(e) => {
+              e.preventDefault()
+              go('contact')
+            }}
+            className="boring-nav-item hidden rounded-full bg-[#f4f1ea] px-4 py-1.5 text-sm font-semibold text-[#16161d] transition-transform duration-300 [transition-timing-function:cubic-bezier(.34,1.56,.64,1)] hover:scale-105 sm:inline-block"
+            style={{ '--i': 1 } as CSSProperties}
+          >
+            Get in touch
+          </a>
+          <button
+            type="button"
+            className="boring-nav-item text-[#f4f1ea] lg:hidden"
+            style={{ '--i': 2 } as CSSProperties}
+            aria-label="Menu"
+            aria-expanded={open}
+            onClick={() => setOpen((o) => !o)}
+          >
+            <MenuIcon size={24} />
+          </button>
         </div>
-        <button type="button" className="boring-nav-item text-white md:hidden" style={{ '--i': 1 } as CSSProperties} aria-label="Menu" aria-expanded={open} onClick={() => setOpen((o) => !o)}>
-          <MenuIcon size={26} />
-        </button>
       </nav>
-      {open && <div className="boring-menu flex flex-col items-center gap-4 border-t border-white/10 bg-black/90 py-5 md:hidden">{SECTIONS.map((s, i) => link(s, i, true))}</div>}
+      {open && (
+        <ol className="boring-menu flex flex-col gap-3 border-t border-[#f4f1ea]/10 px-5 py-6 lg:hidden">
+          {portfolio.chapters.map((c, i) => (
+            <li key={c.id} className="boring-menu-item" style={{ '--i': i } as CSSProperties}>
+              <a
+                href={`#${c.id}`}
+                onClick={(e) => {
+                  e.preventDefault()
+                  go(c.id)
+                }}
+                className="flex items-baseline gap-3 font-display text-3xl font-bold tracking-[-0.03em] text-[#f4f1ea]"
+              >
+                <span className="text-sm font-normal tabular-nums text-[#f4f1ea]/40">{String(i + 1).padStart(2, '0')}</span>
+                {c.title}
+              </a>
+            </li>
+          ))}
+        </ol>
+      )}
     </header>
   )
 }

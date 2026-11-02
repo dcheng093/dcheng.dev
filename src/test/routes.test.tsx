@@ -6,6 +6,7 @@ import { routes } from '../routes'
 import { WEBRING } from '../lib/sitemap'
 import { daniel } from '../content/daniel'
 import { REVIEWS } from '../content/reviews'
+import { portfolio } from '../content/portfolio'
 import { Img } from '../components/media/Img'
 import { VIRUS_ALERT_DELAY_MS } from '../components/VirusAlert'
 import { SURVEY } from '../content/survey'
@@ -130,6 +131,10 @@ describe('routes', () => {
     fireEvent.click(more)
     expect(screen.getByRole('button', { name: 'Show fewer projects' })).toHaveAttribute('aria-expanded', 'true')
     expect(screen.getByText('Born2beroot')).toBeInTheDocument()
+    // Every project gets its own panel, with its repository linked.
+    const work = within(screen.getByRole('list', { name: 'Projects' }))
+    expect(work.getAllByRole('article')).toHaveLength(portfolio.projects.length)
+    expect(work.getAllByRole('link', { name: /View repo/ })).toHaveLength(portfolio.projects.length)
   })
 
   it('/boring is a normal website even for the possessed and the descended: none of it reaches the page', () => {

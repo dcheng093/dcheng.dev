@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState, type RefObject } from 'react'
+import { scrollToId } from './useLenis'
 
 /** Whether the element is on screen (at least `threshold` of it). Starts false. */
 export function useInView(ref: RefObject<Element | null>, threshold = 0.2) {
@@ -42,6 +43,6 @@ export function useReveal<T extends HTMLElement>(threshold = 0.15) {
 
 /** Smooth-scrolls to a section and puts it in the address bar without a history entry each time. */
 export function goTo(id: string) {
-  document.getElementById(id)?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+  scrollToId(id)
   history.replaceState(history.state, '', id === 'home' ? location.pathname : `#${id}`)
 }

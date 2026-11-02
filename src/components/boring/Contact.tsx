@@ -1,17 +1,19 @@
 import { useState, type FormEvent } from 'react'
 import { portfolio } from '../../content/portfolio'
-import { SectionTitle } from './SectionTitle'
-import { goTo, useReveal } from './useInView'
+import { useCopy } from '../../hooks/useCopy'
+import { Chapter, Panel } from './Chapter'
+import { SocialLink } from './Hero'
 
-const field = 'w-full rounded-sm bg-[#1c1c22] px-3 py-2.5 text-white placeholder:text-white/35 outline-none ring-1 ring-transparent transition-shadow focus:ring-[var(--accent)]'
+const field =
+  'w-full border-b border-[#16161d]/20 bg-transparent px-0 py-3 text-lg text-[#16161d] placeholder:text-[#16161d]/40 outline-none transition-colors focus:border-[var(--accent)]'
 
-/** No server: the form writes the email and opens it in the visitor's own mail app. */
+/** No server: the form writes the email and opens it in the visitor's own mail app. Every social, by name, beside it. */
 export function Contact() {
-  const card = useReveal<HTMLFormElement>()
+  const chapter = portfolio.chapters.find((c) => c.id === 'contact')!
+  const { copied, copy } = useCopy()
   const [form, setForm] = useState({ name: '', email: '', subject: '', message: '' })
   const ready = form.name.trim() && form.message.trim()
   const set = (k: keyof typeof form) => (e: { target: { value: string } }) => setForm({ ...form, [k]: e.target.value })
-  const [before, after] = portfolio.contactLine.split('socials')
   const send = (e: FormEvent) => {
     e.preventDefault()
     if (!ready) return
@@ -20,38 +22,37 @@ export function Contact() {
     window.location.href = `mailto:${portfolio.email}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`
   }
   return (
-    <section id="contact" className="mx-auto max-w-3xl scroll-mt-16 px-4 py-24 sm:px-6">
-      <SectionTitle>Contact</SectionTitle>
-      <form ref={card} onSubmit={send} aria-label="Contact form" className="reveal-up rounded-3xl bg-[#141418] p-6 ring-1 ring-white/5 sm:p-8">
-        <p className="mb-6 text-center leading-relaxed text-white/70">
-          {before}
-          <a
-            href="#home"
-            onClick={(e) => {
-              e.preventDefault()
-              goTo('home')
-            }}
-            className="font-semibold text-[var(--accent)] underline underline-offset-4"
+    <Chapter id="contact" title={chapter.title} lede={portfolio.contactLine}>
+      <Panel className="grid gap-12 lg:grid-cols-[1.4fr_1fr]">
+        <form onSubmit={send} aria-label="Contact form" className="space-y-2">
+          <div className="grid gap-x-6 sm:grid-cols-2">
+            <input aria-label="Name" placeholder="Name" className={field} value={form.name} onChange={set('name')} />
+            <input aria-label="Email" placeholder="Email" type="email" className={field} value={form.email} onChange={set('email')} />
+          </div>
+          <input aria-label="Subject" placeholder="Subject" className={field} value={form.subject} onChange={set('subject')} />
+          <textarea aria-label="Message" placeholder="Message" rows={5} className={`${field} resize-none`} value={form.message} onChange={set('message')} />
+          <button
+            type="submit"
+            disabled={!ready}
+            className="mt-6 inline-flex items-center gap-2 rounded-full bg-[#16161d] px-6 py-3 font-semibold text-[#f4f1ea] transition-[transform,opacity] duration-300 [transition-timing-function:cubic-bezier(.34,1.56,.64,1)] enabled:hover:scale-105 disabled:opacity-35"
           >
-            socials
-          </a>
-          {after}
-        </p>
-        <div className="grid gap-2 sm:grid-cols-2">
-          <input aria-label="Name" placeholder="Name" className={field} value={form.name} onChange={set('name')} />
-          <input aria-label="Email" placeholder="Email" type="email" className={field} value={form.email} onChange={set('email')} />
-          <input aria-label="Subject" placeholder="Subject" className={`${field} sm:col-span-2`} value={form.subject} onChange={set('subject')} />
-          <textarea aria-label="Message" placeholder="Message" rows={6} className={`${field} resize-none sm:col-span-2`} value={form.message} onChange={set('message')} />
+            Send message
+          </button>
+        </form>
+        <div>
+          <p className="font-display text-xs font-semibold uppercase tracking-[0.2em] text-[#16161d]/50">Elsewhere</p>
+          <ul aria-label="Socials" className="mt-4 divide-y divide-[#16161d]/10 border-y border-[#16161d]/10">
+            {portfolio.socials.map((s) => (
+              <li key={s.id}>
+                <SocialLink {...s} showLabel onCopy={(text) => void copy(text)} className="w-full py-3.5 text-lg text-[#16161d]" />
+              </li>
+            ))}
+          </ul>
+          <p role="status" className="mt-3 h-5 text-sm text-[#16161d]/60">
+            {copied ? `Copied my Discord: ${portfolio.socials.find((s) => s.copy)?.copy}` : ''}
+          </p>
         </div>
-        <button
-          type="submit"
-          disabled={!ready}
-          className="group relative mx-auto mt-5 block overflow-hidden px-6 py-1.5 font-semibold text-white transition-colors duration-300 enabled:hover:text-black disabled:opacity-40"
-        >
-          <span aria-hidden className="absolute inset-x-0 bottom-0 h-0.5 bg-[var(--accent)] transition-[height] duration-300 ease-out group-enabled:group-hover:h-full" />
-          <span className="relative">Send</span>
-        </button>
-      </form>
-    </section>
+      </Panel>
+    </Chapter>
   )
 }

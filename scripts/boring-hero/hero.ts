@@ -10,7 +10,9 @@ const renderer = new THREE.WebGLRenderer({ canvas, antialias: true })
 renderer.setPixelRatio(1)
 renderer.setSize(W, H, false)
 const scene = new THREE.Scene()
-const { camera } = buildHeroScene(scene, renderer, W / H)
+const { camera, update } = await buildHeroScene(scene, renderer, W / H, 'full')
+// The arrival's resting shot: at the top of the page, the dive over, a little way into the water's drift.
+update(6, { index: 0, pointer: { x: 0, y: 0 }, dive: 1 })
 
 declare global {
   interface Window {

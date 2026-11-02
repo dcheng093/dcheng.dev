@@ -97,27 +97,48 @@ describe('Call Me Maybe (grammar mask)', () => {
 })
 
 describe('the boring site data (src/content/portfolio.ts)', () => {
-  it('works the 42 card out from the project list: validated, categories, the ongoing one, newest first', () => {
-    const stats = intraStats(portfolio.intra.projects)
-    expect(stats.validated).toBe(18)
-    expect(stats.ongoing.map((p) => p.name)).toEqual(['Call-Me-Maybe'])
+  // Daniel keeps portfolio.ts up to date himself, so these check the card's arithmetic against whatever it says.
+  it('works the 42 card out from the project list: validated, categories, the ongoing ones, newest first', () => {
+    const { projects } = portfolio.intra
+    const stats = intraStats(projects)
+    const scored = projects.filter((p) => p.score !== undefined)
+    expect(stats.validated).toBe(scored.length)
+    expect(stats.ongoing.map((p) => p.name)).toEqual(projects.filter((p) => p.status === 'ongoing').map((p) => p.name))
     expect(stats.byKind.reduce((n, k) => n + k.n, 0)).toBe(stats.validated)
-    expect(stats.recent[0].date >= stats.recent.at(-1)!.date).toBe(true)
-    expect(portfolio.intra.milestone).toBe(3)
+    for (let i = 1; i < stats.recent.length; i++) expect(stats.recent[i - 1].date >= stats.recent[i].date).toBe(true)
     // Validating a project is a one-line change.
-    const done = intraStats([...portfolio.intra.projects.filter((p) => p.status !== 'ongoing'), { name: 'Call-Me-Maybe', score: 115, date: '2026-12', kind: 'Python' }])
-    expect(done.validated).toBe(19)
+    const done = intraStats([...projects.filter((p) => p.status !== 'ongoing'), { name: 'Call-Me-Maybe', score: 115, date: '2099-12', kind: 'Python' }])
+    expect(done.validated).toBe(scored.length + 1)
     expect(done.ongoing).toEqual([])
     expect(done.recent[0].name).toBe('Call-Me-Maybe')
   })
 
-  it('shows the Python modules as one row (each still counted), with the ongoing project on top', () => {
-    const { rows, validated } = intraStats(portfolio.intra.projects)
-    expect(validated).toBe(18)
-    expect(rows[0]).toMatchObject({ name: 'Call-Me-Maybe', ongoing: true })
-    const modules = rows.filter((r) => r.name.startsWith('Python Module'))
-    expect(modules).toEqual([expect.objectContaining({ name: 'Python Modules (00–10)', count: 11, score: 100, date: '2026-10' })])
-    expect(rows.length).toBe(9)
+  it('shows a group (the Python modules) as one row, each still counted, with ongoing work on top', () => {
+    const { projects } = portfolio.intra
+    const { rows } = intraStats(projects)
+    const ongoing = projects.filter((p) => p.status === 'ongoing')
+    expect(rows.slice(0, ongoing.length).map((r) => r.ongoing)).toEqual(ongoing.map(() => true))
+    const modules = projects.filter((p) => p.group === 'Python Modules' && p.score !== undefined)
+    const row = rows.filter((r) => r.name.startsWith('Python Modules'))
+    expect(row).toEqual([
+      expect.objectContaining({
+        count: modules.length,
+        score: Math.min(...modules.map((m) => m.score!)),
+        date: modules.map((m) => m.date!).sort().at(-1),
+      }),
+    ])
+    expect(row[0].name).toMatch(/^Python Modules \(\d+–\d+\)$/)
+    // Fixed data: the grouping and the range label.
+    const fake = intraStats([
+      { name: 'Mod 02', score: 100, date: '2026-01', kind: 'Python', group: 'Mods' },
+      { name: 'Mod 05', score: 90, date: '2026-03', kind: 'Python', group: 'Mods' },
+      { name: 'Solo', score: 125, date: '2026-02', kind: 'C' },
+    ])
+    expect(fake.rows).toEqual([
+      { name: 'Mods (02–05)', date: '2026-03', score: 90, ongoing: false, count: 2 },
+      { name: 'Solo', date: '2026-02', score: 125, ongoing: false, count: 1 },
+    ])
+    expect(fake.validated).toBe(3)
   })
 
   it('every project has an animation and a real date, every stack entry a logo, every social a link or a copy', () => {

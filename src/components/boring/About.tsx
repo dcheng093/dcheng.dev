@@ -2,113 +2,177 @@ import { useId, useState, type CSSProperties } from 'react'
 import { monthYear, portfolio } from '../../content/portfolio'
 import { intraStats, type IntraRow } from './intraStats'
 import { mulberry32 } from '../../lib/random'
-import { SectionTitle } from './SectionTitle'
+import { Chapter, Panel } from './Chapter'
 import { ChevronUpIcon } from '../icons'
 import { useReveal } from './useInView'
 
-const card = 'reveal-up lift rounded-3xl bg-[#141418] p-6 ring-1 ring-white/5 sm:p-8'
 const delay = (s: number) => ({ '--delay': `${s}s` }) as CSSProperties
 
-export function About() {
-  const grid = useReveal<HTMLDivElement>(0.1)
+/** The intro paragraph, with his name and the two languages picked out. */
+function Intro() {
   return (
-    <section id="about" className="mx-auto max-w-6xl scroll-mt-16 px-4 py-24 sm:px-6">
-      <SectionTitle>About Me</SectionTitle>
-      <div ref={grid} className="reveal-group grid gap-5 md:grid-cols-2">
-        <div className="space-y-5">
-          <div className={`${card} text-center text-lg leading-relaxed text-white/85`} style={delay(0)}>
-            <p>
-              {portfolio.intro.map((part, i) =>
-                part.strong ? (
-                  <strong key={i} className="font-semibold text-[var(--accent)] underline decoration-2 underline-offset-4">{part.text}</strong>
-                ) : part.accent ? (
-                  <span key={i} className="font-semibold text-[var(--accent-2)]">{part.text}</span>
-                ) : (
-                  <span key={i}>{part.text}</span>
-                ),
-              )}
-            </p>
-          </div>
-          <div className={card} style={delay(0.2)}>
-            <StackOrbit />
-          </div>
-        </div>
-        <div className="space-y-5">
-          <div className={card} style={delay(0.4)}>
-            <IntraCard />
-          </div>
-          <div className={`${card} space-y-5`} style={delay(0.6)}>
-            <p className="text-center text-lg leading-relaxed text-white/85">{portfolio.hobby}</p>
-            <img src="/me/HOBBY-2.webp" alt="Daniel's desk: his PC, keyboard and mouse" width={400} height={300} loading="lazy" className="w-full rounded-2xl object-cover ring-1 ring-white/10" />
-          </div>
-        </div>
-      </div>
-    </section>
+    <p>
+      {portfolio.intro.map((part, i) =>
+        part.strong ? (
+          <strong key={i} className="font-serif-ed italic text-[#c9c1ff]">{part.text}</strong>
+        ) : part.accent ? (
+          <em key={i} className="text-[#c9c1ff]">{part.text}</em>
+        ) : (
+          <span key={i}>{part.text}</span>
+        ),
+      )}
+    </p>
   )
 }
 
-// ——— The stack: logos burst out of the centre into a loose cluster, then each floats on its own (his brother's cloud) ———
+export function About() {
+  const chapter = portfolio.chapters.find((c) => c.id === 'about')!
+  return (
+    <Chapter id="about" title={chapter.title} lede={<Intro />}>
+      <Panel className="grid gap-8 md:grid-cols-[0.9fr_1.1fr] md:items-center">
+        {/* His cutout in its own colours, dissolving into the frame at the shoulders and the bottom (no crop line). */}
+        <figure className="portrait-frame relative mx-auto aspect-[3/4] w-full max-w-sm overflow-hidden rounded-3xl">
+          <img src="/me/boring/daniel.webp" alt={portfolio.name} width={595} height={1100} loading="lazy" className="portrait-fade absolute inset-x-0 bottom-0 mx-auto h-[96%] w-auto object-contain" />
+        </figure>
+        <div className="space-y-6">
+          <p className="font-display text-xs font-semibold uppercase tracking-[0.2em] text-[#16161d]/50">Away from the keyboard</p>
+          <p className="font-serif-ed text-[clamp(1.4rem,2.4vw,2rem)] leading-[1.12] tracking-[-0.015em]">{portfolio.hobby}</p>
+          <img src="/me/HOBBY-2.webp" alt="Daniel's desk: his PC, keyboard and mouse" width={400} height={300} loading="lazy" className="w-full rounded-2xl object-cover" />
+        </div>
+      </Panel>
+    </Chapter>
+  )
+}
 
-// Where each group sits (radius as % of the orbit's width), how big its logos are, and an uneven starting angle so
-// the groups never line up. Every logo is then nudged by its own seeded jitter: a cluster, not a diagram.
+export function Stack() {
+  const chapter = portfolio.chapters.find((c) => c.id === 'stack')!
+  const groups = [
+    { level: 'main', label: 'Main' },
+    { level: 'experienced', label: 'Experienced' },
+    { level: 'site', label: 'This website' },
+  ] as const
+  return (
+    <Chapter id="stack" title={chapter.title} lede={chapter.lede}>
+      <Panel className="grid gap-10 lg:grid-cols-[1.2fr_1fr] lg:items-center">
+        <StackOrbit />
+        <div className="grid gap-6 sm:grid-cols-3 lg:grid-cols-1">
+          {groups.map((g, i) => (
+            <div key={g.level} className="border-t border-[#16161d]/15 pt-4" style={delay(i * 0.1)}>
+              <p className="font-display text-xs font-semibold uppercase tracking-[0.2em] text-[#16161d]/50">{g.label}</p>
+              <p className="font-serif-ed mt-2 text-2xl leading-tight">
+                {portfolio.stack
+                  .filter((s) => s.level === g.level)
+                  .map((s) => s.name)
+                  .join(', ')}
+              </p>
+            </div>
+          ))}
+        </div>
+      </Panel>
+    </Chapter>
+  )
+}
+
+export function Intra() {
+  const chapter = portfolio.chapters.find((c) => c.id === 'intra')!
+  return (
+    <Chapter id="intra" title={chapter.title} lede={<p>{chapter.lede}</p>} dropCap>
+      <Panel className="grid gap-8 lg:grid-cols-[1fr_1.1fr] lg:items-start">
+        <div className="space-y-5">
+          <p className="font-display text-xs font-semibold uppercase tracking-[0.2em] text-[#16161d]/50">42 Kuala Lumpur · {portfolio.intra.login}</p>
+          <p className="font-serif-ed text-[clamp(1.6rem,2.8vw,2.4rem)] leading-[1.06] tracking-[-0.02em]">
+            C first: rebuilding libc, printf and a line reader, then sorting with two stacks. Then Python, a maze generator and a grammar for a language model.
+          </p>
+          <p className="max-w-md text-[#16161d]/70">Every project is graded by other students, and most can earn a bonus past 100. Scores straight from the intra.</p>
+        </div>
+        {/* The card stays dark, like a screen set into the page. */}
+        <div className="rounded-3xl bg-[#0c0b12] p-2 shadow-[0_30px_60px_-30px_#16161d]">
+          <IntraCard />
+        </div>
+      </Panel>
+    </Chapter>
+  )
+}
+
+// ——— The stack: three visible orbits, the logos scattered along them, each ring turning at its own pace ———
+
+// Each ring: which level sits on it, its radius (% of the orbit's width), how big its logos are, and how long a lap
+// takes (negative turns the other way). Within a ring the logos keep their random spacing; the rings slide past each
+// other, so the picture never settles into a pattern.
 const RINGS = [
-  { level: 'main', radius: 17, size: 1, start: -104 },
-  { level: 'experienced', radius: 31, size: 0.9, start: 37 },
-  { level: 'site', radius: 45, size: 0.82, start: 11 },
+  { level: 'main', radius: 17, size: 1, lap: 90 },
+  { level: 'experienced', radius: 31, size: 0.9, lap: -130 },
+  { level: 'site', radius: 45, size: 0.82, lap: 170 },
 ] as const
 
-/** A stable random number generator per logo name, so the cluster looks the same on every visit. */
+/** A stable random number generator per name, so the scatter looks the same on every visit. */
 const seeded = (name: string) => mulberry32([...name].reduce((h, c) => Math.imul(h ^ c.charCodeAt(0), 16777619), 2166136261))
+
+/** Random angles (degrees) for `count` logos on a ring, never closer than `gap` degrees apart. */
+function scatter(seed: string, count: number, gap: number) {
+  const rng = seeded(seed)
+  const angles: number[] = []
+  for (let tries = 0; angles.length < count && tries < 500; tries++) {
+    const a = rng() * 360
+    if (angles.every((b) => Math.abs(((a - b + 540) % 360) - 180) >= gap)) angles.push(a)
+  }
+  return angles
+}
 
 function StackOrbit() {
   const ref = useReveal<HTMLDivElement>(0.3)
-  let n = 0
   return (
     <div ref={ref} className="orbit relative mx-auto aspect-square w-full max-w-md [container-type:inline-size]">
-      <div aria-hidden className="absolute inset-[18%] rounded-full bg-[radial-gradient(circle,color-mix(in_srgb,var(--accent)_22%,transparent)_0%,transparent_70%)] blur-xl" />
-      <p aria-hidden className="absolute inset-0 grid place-items-center font-marker text-lg text-white/40">my stack</p>
+      <div aria-hidden className="absolute inset-[22%] rounded-full bg-[radial-gradient(circle,color-mix(in_srgb,var(--accent)_20%,transparent)_0%,transparent_70%)] blur-xl" />
+      {RINGS.map((ring) => (
+        <div key={ring.level} aria-hidden className="orbit-ring absolute rounded-full border-[1.5px] border-[#16161d]/[0.18]" style={{ inset: `${50 - ring.radius}%` }} />
+      ))}
+      <p aria-hidden className="font-serif-ed absolute inset-0 grid place-items-center text-2xl italic text-[#16161d]/35">my stack</p>
       <ul aria-label="Languages and tools">
         {RINGS.map((ring, r) => {
           const items = portfolio.stack.filter((s) => s.level === ring.level)
+          // Room for a logo plus a little air, as an angle on this ring.
+          const gap = ((13 * ring.size + 4) / ring.radius) * (180 / Math.PI)
+          const angles = scatter(ring.level, items.length, gap)
           return items.map((s, i) => {
             const rng = seeded(s.name)
-            const angle = ((i / items.length) * 360 + ring.start + (rng() - 0.5) * 28) * (Math.PI / 180)
-            const radius = Math.min(46, ring.radius + (rng() - 0.5) * 8)
             const scale = ring.size * (0.94 + rng() * 0.12)
-            const k = n++
             return (
               <li
                 key={s.name}
                 tabIndex={0}
-                className="orbit-badge group absolute left-1/2 top-1/2 outline-none hover:z-30 focus-within:z-30 focus:z-30"
+                className="orbit-arm group absolute left-1/2 top-1/2 outline-none hover:z-30 focus:z-30"
                 style={
                   {
-                    '--tx': `${(Math.cos(angle) * radius).toFixed(2)}cqw`,
-                    '--ty': `${(Math.sin(angle) * radius).toFixed(2)}cqw`,
-                    '--delay': `${(r * 0.3 + i * 0.06).toFixed(2)}s`,
-                    // Its own slow loop: how far it wanders, how much it tilts, how long a lap takes, where it starts.
-                    '--fx': `${(4 + rng() * 5).toFixed(1)}px`,
-                    '--fy': `${(4 + rng() * 5).toFixed(1)}px`,
-                    '--rot': `${(2 + rng() * 2.5).toFixed(1)}deg`,
+                    '--start': `${angles[i].toFixed(1)}deg`,
+                    '--lap': `${Math.abs(ring.lap)}s`,
+                    '--turn': ring.lap < 0 ? '-360deg' : '360deg',
+                    '--r': `${ring.radius}cqw`,
+                    '--delay': `${(r * 0.3 + i * 0.07).toFixed(2)}s`,
+                    '--fx': `${(1.5 + rng() * 2).toFixed(1)}px`,
+                    '--fy': `${(1.5 + rng() * 2).toFixed(1)}px`,
+                    '--rot': `${(1.5 + rng() * 2).toFixed(1)}deg`,
                     '--dur': `${(7 + rng() * 6).toFixed(1)}s`,
-                    '--phase': `${(-rng() * 12 - k).toFixed(1)}s`,
+                    '--phase': `${(-rng() * 12).toFixed(1)}s`,
                     '--s': scale.toFixed(3),
                   } as CSSProperties
                 }
               >
-                {/* Sized to the orbit (up to 56px before its own scale), so twelve still fit around a phone-sized one. */}
-                <div className="orbit-float grid place-items-center rounded-full border-2 border-black bg-[#e6e6ee] shadow-[0_0_14px_#ffffff30] transition-[scale] duration-200 group-hover:scale-110 group-focus:scale-110 [height:calc(min(3.5rem,13cqw)*var(--s))] [margin:calc(min(1.75rem,6.5cqw)*var(--s)*-1)_0_0_calc(min(1.75rem,6.5cqw)*var(--s)*-1)] [width:calc(min(3.5rem,13cqw)*var(--s))]">
-                  <img src={`/boring/logos/${s.logo}.webp`} alt="" width={40} height={40} loading="lazy" className="size-[58%] object-contain" />
+                {/* The arm turns; the spot sits on the ring at its end; the upright layer turns back the other way, so
+                    the logo and its label always stay level. */}
+                <div className="orbit-spot">
+                  <div className="orbit-upright relative">
+                    <div className="orbit-float grid place-items-center rounded-full border-2 border-[#16161d] bg-white shadow-[0_6px_16px_-6px_#16161d55] transition-[scale] duration-200 group-hover:scale-110 group-focus:scale-110 [height:calc(min(3.5rem,13cqw)*var(--s))] [margin:calc(min(1.75rem,6.5cqw)*var(--s)*-1)_0_0_calc(min(1.75rem,6.5cqw)*var(--s)*-1)] [width:calc(min(3.5rem,13cqw)*var(--s))]">
+                      <img src={`/boring/logos/${s.logo}.webp`} alt="" width={40} height={40} loading="lazy" className="size-[58%] object-contain" />
+                    </div>
+                    <span
+                      aria-hidden
+                      className="pointer-events-none absolute left-0 top-[min(2rem,7.5cqw)] w-max max-w-[13rem] -translate-x-1/2 rounded-md bg-[#16161d] px-2.5 py-1.5 text-center text-xs leading-snug text-[#f4f1ea] opacity-0 shadow-[0_6px_18px_#0005] transition-opacity duration-200 group-hover:opacity-100 group-focus:opacity-100"
+                    >
+                      <b>{s.name}</b> · {s.note}
+                    </span>
+                  </div>
                 </div>
-                {/* The label sits under the badge, leaning inwards (a badge on the right reads leftwards), so it stays
-                    inside the card. */}
-                <span
-                  aria-hidden
-                  className="pointer-events-none absolute left-0 top-[min(2rem,7.5cqw)] w-max max-w-[14rem] rounded-md bg-black/95 px-2.5 py-1.5 text-center text-xs leading-snug text-white opacity-0 shadow-[0_6px_18px_#000a] ring-1 ring-white/15 transition-opacity duration-200 group-hover:opacity-100 group-focus:opacity-100"
-                  style={{ translate: `${(-50 - Math.cos(angle) * 35).toFixed(1)}% 0` }}
-                >
-                  <b>{s.name}</b> · {s.note}
-                </span>
                 <span className="sr-only">
                   {s.name}: {s.note}
                 </span>
@@ -133,7 +197,7 @@ function IntraCard() {
   const first = stats.rows.slice(0, SHOWN)
   const rest = stats.rows.slice(SHOWN)
   return (
-    <div ref={ref} className="intra rounded-2xl border border-white/10 p-4 text-white">
+    <div ref={ref} className="intra rounded-2xl p-4 text-white sm:p-5">
       <div className="flex items-start justify-between gap-3">
         <div className="flex items-center gap-3">
           <span className="grid h-10 w-10 place-items-center rounded-md bg-black ring-1 ring-white/20">
@@ -233,14 +297,14 @@ const SHOWN = 6
 
 function IntraLine({ row, className = '' }: { row: IntraRow; className?: string }) {
   return (
-    <li className={`grid grid-cols-[4.6rem_4.4rem_1fr] items-center gap-2 ${className}`}>
+    <li className={`grid grid-cols-[4.1rem_5.2rem_1fr] items-center gap-2 sm:grid-cols-[4.6rem_5.6rem_1fr] ${className}`}>
       <span className="text-white/50">{row.date ? monthYear(row.date) : 'now'}</span>
       {row.ongoing ? (
-        <span className="animate-pulse rounded bg-amber-400 px-1 py-0.5 text-center text-[10px] font-bold uppercase tracking-wide text-black">in progress</span>
+        <span className="animate-pulse whitespace-nowrap rounded bg-amber-400 px-1 py-0.5 text-center text-[10px] font-bold uppercase tracking-wide text-black">in progress</span>
       ) : (
         <span className={`rounded px-1.5 py-0.5 text-center text-xs font-semibold ${row.score! > 100 ? 'bg-[var(--accent)] text-white' : 'bg-emerald-500 text-black'}`}>{row.score}</span>
       )}
-      <span className="truncate">
+      <span className="min-w-0 break-words leading-tight">
         {row.name}
         {row.count > 1 && <span className="ml-1.5 text-xs text-white/40">×{row.count}</span>}
       </span>

@@ -8,12 +8,26 @@
 //   • New project for the carousel? Add it to `projects` (oldest first). `demo` picks its animation
 //     (src/components/boring/demos/Demo.tsx); a new kind of animation needs a new demo there.
 
+export type ChapterId = 'about' | 'stack' | 'intra' | 'work' | 'contact'
 export type SocialId = 'github' | 'email' | 'discord' | 'youtube' | 'twitch' | 'soundcloud'
 
 export const portfolio = {
   name: 'Daniel Cheng',
-  greeting: ["HEY THERE,", "THE NAME'S…", 'DANIEL CHENG'],
   tagline: 'Software engineering student · 42 Kuala Lumpur',
+  /** The serif line under the giant name in the hero. */
+  heroLine: 'Software engineering student at 42 Kuala Lumpur, writing C and Python with care.',
+
+  /**
+   * The page's chapters, in order: each opens with its title, huge, over the 3D world, then `lede` in serif, then its
+   * panel. `id` is its anchor (and its camera shot in the world: src/components/boring/heroScene.ts).
+   */
+  chapters: [
+    { id: 'about', title: 'About' },
+    { id: 'stack', title: 'Stack', lede: "Two languages I think in, a few I've built things with, and everything this website runs on." },
+    { id: 'intra', title: '42', lede: 'No teachers and no lectures: every project is reviewed by peers, and nothing passes until it works. Milestone 3, so far.' },
+    { id: 'work', title: 'Work', lede: "What I've built, oldest first. Every one of them runs here, live, ported from its repository." },
+    { id: 'contact', title: 'Contact' },
+  ] as { id: ChapterId; title: string; lede?: string }[],
 
   /** Shown in the hero (2 rows of 3) and the footer, in this order. Discord has no link: its button copies the name. */
   socials: [
