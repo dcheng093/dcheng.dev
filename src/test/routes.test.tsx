@@ -37,6 +37,10 @@ vi.mock('../sealed/hunt.json', async () => {
   }
 })
 
+// The stale-deploy reload would navigate jsdom away; the tests only need to know it was asked for.
+const reloadForNewDeploy = vi.hoisted(() => vi.fn(() => true))
+vi.mock('../lib/staleDeploy', async (original) => ({ ...(await original<typeof import('../lib/staleDeploy')>()), reloadForNewDeploy }))
+
 // Pages load on demand on the real site (routes.tsx `lazy`). Here they're all resolved up front, so a test sees its
 // page on the first render, as a returning visitor would.
 const eagerRoutes: RouteObject[] = await Promise.all(
@@ -748,5 +752,51 @@ describe('the rabbit hole', () => {
     const win = screen.getByTestId('window-computer')
     await user.dblClick(within(within(win).getByRole('list', { name: 'Files' })).getByRole('button', { name: 'A:' }))
     expect(within(win).getByRole('alertdialog')).toHaveTextContent('The device is not ready')
+  })
+})
+
+describe('a page that fails to load', () => {
+  // The real routes, with one page's code failing the way it does in a tab older than the latest deploy (or otherwise).
+  const renderFailing = (path: string, error: unknown) => {
+    const failing = routes.map((r) => ({ ...r, children: r.children?.map((c) => (c.path === path.slice(1) ? { ...c, lazy: () => Promise.reject(error) } : c)) }) as RouteObject)
+    sessionStorage.setItem('entered', 'true')
+    render(<RouterProvider router={createMemoryRouter(failing, { initialEntries: ['/', path] })} />)
+  }
+  const stale = new TypeError('Failed to fetch dynamically imported module: https://dcheng.dev/assets/Boring-old.js')
+
+  it('from an older deploy: loads again fresh, no crash screen', async () => {
+    reloadForNewDeploy.mockClear().mockReturnValue(true)
+    renderFailing('/boring', stale)
+    expect(await screen.findByTestId('route-reloading')).toBeInTheDocument()
+    await waitFor(() => expect(reloadForNewDeploy).toHaveBeenCalledTimes(1))
+    expect(screen.queryByTestId('bsod')).toBeNull()
+    expect(screen.queryByTestId('boring-error')).toBeNull()
+  })
+
+  it('on /boring, still failing after the reload: a plain error, never the joke crash screen, and the cause logged', async () => {
+    reloadForNewDeploy.mockClear().mockReturnValue(false)
+    const log = vi.spyOn(console, 'error').mockImplementation(() => {})
+    renderFailing('/boring', stale)
+    expect(await screen.findByTestId('boring-error')).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Reload' })).toBeInTheDocument()
+    expect(screen.queryByTestId('bsod')).toBeNull()
+    expect(log).toHaveBeenCalledWith('Route error:', stale)
+    log.mockRestore()
+  })
+
+  it('on /boring, any other error: the plain error', async () => {
+    const log = vi.spyOn(console, 'error').mockImplementation(() => {})
+    renderFailing('/boring', new Error('boom'))
+    expect(await screen.findByTestId('boring-error')).toBeInTheDocument()
+    expect(screen.queryByTestId('bsod')).toBeNull()
+    log.mockRestore()
+  })
+
+  it('on the fun site, any other error: the crash screen, as ever', async () => {
+    const log = vi.spyOn(console, 'error').mockImplementation(() => {})
+    renderFailing('/dealership', new Error('boom'))
+    expect(await screen.findByTestId('bsod')).toBeInTheDocument()
+    expect(log).toHaveBeenCalledWith('Route error:', expect.any(Error))
+    log.mockRestore()
   })
 })

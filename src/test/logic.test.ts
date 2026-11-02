@@ -28,6 +28,7 @@ import { stickers } from '../content/stickers'
 import { frameStyle, timing, type BlinkieOpts } from '../lib/blinkie'
 import { PROC_TEXTURES, TEX } from '../three/pageScenes'
 import { ambush, shouldShowAd, AD_AFTER_CLOSES } from '../lib/popnuke'
+import { isChunkLoadError, RELOAD_WINDOW_MS, reloadForNewDeploy } from '../lib/staleDeploy'
 import { LEGENDARIES, PAGE_3D, rollLegendary, sceneFor } from '../content/objects'
 import { moodOffset, poke, restingBody, step, type Personality } from '../lib/personality'
 import { hasGlyph, voxelWord } from '../lib/voxelFont'
@@ -1134,5 +1135,30 @@ describe('the possessed site: what lies under the pages', () => {
     const rot = home.map((t) => css.match(new RegExp(`\\.tile-${t} \\{ --rot: url\\('([^']+)'\\)`))?.[1])
     expect(rot.every(Boolean)).toBe(true)
     expect(new Set(rot).size).toBe(home.length)
+  })
+})
+
+describe('stale deploys', () => {
+  it('knows a page chunk that failed to load, in every browser, from any other error', () => {
+    for (const message of [
+      'Failed to fetch dynamically imported module: https://dcheng.dev/assets/Boring-old.js',
+      'error loading dynamically imported module: https://dcheng.dev/assets/Boring-old.js',
+      'Importing a module script failed.',
+      'Failed to load module script: Expected a JavaScript-or-Wasm module script but the server responded with a MIME type of "text/html".',
+      "'text/html' is not a valid JavaScript MIME type.",
+    ])
+      expect(isChunkLoadError(new TypeError(message))).toBe(true)
+    expect(isChunkLoadError(new TypeError("Cannot read properties of undefined (reading 'x')"))).toBe(false)
+    expect(isChunkLoadError(undefined)).toBe(false)
+    expect(isChunkLoadError({ status: 404 })).toBe(false)
+  })
+
+  it('reloads once, then gives up for a while so a truly broken page cannot loop', () => {
+    const go = vi.fn()
+    expect(reloadForNewDeploy(1_000_000, go)).toBe(true)
+    expect(reloadForNewDeploy(1_000_000 + RELOAD_WINDOW_MS - 1, go)).toBe(false)
+    expect(go).toHaveBeenCalledTimes(1)
+    expect(reloadForNewDeploy(1_000_000 + RELOAD_WINDOW_MS + 1, go)).toBe(true)
+    expect(go).toHaveBeenCalledTimes(2)
   })
 })

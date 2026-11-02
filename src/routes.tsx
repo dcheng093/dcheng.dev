@@ -1,7 +1,7 @@
 import type { RouteObject } from 'react-router-dom'
 import { RootLayout, type RouteHandle } from './layouts/RootLayout'
 import { Home } from './routes/Home'
-import { FakeBSOD } from './routes/FakeBSOD'
+import { RouteError } from './routes/RouteError'
 import { SealedOrBSOD } from './routes/Sealed'
 
 // Every page but Home (where everyone arrives) and the crash screen loads on demand: nobody needs every page's code
@@ -19,7 +19,7 @@ export const routes: RouteObject[] = [
   {
     path: '/',
     element: <RootLayout />,
-    errorElement: <FakeBSOD />,
+    errorElement: <RouteError />,
     // Shown for a blink when the very first page loaded is one of the lazy Cyber Town pages (just dark for the boring site).
     hydrateFallbackElement:
       typeof location !== 'undefined' && /^\/boring\/?$/i.test(location.pathname) ? (
